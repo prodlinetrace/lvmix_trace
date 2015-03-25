@@ -1,0 +1,52 @@
+2015-01-29 23:12:38,276 - snap7.client - INFO - creating snap7 client
+2015-01-29 23:12:38,276 - plc.controller - INFO - PLC: c1 connected to MongoDB @ localhost:27017. Status: True
+2015-01-29 23:12:38,276 - snap7.client - INFO - creating snap7 client
+2015-01-29 23:12:38,276 - plc.controller - INFO - PLC: c2 connected to MongoDB @ localhost:27017. Status: True
+2015-01-29 23:12:38,276 - snap7.client - INFO - connecting to 192.168.0.10:102 rack 0 slot 2
+2015-01-29 23:12:38,312 - plc.controller - INFO - PLC: c1 connected to server: IP 192.168.0.10 PORT 102
+2015-01-29 23:12:38,312 - plc.prodline - INFO - Controller id: c1 has status: True 
+2015-01-29 23:12:38,312 - snap7.client - INFO - connecting to 192.168.0.20:102 rack 0 slot 2
+2015-01-29 23:12:38,329 - plc.controller - INFO - PLC: c2 connected to server: IP 192.168.0.20 PORT 102
+2015-01-29 23:12:38,329 - plc.prodline - INFO - Controller id: c2 has status: True 
+2015-01-29 23:12:38,427 - __main__ - INFO - saving data item 100 to D:\diko\workspace\prodlinetrace\data\dbdump\c1_100.db file
+2015-01-29 23:12:38,428 - __main__ - INFO - saving data item 101 to D:\diko\workspace\prodlinetrace\data\dbdump\c1_101.db file
+2015-01-29 23:12:38,430 - __main__ - INFO - saving data item 300 to D:\diko\workspace\prodlinetrace\data\dbdump\c1_300.db file
+2015-01-29 23:12:38,430 - __main__ - INFO - saving data item 301 to D:\diko\workspace\prodlinetrace\data\dbdump\c1_301.db file
+2015-01-29 23:12:38,430 - __main__ - INFO - saving data item 302 to D:\diko\workspace\prodlinetrace\data\dbdump\c1_302.db file
+2015-01-29 23:12:38,431 - __main__ - INFO - saving data item 303 to D:\diko\workspace\prodlinetrace\data\dbdump\c1_303.db file
+2015-01-29 23:12:38,431 - __main__ - INFO - saving data item 310 to D:\diko\workspace\prodlinetrace\data\dbdump\c1_310.db file
+2015-01-29 23:12:38,529 - __main__ - INFO - saving data item 100 to D:\diko\workspace\prodlinetrace\data\dbdump\c2_100.db file
+2015-01-29 23:12:38,529 - __main__ - INFO - saving data item 101 to D:\diko\workspace\prodlinetrace\data\dbdump\c2_101.db file
+2015-01-29 23:12:38,529 - __main__ - INFO - saving data item 300 to D:\diko\workspace\prodlinetrace\data\dbdump\c2_300.db file
+2015-01-29 23:12:38,529 - __main__ - INFO - saving data item 301 to D:\diko\workspace\prodlinetrace\data\dbdump\c2_301.db file
+2015-01-29 23:12:38,529 - __main__ - INFO - saving data item 302 to D:\diko\workspace\prodlinetrace\data\dbdump\c2_302.db file
+2015-01-29 23:12:38,529 - __main__ - INFO - saving data item 303 to D:\diko\workspace\prodlinetrace\data\dbdump\c2_303.db file
+2015-01-29 23:12:38,530 - __main__ - INFO - saving data item 310 to D:\diko\workspace\prodlinetrace\data\dbdump\c2_310.db file
+2015-01-29 23:12:38,655 - snap7.client - INFO - disconnecting snap7 client
+2015-01-29 23:12:38,792 - snap7.client - INFO - disconnecting snap7 client
+2015-02-01 01:25:44,354 - snap7.client - INFO - creating snap7 client
+2015-02-01 01:25:44,394 - plc.controller - INFO - PLC: c1 connected to SQLLite @ data\prodline.db. Status: True
+2015-02-01 01:25:44,394 - snap7.client - INFO - creating snap7 client
+2015-02-01 01:25:44,394 - plc.controller - INFO - PLC: c2 connected to SQLLite @ data\prodline.db. Status: True
+2015-02-01 01:25:44,394 - snap7.client - INFO - connecting to 192.168.0.10:102 rack 0 slot 2
+2015-02-01 01:25:44,420 - plc.controller - INFO - PLC: c1 connected to server: IP 192.168.0.10 PORT 102
+2015-02-01 01:25:44,420 - plc.prodline - INFO - Controller id: c1 has status: True 
+2015-02-01 01:25:44,420 - snap7.client - INFO - connecting to 192.168.0.20:102 rack 0 slot 2
+2015-02-01 01:25:44,446 - plc.controller - INFO - PLC: c2 connected to server: IP 192.168.0.20 PORT 102
+2015-02-01 01:25:44,446 - plc.prodline - INFO - Controller id: c2 has status: True 
+2015-02-01 01:25:44,549 - __main__ - INFO - saving data item 100 to D:\diko\workspace\prodlinetrace\data\dbdump\c1_100.db file
+2015-02-01 01:25:44,551 - __main__ - INFO - saving data item 101 to D:\diko\workspace\prodlinetrace\data\dbdump\c1_101.db file
+2015-02-01 01:25:44,552 - __main__ - INFO - saving data item 300 to D:\diko\workspace\prodlinetrace\data\dbdump\c1_300.db file
+2015-02-01 01:25:44,552 - __main__ - INFO - saving data item 301 to D:\diko\workspace\prodlinetrace\data\dbdump\c1_301.db file
+2015-02-01 01:25:44,553 - __main__ - INFO - saving data item 302 to D:\diko\workspace\prodlinetrace\data\dbdump\c1_302.db file
+2015-02-01 01:25:44,553 - __main__ - INFO - saving data item 303 to D:\diko\workspace\prodlinetrace\data\dbdump\c1_303.db file
+2015-02-01 01:25:44,555 - __main__ - INFO - saving data item 310 to D:\diko\workspace\prodlinetrace\data\dbdump\c1_310.db file
+2015-02-01 01:25:44,650 - __main__ - INFO - saving data item 100 to D:\diko\workspace\prodlinetrace\data\dbdump\c2_100.db file
+2015-02-01 01:25:44,651 - __main__ - INFO - saving data item 101 to D:\diko\workspace\prodlinetrace\data\dbdump\c2_101.db file
+2015-02-01 01:25:44,651 - __main__ - INFO - saving data item 300 to D:\diko\workspace\prodlinetrace\data\dbdump\c2_300.db file
+2015-02-01 01:25:44,651 - __main__ - INFO - saving data item 301 to D:\diko\workspace\prodlinetrace\data\dbdump\c2_301.db file
+2015-02-01 01:25:44,653 - __main__ - INFO - saving data item 302 to D:\diko\workspace\prodlinetrace\data\dbdump\c2_302.db file
+2015-02-01 01:25:44,654 - __main__ - INFO - saving data item 303 to D:\diko\workspace\prodlinetrace\data\dbdump\c2_303.db file
+2015-02-01 01:25:44,654 - __main__ - INFO - saving data item 310 to D:\diko\workspace\prodlinetrace\data\dbdump\c2_310.db file
+2015-02-01 01:25:44,779 - snap7.client - INFO - disconnecting snap7 client
+2015-02-01 01:25:44,911 - snap7.client - INFO - disconnecting snap7 client
