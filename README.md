@@ -13,13 +13,14 @@ Requirements
 
 - Python 2.7 or 3.3+ on any supported OS (even Windows!)
 - virtualenv (or pyvenv if you are using Python 3.4)
-- git
+- snap7 in version 1.3.0 or higher
 - configured PLC controller. 
+- git
 
 Setup
 -----
 
-In order to build installer following packages needs to be installed:
+In order to build installer following packages needs to be installed (for windows):
 ActivePython 2.7.10 :
 wxPython3.0-win64-3.0.2.0-py27.exe
 
@@ -27,7 +28,7 @@ Below are step-by-step installation instructions:
 
 **Step 1**: Clone the git repository
 
-    $ git clone https://github.com/wilkpio/prodlinetrace.git
+    $ git clone https://bitbucket.org/wilkpio/prodlinetrace.git
     $ cd prodlinetrace
 
 **Step 2**: Create a virtual environment.
