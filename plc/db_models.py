@@ -9,6 +9,7 @@ from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
 from flask import request, current_app
 from flask.ext.login import UserMixin
 import logging
+__version__ = '0.1.0'
 
 logger = logging.getLogger(__name__)
 
@@ -102,22 +103,28 @@ class Product(db.Model):
     statuses = db.relationship('Status', lazy='dynamic', backref='product')
     operations = db.relationship('Operation', lazy='dynamic', backref='product')
 
-    def __init__(self, _type, _serial, _week, _year):
-        self.type = _type
-        self.serial = _serial
-        self.week = _week
-        self.year = _year
+    def __init__(self, type, serial, week, year):
+        self.type = type
+        self.serial = serial
+        self.week = week
+        self.year = year
         self.id = self.get_product_id(self.type, self.serial)
 
     def __repr__(self):
         return '<Product %d>' % self.id
 
-    def get_product_id(self, _type, _serial):
+    def get_product_id(self, type=None, serial=None):
         """
         returns product id based on product_type and serial_number.
         It is used within Product table.
         """
-        return pow(10, 8) * _type + _serial
+        if type is None:
+            type = self.type
+
+        if serial is None:
+            serial = self.serial
+            
+        return pow(10, 8) * type + serial
 
     @property
     def serialize(self):

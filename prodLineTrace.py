@@ -11,6 +11,7 @@ import traceback
 
 from plc import helpers
 from plc import __version__ as version
+from plc.db_models import __version__ as dbmodel_version
 from plc.prodline import ProdLine
 from plc.util import file_name_with_size
 # from plcweb import application as webapp
@@ -34,6 +35,7 @@ class MainWindow(wx.App):
         self.valueMainErrorLogFile = xrc.XRCCTRL(frame, "valueMainErrorLogFile")
         self.valueMainVerbosity = xrc.XRCCTRL(frame, "valueMainVerbosity")
         self.valueMainVersion = xrc.XRCCTRL(frame, "valueMainVersion")
+        self.valueMainDBModelVersion = xrc.XRCCTRL(frame, "valueMainDBModelVersion")
         self.valueMainDBFile = xrc.XRCCTRL(frame, "valueMainDBFile")
         self.valueMainUptime = xrc.XRCCTRL(frame, "valueMainUptime")
         self.valueMainControllerCount = xrc.XRCCTRL(frame, "valueMainControllerCount")
@@ -86,6 +88,7 @@ class MainWindow(wx.App):
         self._mode = self.ID_UPDATE_CTRL_STATUS
         # push some initial data
         self.valueMainVersion.SetLabelText(version)
+        self.valueMainDBModelVersion.SetLabelText(dbmodel_version)
 
         while True:
             self.valueMainLogFile.SetLabelText(file_name_with_size(self.logfile))

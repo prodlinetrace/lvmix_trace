@@ -172,6 +172,21 @@
                                     <object class="sizeritem">
                                         <flag>wxALIGN_LEFT|wxALIGN_TOP|wxALL</flag>
                                         <border>5</border>
+                                        <object class="wxStaticText" name="labelMainDBModelVersion">
+                                            <label>DB Model Version</label>
+                                        </object>
+                                    </object>
+                                    <object class="sizeritem">
+                                        <flag>wxALIGN_LEFT|wxALIGN_TOP|wxALL</flag>
+                                        <border>5</border>
+                                        <object class="wxStaticText" name="valueMainDBModelVersion">
+                                            <label>MyLabel</label>
+                                        </object>
+                                    </object>
+                                    
+                                    <object class="sizeritem">
+                                        <flag>wxALIGN_LEFT|wxALIGN_TOP|wxALL</flag>
+                                        <border>5</border>
                                         <object class="wxStaticText" name="labelMainMsgRead">
                                             <label>Runtime Status Msg Read Count</label>
                                         </object>

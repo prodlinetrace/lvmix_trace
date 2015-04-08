@@ -19,17 +19,17 @@ class Database(object):
             cursor.close()
         db.create_all()  # initialize empty database if required.
 
-    def read_status(self, product_type, serial, station):
+    def read_status(self, product_type, serial_number, station):
         product_type = int(product_type)
-        serial = int(serial)
-        product_id = get_product_id(product_type, serial)
+        serial_number = int(serial_number)
+        product_id = get_product_id(product_type, serial_number)
         station = int(station)
         res = Status.query.filter_by(product_id=product_id).filter_by(station_id=station).all()
         if len(res) == 0:
-            logger.warn("record for PT: %s SN: %s ST: %d not found - returning undefined" % (product_type, serial, station))
+            logger.warn("record for PT: %s SN: %s ST: %d not found - returning undefined" % (product_type, serial_number, station))
             return 2
         ret = res[-1].status
-        logger.info("record for PT: %s SN: %s ST: %d has status: %s" % (product_type, serial, station, ret))
+        logger.info("record for PT: %s SN: %s ST: %d has status: %s" % (product_type, serial_number, station, ret))
         return ret
 
     def write_status(self, product_type, serial_number, station, status, week_number=48, year_number=15, date_time=datetime.now()):
