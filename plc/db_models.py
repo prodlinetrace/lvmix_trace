@@ -124,7 +124,7 @@ class Product(db.Model):
 
         if serial is None:
             serial = self.serial
-            
+
         return pow(10, 8) * type + serial
 
     @property
