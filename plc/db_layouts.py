@@ -109,11 +109,20 @@ for i in range(0, 1):  # append 1 tracebility template.
 
 db303 = db3xxHead
 db303 += offset_spec_block(db3xxTrcHead, 46)
-for i in range(0, 6):  # append 6 tracebility templates.
+for i in range(0, 4):  # append 4 tracebility templates.
     base_offset = 48
     block_size = 54
     offset = base_offset + block_size * i
     db303 += offset_spec_block(db3xxTrcTemplate, offset).replace("__no__", str(i))
+
+db304 = db3xxHead
+db304 += offset_spec_block(db3xxTrcHead, 46)
+for i in range(0, 5):  # append 5 tracebility templates.
+    base_offset = 48
+    block_size = 54
+    offset = base_offset + block_size * i
+    db304 += offset_spec_block(db3xxTrcTemplate, offset).replace("__no__", str(i))
+
 
 # special cases hacking...
 db310 = db300
