@@ -31,7 +31,7 @@ db300Body = """
 
 db300Ctrl = """
 52.0    ctrl.plc.live                BOOL        # blinks every 300[ms]. Indicates that PLC is alive.
-52.1    ctrl.plc.trc_on              BOOL        # tracebility flag. used by PLC to indicate if tracebility should be switched on.
+52.1    ctrl.plc.trc_on              BOOL        # traceability flag. used by PLC to indicate if tracaebility should be switched on.
 52.2    ctrl.plc.data_ready          BOOL        # not used.
 52.3    ctrl.plc.reserve             BOOL
 52.4    ctrl.pc.live                 BOOL        # Watched by PLC. PC should blink this bit every 300[ms] to notify that application is connected.
@@ -47,7 +47,7 @@ db300 += db300Ctrl
 
 
 db3xxTrcHead = """
-0.0    body.trc.template_count                 BYTE        # number of tracebility template blocks in message body.
+0.0    body.trc.template_count                 BYTE        # number of traceability template blocks in message body.
 1.0    body.res_1                              BYTE
 """
 
@@ -64,62 +64,63 @@ db3xxTrcTemplate = """
 0.5    body.trc.tmpl.__no__.res_4              BOOL
 0.6    body.trc.tmpl.__no__.res_5              BOOL
 0.7    body.trc.tmpl.__no__.res_6              BOOL
-1.0    body.trc.tmpl.__no__.byte_res           BYTE
-2.0    body.trc.tmpl.__no__.operation_status   BYTE        # overall operation status. 1 - OK, 2 - NOK, 4 - Not present in this variant
-3.0    body.trc.tmpl.__no__.operation_type     BYTE        # overall operation type
+1.0    body.trc.tmpl.__no__.res_byte           BYTE
+2.0    body.trc.tmpl.__no__.operation_status   BYTE        # overall operation status. 1 - OK, 2 - NOK, 4 - Not present in this variant,  5 - next one OK, 6 - next one NOK
+3.0    body.trc.tmpl.__no__.res_byte_0         BYTE
+4.0    body.trc.tmpl.__no__.operation_type     INT         # individual operation type
 
-4.0    body.trc.tmpl.__no__.1.result           REAL        # operation #1 - measured result.
-8.0    body.trc.tmpl.__no__.1.result_max       REAL        # operation #1 - maximum value
-12.0   body.trc.tmpl.__no__.1.result_min       REAL        # operation #1 - minimum value
-16.0   body.trc.tmpl.__no__.1.result_status    BYTE        # operation #1 - status
-17.0   body.trc.tmpl.__no__.1.byte_res         BYTE        # not used - TODO: could be used as indication flag
+6.0    body.trc.tmpl.__no__.1.result           REAL        # operation #1 - measured result.
+10.0   body.trc.tmpl.__no__.1.result_max       REAL        # operation #1 - maximum value
+14.0   body.trc.tmpl.__no__.1.result_min       REAL        # operation #1 - minimum value
+18.0   body.trc.tmpl.__no__.1.result_status    INT         # operation #1 - status
+20.0   body.trc.tmpl.__no__.1.word_res         WORD        # not used - TODO: could be used as indication flag
 
-18.0   body.trc.tmpl.__no__.2.result           REAL
-22.0   body.trc.tmpl.__no__.2.result_max       REAL
-26.0   body.trc.tmpl.__no__.2.result_min       REAL
-30.0   body.trc.tmpl.__no__.2.result_status    BYTE
-31.0   body.trc.tmpl.__no__.2.byte_res         BYTE
+22.0   body.trc.tmpl.__no__.2.result           REAL        # operation #2 - measured result.
+26.0   body.trc.tmpl.__no__.2.result_max       REAL        # operation #2 - maximum value
+30.0   body.trc.tmpl.__no__.2.result_min       REAL        # operation #2 - minimum value
+34.0   body.trc.tmpl.__no__.2.result_status    INT         # operation #2 - status
+36.0   body.trc.tmpl.__no__.2.word_res         WORD
 
-32.0   body.trc.tmpl.__no__.3.result           REAL
-36.0   body.trc.tmpl.__no__.3.result_max       REAL
-40.0   body.trc.tmpl.__no__.3.result_min       REAL
-44.0   body.trc.tmpl.__no__.3.result_status    BYTE
-45.0   body.trc.tmpl.__no__.3.byte_res         BYTE
-46.0   body.trc.tmpl.__no__.date_time          DATETIME    # date and time - size is 8 bytes
-# tracebility template size is 54
+38.0   body.trc.tmpl.__no__.3.result           REAL        # operation #3 - measured result.
+42.0   body.trc.tmpl.__no__.3.result_max       REAL        # operation #3 - maximum value
+46.0   body.trc.tmpl.__no__.3.result_min       REAL        # operation #3 - minimum value
+50.0   body.trc.tmpl.__no__.3.result_status    INT         # operation #3 - status
+52.0   body.trc.tmpl.__no__.3.word_res         WORD
+54.0   body.trc.tmpl.__no__.date_time          DATETIME    # date and time - size is 8 bytes
+# traceability template size is 62
 """
 
 
 db301 = db3xxHead
 db301 += offset_spec_block(db3xxTrcHead, 46)
-for i in range(0, 3):  # append 3 tracebility templates.
+for i in range(0, 3):  # append 3 traceability templates.
     base_offset = 48
-    block_size = 54
+    block_size = 62
     offset = base_offset + block_size * i
     db301 += offset_spec_block(db3xxTrcTemplate, offset).replace("__no__", str(i))
 
 
 db302 = db3xxHead
 db302 += offset_spec_block(db3xxTrcHead, 46)
-for i in range(0, 1):  # append 1 tracebility template.
+for i in range(0, 1):  # append 1 traceability template.
     base_offset = 48
-    block_size = 54
+    block_size = 62
     offset = base_offset + block_size * i
     db302 += offset_spec_block(db3xxTrcTemplate, offset).replace("__no__", str(i))
 
 db303 = db3xxHead
 db303 += offset_spec_block(db3xxTrcHead, 46)
-for i in range(0, 4):  # append 4 tracebility templates.
+for i in range(0, 4):  # append 4 traceability templates.
     base_offset = 48
-    block_size = 54
+    block_size = 62
     offset = base_offset + block_size * i
     db303 += offset_spec_block(db3xxTrcTemplate, offset).replace("__no__", str(i))
 
 db304 = db3xxHead
 db304 += offset_spec_block(db3xxTrcHead, 46)
-for i in range(0, 5):  # append 5 tracebility templates.
+for i in range(0, 5):  # append 5 traceability templates.
     base_offset = 48
-    block_size = 54
+    block_size = 62
     offset = base_offset + block_size * i
     db304 += offset_spec_block(db3xxTrcTemplate, offset).replace("__no__", str(i))
 
