@@ -1,4 +1,3 @@
-#!/usr/bin/python
 from plc import db
 from datetime import datetime
 import hashlib
@@ -9,7 +8,7 @@ from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
 from flask import request, current_app
 from flask.ext.login import UserMixin
 import logging
-__version__ = '0.1.1'
+__version__ = '0.2.0'
 
 logger = logging.getLogger(__name__)
 
@@ -177,7 +176,7 @@ class Station(db.Model):
 class Status(db.Model):
     __tablename__ = 'status'
     id = db.Column(db.Integer, primary_key=True)
-    status = db.Column(db.Integer)
+    status = db.Column(db.Integer, db.ForeignKey('operation_status.id'))
     date_time = db.Column(db.String(40))
     product_id = db.Column(db.Integer, db.ForeignKey('product.id'))
     station_id = db.Column(db.Integer, db.ForeignKey('station.id'))
@@ -210,26 +209,26 @@ class Operation(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     product_id = db.Column(db.Integer, db.ForeignKey('product.id'))
     station_id = db.Column(db.Integer, db.ForeignKey('station.id'))
-    operation_status = db.Column(db.Integer)
+    operation_status_id = db.Column(db.Integer, db.ForeignKey('operation_status.id'))
     operation_type_id = db.Column(db.Integer, db.ForeignKey('operation_type.id'))
     date_time = db.Column(db.String(40))
     result_1 = db.Column(db.Float)
     result_1_max = db.Column(db.Float)
     result_1_min = db.Column(db.Float)
-    result_1_status = db.Column(db.Float)
+    result_1_status_id = db.Column(db.Integer, db.ForeignKey('operation_status.id'))
     result_2 = db.Column(db.Float)
     result_2_max = db.Column(db.Float)
     result_2_min = db.Column(db.Float)
-    result_2_status = db.Column(db.Float)
+    result_2_status_id = db.Column(db.Integer, db.ForeignKey('operation_status.id'))
     result_3 = db.Column(db.Float)
     result_3_max = db.Column(db.Float)
     result_3_min = db.Column(db.Float)
-    result_3_status = db.Column(db.Float)
+    result_3_status_id = db.Column(db.Integer, db.ForeignKey('operation_status.id'))
 
-    def __init__(self, _product, _station, _operation_status, _operation_type_id, _date_time, _r1=None, _r1_min=None, _r1_max=None, _r1_stat=None, _r2=None, _r2_min=None, _r2_max=None, _r2_stat=None, _r3=None, _r3_min=None, _r3_max=None, _r3_stat=None):
+    def __init__(self, _product, _station, _operation_status_id, _operation_type_id, _date_time, _r1=None, _r1_min=None, _r1_max=None, _r1_stat=None, _r2=None, _r2_min=None, _r2_max=None, _r2_stat=None, _r3=None, _r3_min=None, _r3_max=None, _r3_stat=None):
         self.product_id = _product
         self.station_id = _station
-        self.operation_status = _operation_status
+        self.operation_status_id = _operation_status_id
         self.operation_type_id = _operation_type_id
         if _date_time is None:
             _date_time = datetime.now()
@@ -238,17 +237,17 @@ class Operation(db.Model):
         self.result_1 = _r1
         self.result_1_max = _r1_max
         self.result_1_min = _r1_min
-        self.result_1_status = _r1_stat
+        self.result_1_status_id = _r1_stat
 
         self.result_2 = _r2
         self.result_2_max = _r2_max
         self.result_2_min = _r2_min
-        self.result_2_status = _r2_stat
+        self.result_2_status_id = _r2_stat
 
         self.result_3 = _r3
         self.result_3_max = _r3_max
         self.result_3_min = _r3_min
-        self.result_3_status = _r3_stat
+        self.result_3_status_id = _r3_stat
 
     def __repr__(self):
         return '<Assembly Operation for: Product: %r Station: %r Operation_type: %r>' % (self.product_id, self.station_id, self.operation_type_id)
@@ -262,23 +261,55 @@ class Operation(db.Model):
             'product_id': self.product_id,
             'station_id': self.station_id,
             'operation_type_id': self.operation_type_id,
-            'operation_status': self.operation_status,
+            'operation_status_id': self.operation_status_id,
             'date_time': self.date_time,
 
             'result_1': self.result_1,
             'result_1_max': self.result_1_max,
             'result_1_min': self.result_1_min,
-            'result_1_status': self.result_1_status,
+            'result_1_status_id': self.result_1_status_id,
 
             'result_2': self.result_2,
             'result_2_max': self.result_2_max,
             'result_2_min': self.result_2_min,
-            'result_2_status': self.result_2_status,
+            'result_2_status_id': self.result_2_status_id,
 
             'result_3': self.result_3,
             'result_3_max': self.result_3_max,
             'result_3_min': self.result_3_min,
-            'result_3_status': self.result_3_status,
+            'result_3_status_id': self.result_3_status_id,
+        }
+
+
+class Operation_Status(db.Model):
+    __tablename__ = 'operation_status'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(64))
+    description = db.Column(db.String(255))
+    operations = db.relationship('Operation', lazy='dynamic', backref='operation_status',  foreign_keys='Operation.operation_status_id')
+
+    result_1_status = db.relationship('Operation', lazy='dynamic', backref='result_1_status', foreign_keys='Operation.result_1_status_id')
+    result_2_status = db.relationship('Operation', lazy='dynamic', backref='result_2_status', foreign_keys='Operation.result_2_status_id')
+    result_3_status = db.relationship('Operation', lazy='dynamic', backref='result_3_status', foreign_keys='Operation.result_3_status_id')
+
+    status = db.relationship('Status', lazy='dynamic', backref='status_name', foreign_keys='Status.status')
+
+
+    def __init__(self, id, name="Default Operation Status", description="Default Operation Status Description"):
+        self.id = id
+        self.name = name
+        self.description = description
+
+    def __repr__(self):
+        return '<Operation_Type Id: %r Name: %r Description: %r>' % (self.id, self.name, self.description)
+
+    @property
+    def serialize(self):
+        """Return object data in easily serializeable format"""
+        return {
+            'id': self.id,
+            'name': self.name,
+            'description': self.description,
         }
 
 
@@ -305,3 +336,4 @@ class Operation_Type(db.Model):
             'name': self.name,
             'description': self.description,
         }
+
