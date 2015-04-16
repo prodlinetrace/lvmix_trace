@@ -320,9 +320,9 @@ class Operation_Type(db.Model):
     description = db.Column(db.String(255))
     operations = db.relationship('Operation', lazy='dynamic', backref='operation_type')
 
-    def __init__(self, id, _name="Default Operation Name", description="Default Operation Description"):
+    def __init__(self, id, name="Default Operation Name", description="Default Operation Description"):
         self.id = id
-        self.name = _name
+        self.name = name
         self.description = description
 
     def __repr__(self):
