@@ -49,6 +49,7 @@ class MainWindow(wx.App):
         self.valueMainDBStatusCount = xrc.XRCCTRL(frame, "valueMainDBStatusCount")
         self.valueMainDBOperationCount = xrc.XRCCTRL(frame, "valueMainDBOperationCount")
         self.valueMainDBOperationTypeCount = xrc.XRCCTRL(frame, "valueMainDBOperationTypeCount")
+        self.valueMainDBStatusTypeCount = xrc.XRCCTRL(frame, "valueMainDBStatusTypeCount")
         self.valueMainDBCommentCount = xrc.XRCCTRL(frame, "valueMainDBCommentCount")
 
         self.valueLogTextArea = xrc.XRCCTRL(frame, "valueLogTextArea")
@@ -110,6 +111,7 @@ class MainWindow(wx.App):
             self.valueMainDBStatusCount.SetLabelText(str(self.application.get_status_count()))
             self.valueMainDBOperationCount.SetLabelText(str(self.application.get_opertation_count()))
             self.valueMainDBOperationTypeCount.SetLabelText(str(self.application.get_operation_type_count()))
+            self.valueMainDBStatusTypeCount.SetLabelText(str(self.application.get_status_type_count()))
             self.valueMainDBCommentCount.SetLabelText(str(self.application.get_comment_count()))
 
             time.sleep(0.31234)

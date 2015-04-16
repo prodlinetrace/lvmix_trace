@@ -220,6 +220,9 @@ class Database(object):
     def get_status_count(self):
         return Status.query.count()
 
+    def get_status_type_count(self):
+        return Operation_Status.query.count()
+
     def get_opertation_count(self):
         return Operation.query.count()
 

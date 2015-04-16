@@ -2,7 +2,7 @@
 <resource version="2.3.0.1" xmlns="http://www.wxwidgets.org/wxxrc">
     <object class="wxFrame" name="MainFrame">
         <style>wxDEFAULT_FRAME_STYLE|wxTAB_TRAVERSAL</style>
-        <size>828,600</size>
+        <size>848,600</size>
         <title>ProdLineManager</title>
         <object class="wxPanel" name="DemoPanel">
             <style>wxTAB_TRAVERSAL</style>
@@ -153,7 +153,7 @@
 								                <item>CRITICAL</item>
 								            </content>
 								            <selection>1</selection>
-								        </object>                                    
+								        </object>
         							</object>
                                     <object class="sizeritem">
                                         <flag>wxALIGN_LEFT|wxALIGN_TOP|wxALL</flag>
@@ -183,7 +183,7 @@
                                             <label>MyLabel</label>
                                         </object>
                                     </object>
-                                    
+
                                     <object class="sizeritem">
                                         <flag>wxALIGN_LEFT|wxALIGN_TOP|wxALL</flag>
                                         <border>5</border>
@@ -294,6 +294,20 @@
                                         <border>5</border>
                                         <object class="wxStaticText" name="valueMainDBOperationTypeCount">
                                             <label>DB OperationType Count value</label>
+                                        </object>
+                                    </object>
+                                    <object class="sizeritem">
+                                        <flag>wxALIGN_LEFT|wxALIGN_TOP|wxALL</flag>
+                                        <border>5</border>
+                                        <object class="wxStaticText" name="labelMainDBStatusTypeCount">
+                                            <label>DB StatusType Count</label>
+                                        </object>
+                                    </object>
+                                    <object class="sizeritem">
+                                        <flag>wxALIGN_LEFT|wxALIGN_TOP|wxALL</flag>
+                                        <border>5</border>
+                                        <object class="wxStaticText" name="valueMainDBStatusTypeCount">
+                                            <label>DB StatusType Count value</label>
                                         </object>
                                     </object>
                                     <object class="sizeritem">

@@ -167,6 +167,9 @@ class ProdLine(ProdLineBase):
     def get_operation_type_count(self):
         return self.database.get_operation_type_count()
 
+    def get_status_type_count(self):
+        return self.database.get_status_type_count()
+
     def get_comment_count(self):
         return self.database.get_comment_count()
 
