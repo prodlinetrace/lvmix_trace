@@ -19,6 +19,7 @@ class Database(object):
             cursor.close()
         db.create_all()  # initialize empty database if required.
 
+
     def read_status(self, product_type, serial_number, station):
         product_type = int(product_type)
         serial_number = int(serial_number)
@@ -27,10 +28,11 @@ class Database(object):
         res = Status.query.filter_by(product_id=product_id).filter_by(station_id=station).all()
         if len(res) == 0:
             logger.warn("record for PT: %s SN: %s ST: %d not found - returning undefined" % (product_type, serial_number, station))
-            return 2
+            return 0  # Wabco statuses are not used anymore. Current statuses: (0 undefined, 1 OK, 2 NOK)
         ret = res[-1].status
         logger.info("record for PT: %s SN: %s ST: %d has status: %s" % (product_type, serial_number, station, ret))
         return ret
+
 
     def write_status(self, product_type, serial_number, station, status, week_number=48, year_number=15, date_time=datetime.now()):
         product_type = int(product_type)
@@ -45,7 +47,60 @@ class Database(object):
 
         self.add_product_if_required(product_type, serial_number, week_number, year_number)
         self.add_station_if_required(station)
+        self.add_operation_status_if_required(status)  # status and operation status names are kept in one and same table
         self.add_status(status, product_id, station, date_time)
+
+
+    def write_operation(self, product_type, serial_number, week_number, year_number, station_id, operation_status, operation_type, date_time, result_1, result_1_max, result_1_min, result_1_status, result_2, result_2_max, result_2_min, result_2_status, result_3, result_3_max, result_3_min, result_3_status):
+
+        product_type = int(product_type)
+        serial_number = int(serial_number)
+        product_id = get_product_id(product_type, serial_number)
+        station_id = int(station_id)
+
+        self.add_product_if_required(product_type, serial_number, week_number, year_number)
+        self.add_station_if_required(station_id)
+        self.add_operation_status_if_required(operation_status)
+        self.add_operation_status_if_required(result_1_status)
+        self.add_operation_status_if_required(result_2_status)
+        self.add_operation_status_if_required(result_3_status)
+        self.add_operation_type_if_required(operation_type)
+        self.add_operation(product_id, station_id, operation_status, operation_type, date_time, result_1, result_1_max, result_1_min, result_1_status, result_2, result_2_max, result_2_min, result_2_status, result_3, result_3_max, result_3_min, result_3_status)
+
+
+    def add_operation(self, product_id, station_id, operation_status, operation_type, date_time, result_1, result_1_max, result_1_min, result_1_status, result_2, result_2_max, result_2_min, result_2_status, result_3, result_3_max, result_3_min, result_3_status):
+        product_id,
+        station_id,
+        operation_status,
+        operation_type,
+        result_1,
+        result_1_max,
+        result_1_min,
+        result_1_status,
+        result_2,
+        result_2_max,
+        result_2_min,
+        result_2_status,
+        result_3,
+        result_3_max,
+        result_3_min,
+        result_3_status
+        if date_time is None:
+            date_time = str(date_time)
+
+        try:
+            new_operation = Operation(product_id, station_id, operation_status, operation_type, date_time, result_1, result_1_max, result_1_min, result_1_status, result_2, result_2_max, result_2_min, result_2_status, result_3, result_3_max, result_3_min, result_3_status)
+            logger.info("Adding new Operation to database: %r" % new_operation)
+            db.session.add(new_operation)
+            try:
+                db.session.commit()
+            except sqlalchemy.exc.IntegrityError, e:
+                logger.error("%s : %s " % (repr(e), e.__str__()))
+
+        except sqlalchemy.exc.OperationalError, e:
+            logger.error("Database: %s is locked. Error: %s" % (db.get_app().config['SQLALCHEMY_DATABASE_URI'], e.__str__()))
+            return False
+        return True
 
 
     def add_status(self, status, product, station, date_time=None):
@@ -69,81 +124,6 @@ class Database(object):
             return False
         return True
 
-    
-    def add_station_if_required(self, station):
-        station = int(station)
-        try:
-            _station = Station.query.filter_by(id=int(station)).first()
-            if _station is None:  # add new station if required (should not happen often)
-                # TODO: try to get ip. port, rack, slot from config file
-                new_station = Station(id=station, name=station)
-                logger.info("Adding new Station to database: %s" % str(new_station))
-                db.session.add(new_station)
-
-            new_status = Status(status, product_id, station, date_time)
-            logger.info("Adding new Status to database: %r" % new_status)
-            db.session.add(new_status)
-            try:
-                db.session.commit()
-            except sqlalchemy.exc.IntegrityError, e:
-                logger.error("%s : %s " % (repr(e), e.__str__()))
-
-        except sqlalchemy.exc.OperationalError, e:
-            logger.error("Database: %s is locked. Error: %s" % (db.get_app().config['SQLALCHEMY_DATABASE_URI'], e.__str__()))
-            return False
-        return True
-
-    def write_operation(self, product_type, serial_number, week_number, year_number, station_id, operation_status, operation_type, date_time, result_1, result_1_max, result_1_min, result_1_status, result_2, result_2_max, result_2_min, result_2_status, result_3, result_3_max, result_3_min, result_3_status):
-
-        product_type = int(product_type)
-        serial_number = int(serial_number)
-        product_id = get_product_id(product_type, serial_number)
-        station_id = int(station_id)
-
-        self.add_product_if_required(product_type, serial_number, week_number, year_number)
-        self.add_operation_type_if_required(operation_type)
-        
-
-    def add_operation_type_if_required(self, operation_type):
-        operation_type = int(operation_type)
-        
-        try:
-            _oper_type = Operation_Type.query.filter_by(id=int(operation_type)).first()
-            if _oper_type is None:  # add new operation_type if required (should not happen often)
-                new_operation_type = Operation_Type(operation_type)
-                logger.info("Adding new Operation_type to database: %s" % str(new_operation_type))
-                db.session.add(new_operation_type)
-
-            new_operation = Operation(
-                                product_id,
-                                station_id,
-                                operation_status,
-                                operation_type,
-                                date_time,
-                                result_1,
-                                result_1_max,
-                                result_1_min,
-                                result_1_status,
-                                result_2,
-                                result_2_max,
-                                result_2_min,
-                                result_2_status,
-                                result_3,
-                                result_3_max,
-                                result_3_min,
-                                result_3_status
-            )
-            logger.info("Adding new Operation to database: %r" % new_operation)
-            db.session.add(new_operation)
-            try:
-                db.session.commit()
-            except sqlalchemy.exc.IntegrityError, e:
-                logger.error("%s : %s " % (repr(e), e.__str__()))
-
-        except sqlalchemy.exc.OperationalError, e:
-            logger.error("Database: %s is locked. Error: %s" % (db.get_app().config['SQLALCHEMY_DATABASE_URI'], e.__str__()))
-            return False
-        return True
 
     def add_product_if_required(self, product_type, serial_number, week_number=48, year_number=15):
         product_type = int(product_type)
@@ -167,24 +147,69 @@ class Database(object):
             return False
         return True
 
-    def _add_status_if_required(self, status_id):
-        status_id = int(status_id)
 
+    def add_station_if_required(self, station):
+        station = int(station)
         try:
-            _status = Status.query.filter_by(id=int(status_id)).first()
-            if _status is None:  # add item if not exists yet.
-                new_status = Product(product_type, serial_number, week_number, year_number)
-                logger.info("Adding new Product to database: %s" % str(new_prod))
-                db.session.add(new_prod)
-                try:
-                    db.session.commit()
-                except sqlalchemy.exc.IntegrityError, e:
-                    logger.error("%s : %s " % (repr(e), e.__str__()))
+            _station = Station.query.filter_by(id=int(station)).first()
+            if _station is None:  # add new station if required (should not happen often)
+                # TODO: try to get ip. port, rack, slot from config file
+                new_station = Station(id=station, name=station)
+                logger.info("Adding new Station to database: %s" % str(new_station))
+                db.session.add(new_station)
+
+            try:
+                db.session.commit()
+            except sqlalchemy.exc.IntegrityError, e:
+                logger.error("%s : %s " % (repr(e), e.__str__()))
 
         except sqlalchemy.exc.OperationalError, e:
             logger.error("Database: %s is locked. Error: %s" % (db.get_app().config['SQLALCHEMY_DATABASE_URI'], e.__str__()))
             return False
         return True
+
+
+    def add_operation_type_if_required(self, operation_type):
+        operation_type = int(operation_type)
+
+        try:
+            _operation_type = Operation_Type.query.filter_by(id=int(operation_type)).first()
+            if _operation_type is None:  # add new operation_type if required (should not happen often)
+                new_operation_type = Operation_Type(id=operation_type, name=operation_type)
+                logger.info("Adding new Operation_Type to database: %s" % str(new_operation_type))
+                db.session.add(new_operation_type)
+
+            try:
+                db.session.commit()
+            except sqlalchemy.exc.IntegrityError, e:
+                logger.error("%s : %s " % (repr(e), e.__str__()))
+
+        except sqlalchemy.exc.OperationalError, e:
+            logger.error("Database: %s is locked. Error: %s" % (db.get_app().config['SQLALCHEMY_DATABASE_URI'], e.__str__()))
+            return False
+        return True
+
+
+    def add_operation_status_if_required(self, operation_status):
+        operation_status = int(operation_status)
+
+        try:
+            _operation_status = Operation_Status.query.filter_by(id=int(operation_status)).first()
+            if _operation_status is None:  # add new operation_status if required (should not happen often)
+                new_operation_status = Operation_Status(id=operation_status, name=operation_status)
+                logger.info("Adding new Operation_Status to database: %s" % str(new_operation_status))
+                db.session.add(new_operation_status)
+
+            try:
+                db.session.commit()
+            except sqlalchemy.exc.IntegrityError, e:
+                logger.error("%s : %s " % (repr(e), e.__str__()))
+
+        except sqlalchemy.exc.OperationalError, e:
+            logger.error("Database: %s is locked. Error: %s" % (db.get_app().config['SQLALCHEMY_DATABASE_URI'], e.__str__()))
+            return False
+        return True
+
 
     def get_product_count(self):
         return Product.query.count()
