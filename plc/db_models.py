@@ -8,7 +8,7 @@ from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
 from flask import request, current_app
 from flask.ext.login import UserMixin
 import logging
-__version__ = '0.2.0'
+__version__ = '0.2.1'
 
 logger = logging.getLogger(__name__)
 
@@ -149,13 +149,13 @@ class Station(db.Model):
     statuses = db.relationship('Status', lazy='dynamic', backref='station')
     operations = db.relationship('Operation', lazy='dynamic', backref='station')
 
-    def __init__(self, _id, _ip='localhost', _name="name", _port=102, _rack=0, _slot=2):
-        self.id = _id
-        self.ip = _ip
-        self.name = _name
-        self.port = _port
-        self.rack = _rack
-        self.slot = _slot
+    def __init__(self, id, ip='localhost', name="name", port=102, rack=0, slot=2):
+        self.id = id
+        self.ip = ip
+        self.name = name
+        self.port = port
+        self.rack = rack
+        self.slot = slot
 
     def __repr__(self):
         return '<Station %r>' % self.id
@@ -181,13 +181,13 @@ class Status(db.Model):
     product_id = db.Column(db.Integer, db.ForeignKey('product.id'))
     station_id = db.Column(db.Integer, db.ForeignKey('station.id'))
 
-    def __init__(self, _status, _product, _station, _date_time=None):
-        self.status = _status
-        self.product_id = _product
-        self.station_id = _station
-        if _date_time is None:
-            _date_time = datetime.now()
-        self.date_time = str(_date_time)
+    def __init__(self, status, product, station, date_time=None):
+        self.status = status
+        self.product_id = product
+        self.station_id = station
+        if date_time is None:
+            date_time = datetime.now()
+        self.date_time = str(date_time)
 
     def __repr__(self):
         return '<Status Product: %d Station: %r Status: %r>' % (self.product_id, self.station_id, self.status)
@@ -225,29 +225,29 @@ class Operation(db.Model):
     result_3_min = db.Column(db.Float)
     result_3_status_id = db.Column(db.Integer, db.ForeignKey('operation_status.id'))
 
-    def __init__(self, _product, _station, _operation_status_id, _operation_type_id, _date_time, _r1=None, _r1_min=None, _r1_max=None, _r1_stat=None, _r2=None, _r2_min=None, _r2_max=None, _r2_stat=None, _r3=None, _r3_min=None, _r3_max=None, _r3_stat=None):
-        self.product_id = _product
-        self.station_id = _station
-        self.operation_status_id = _operation_status_id
-        self.operation_type_id = _operation_type_id
-        if _date_time is None:
-            _date_time = datetime.now()
-        self.date_time = str(_date_time)
+    def __init__(self, product, station, operation_status_id, operation_type_id, date_time, r1=None, r1_min=None, r1_max=None, r1_stat=None, r2=None, r2_min=None, r2_max=None, r2_stat=None, r3=None, r3_min=None, r3_max=None, r3_stat=None):
+        self.product_id = product
+        self.station_id = station
+        self.operation_status_id = operation_status_id
+        self.operation_type_id = operation_type_id
+        if date_time is None:
+            date_time = datetime.now()
+        self.date_time = str(date_time)
 
-        self.result_1 = _r1
-        self.result_1_max = _r1_max
-        self.result_1_min = _r1_min
-        self.result_1_status_id = _r1_stat
+        self.result_1 = r1
+        self.result_1_max = r1_max
+        self.result_1_min = r1_min
+        self.result_1_status_id = r1_stat
 
-        self.result_2 = _r2
-        self.result_2_max = _r2_max
-        self.result_2_min = _r2_min
-        self.result_2_status_id = _r2_stat
+        self.result_2 = r2
+        self.result_2_max = r2_max
+        self.result_2_min = r2_min
+        self.result_2_status_id = r2_stat
 
-        self.result_3 = _r3
-        self.result_3_max = _r3_max
-        self.result_3_min = _r3_min
-        self.result_3_status_id = _r3_stat
+        self.result_3 = r3
+        self.result_3_max = r3_max
+        self.result_3_min = r3_min
+        self.result_3_status_id = r3_stat
 
     def __repr__(self):
         return '<Assembly Operation for: Product: %r Station: %r Operation_type: %r>' % (self.product_id, self.station_id, self.operation_type_id)
@@ -320,10 +320,10 @@ class Operation_Type(db.Model):
     description = db.Column(db.String(255))
     operations = db.relationship('Operation', lazy='dynamic', backref='operation_type')
 
-    def __init__(self, _id, _name="Default Operation Name", _description="Default Operation Description"):
-        self.id = _id
+    def __init__(self, id, _name="Default Operation Name", description="Default Operation Description"):
+        self.id = id
         self.name = _name
-        self.description = _description
+        self.description = description
 
     def __repr__(self):
         return '<Operation_Type Id: %r Name: %r Description: %r>' % (self.id, self.name, self.description)

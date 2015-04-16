@@ -44,12 +44,39 @@ class Database(object):
         logger.debug("saving record for PT: %s SN: %s ST: %d STATUS: %d  PW:%s PY: %s DT: %s" % (product_type, serial_number, station, status, week_number, year_number, date_time))
 
         self.add_product_if_required(product_type, serial_number, week_number, year_number)
+        self.add_station_if_required(station)
+        self.add_status(status, product_id, station, date_time)
 
+
+    def add_status(self, status, product, station, date_time=None):
+        status = int(status)
+        product = int(product)
+        station = int(station)
+        if date_time is None:
+            date_time = str(date_time)
+
+        try:
+            new_status = Status(status, product, station, date_time)
+            logger.info("Adding new Status to database: %r" % new_status)
+            db.session.add(new_status)
+            try:
+                db.session.commit()
+            except sqlalchemy.exc.IntegrityError, e:
+                logger.error("%s : %s " % (repr(e), e.__str__()))
+
+        except sqlalchemy.exc.OperationalError, e:
+            logger.error("Database: %s is locked. Error: %s" % (db.get_app().config['SQLALCHEMY_DATABASE_URI'], e.__str__()))
+            return False
+        return True
+
+    
+    def add_station_if_required(self, station):
+        station = int(station)
         try:
             _station = Station.query.filter_by(id=int(station)).first()
             if _station is None:  # add new station if required (should not happen often)
                 # TODO: try to get ip. port, rack, slot from config file
-                new_station = Station(station)
+                new_station = Station(id=station, name=station)
                 logger.info("Adding new Station to database: %s" % str(new_station))
                 db.session.add(new_station)
 
@@ -74,7 +101,12 @@ class Database(object):
         station_id = int(station_id)
 
         self.add_product_if_required(product_type, serial_number, week_number, year_number)
+        self.add_operation_type_if_required(operation_type)
+        
 
+    def add_operation_type_if_required(self, operation_type):
+        operation_type = int(operation_type)
+        
         try:
             _oper_type = Operation_Type.query.filter_by(id=int(operation_type)).first()
             if _oper_type is None:  # add new operation_type if required (should not happen often)
@@ -123,6 +155,25 @@ class Database(object):
             _product = Product.query.filter_by(type=int(product_type)).filter_by(serial=int(serial_number)).first()
             if _product is None:  # add item if not exists yet.
                 new_prod = Product(product_type, serial_number, week_number, year_number)
+                logger.info("Adding new Product to database: %s" % str(new_prod))
+                db.session.add(new_prod)
+                try:
+                    db.session.commit()
+                except sqlalchemy.exc.IntegrityError, e:
+                    logger.error("%s : %s " % (repr(e), e.__str__()))
+
+        except sqlalchemy.exc.OperationalError, e:
+            logger.error("Database: %s is locked. Error: %s" % (db.get_app().config['SQLALCHEMY_DATABASE_URI'], e.__str__()))
+            return False
+        return True
+
+    def _add_status_if_required(self, status_id):
+        status_id = int(status_id)
+
+        try:
+            _status = Status.query.filter_by(id=int(status_id)).first()
+            if _status is None:  # add item if not exists yet.
+                new_status = Product(product_type, serial_number, week_number, year_number)
                 logger.info("Adding new Product to database: %s" % str(new_prod))
                 db.session.add(new_prod)
                 try:
