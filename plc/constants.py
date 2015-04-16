@@ -17,9 +17,9 @@ TRC_TMPL_SAVE_FLAG  = 'body.trc.tmpl.__no__.PLC_Save'
 SQLALCHEMY_DATABASE_URI_PREFIX = 'sqlite:///'
 
 STATION_STATUS_CODES = {
-    0: {"result": "NOK", "desc": "Status not ok"},
+    0: {"result": "UNDEFINED", "desc": "status undefined (not present in database)"},
     1: {"result": "OK", "desc": "Status ok"},
-    2: {"result": "UNDEFINED", "desc": "status undefined (not present in database)"},
+    2: {"result": "NOK", "desc": "Status not ok"},
     4: {"result": "NOTAVAILABLE", "desc": "Not present in given type"},
     5: {"result": "REPEATEDOK", "desc": "Repeated test was ok"},
     6: {"result": "REPEATEDNOK", "desc": "Repeated test was not ok"},
