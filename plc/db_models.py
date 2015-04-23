@@ -8,7 +8,7 @@ from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
 from flask import request, current_app
 from flask.ext.login import UserMixin
 import logging
-__version__ = '0.2.1'
+__version__ = '0.2.2'
 
 logger = logging.getLogger(__name__)
 
@@ -225,7 +225,7 @@ class Operation(db.Model):
     result_3_min = db.Column(db.Float)
     result_3_status_id = db.Column(db.Integer, db.ForeignKey('operation_status.id'))
 
-    def __init__(self, product, station, operation_status_id, operation_type_id, date_time, r1=None, r1_min=None, r1_max=None, r1_stat=None, r2=None, r2_min=None, r2_max=None, r2_stat=None, r3=None, r3_min=None, r3_max=None, r3_stat=None):
+    def __init__(self, product, station, operation_status_id, operation_type_id, date_time, r1=None, r1_max=None, r1_min=None, r1_stat=None, r2=None, r2_max=None, r2_min=None, r2_stat=None, r3=None, r3_max=None, r3_min=None, r3_stat=None):
         self.product_id = product
         self.station_id = station
         self.operation_status_id = operation_status_id
