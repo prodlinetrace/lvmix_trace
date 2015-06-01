@@ -89,40 +89,175 @@ db3xxTrcTemplate = """
 54.0   body.trc.tmpl.{number}.date_time          DATETIME    # date and time - size is 8 bytes
 # traceability template size is 62
 """
+#############################################################################################
+# St1x
+#############################################################################################
+db311 = db3xxHead
+db311 += offset_spec_block(db3xxTrcHead, 46)
+for i in range(0, 1):  # append 1 traceability templates.
+    base_offset = 48
+    block_size = 62
+    offset = base_offset + block_size * i
+    db311 += offset_spec_block(db3xxTrcTemplate, offset).replace("{number}", str(i))
 
+db312 = db3xxHead
+db312 += offset_spec_block(db3xxTrcHead, 46)
+for i in range(0, 2):  # append 2 traceability template.
+    base_offset = 48
+    block_size = 62
+    offset = base_offset + block_size * i
+    db312 += offset_spec_block(db3xxTrcTemplate, offset).format(number=str(i))
 
-db301 = db3xxHead
-db301 += offset_spec_block(db3xxTrcHead, 46)
+db313 = db3xxHead
+db313 += offset_spec_block(db3xxTrcHead, 46)
+for i in range(0, 1):  # append 1 traceability templates.
+    base_offset = 48
+    block_size = 62
+    offset = base_offset + block_size * i
+    db313 += offset_spec_block(db3xxTrcTemplate, offset).format(number=str(i))
+
+db314 = db3xxHead
+db314 += offset_spec_block(db3xxTrcHead, 46)
+for i in range(0, 10):  # append 10 traceability templates.
+    base_offset = 48
+    block_size = 62
+    offset = base_offset + block_size * i
+    db314 += offset_spec_block(db3xxTrcTemplate, offset).format(number=str(i))
+
+#############################################################################################
+# St2x
+#############################################################################################
+db321 = db3xxHead
+db321 += offset_spec_block(db3xxTrcHead, 46)
 for i in range(0, 3):  # append 3 traceability templates.
     base_offset = 48
     block_size = 62
     offset = base_offset + block_size * i
-    db301 += offset_spec_block(db3xxTrcTemplate, offset).replace("{number}", str(i))
+    db321 += offset_spec_block(db3xxTrcTemplate, offset).replace("{number}", str(i))
 
-
-db302 = db3xxHead
-db302 += offset_spec_block(db3xxTrcHead, 46)
+db322 = db3xxHead
+db322 += offset_spec_block(db3xxTrcHead, 46)
 for i in range(0, 1):  # append 1 traceability template.
     base_offset = 48
     block_size = 62
     offset = base_offset + block_size * i
-    db302 += offset_spec_block(db3xxTrcTemplate, offset).format(number=str(i))
+    db322 += offset_spec_block(db3xxTrcTemplate, offset).format(number=str(i))
 
-db303 = db3xxHead
-db303 += offset_spec_block(db3xxTrcHead, 46)
+db323 = db3xxHead
+db323 += offset_spec_block(db3xxTrcHead, 46)
 for i in range(0, 4):  # append 4 traceability templates.
     base_offset = 48
     block_size = 62
     offset = base_offset + block_size * i
-    db303 += offset_spec_block(db3xxTrcTemplate, offset).format(number=str(i))
+    db323 += offset_spec_block(db3xxTrcTemplate, offset).format(number=str(i))
 
-db304 = db3xxHead
-db304 += offset_spec_block(db3xxTrcHead, 46)
+db324 = db3xxHead
+db324 += offset_spec_block(db3xxTrcHead, 46)
 for i in range(0, 5):  # append 5 traceability templates.
     base_offset = 48
     block_size = 62
     offset = base_offset + block_size * i
-    db304 += offset_spec_block(db3xxTrcTemplate, offset).format(number=str(i))
+    db324 += offset_spec_block(db3xxTrcTemplate, offset).format(number=str(i))
+
+#############################################################################################
+# St3x
+#############################################################################################
+db331 = db3xxHead
+db331 += offset_spec_block(db3xxTrcHead, 46)
+for i in range(0, 1):  # append 1 traceability templates.
+    base_offset = 48
+    block_size = 62
+    offset = base_offset + block_size * i
+    db331 += offset_spec_block(db3xxTrcTemplate, offset).replace("{number}", str(i))
+
+db332 = db3xxHead
+db332 += offset_spec_block(db3xxTrcHead, 46)
+for i in range(0, 3):  # append 3 traceability template.
+    base_offset = 48
+    block_size = 62
+    offset = base_offset + block_size * i
+    db332 += offset_spec_block(db3xxTrcTemplate, offset).format(number=str(i))
+
+db333 = db3xxHead
+db333 += offset_spec_block(db3xxTrcHead, 46)
+for i in range(0, 3):  # append 3 traceability templates.
+    base_offset = 48
+    block_size = 62
+    offset = base_offset + block_size * i
+    db333 += offset_spec_block(db3xxTrcTemplate, offset).format(number=str(i))
+
+#############################################################################################
+# St4x
+#############################################################################################
+db341 = db3xxHead
+db341 += offset_spec_block(db3xxTrcHead, 46)
+for i in range(0, 4):  # append 4 traceability templates.
+    base_offset = 48
+    block_size = 62
+    offset = base_offset + block_size * i
+    db341 += offset_spec_block(db3xxTrcTemplate, offset).replace("{number}", str(i))
+
+db342 = db3xxHead
+db342 += offset_spec_block(db3xxTrcHead, 46)
+for i in range(0, 13):  # append 13 traceability template.
+    base_offset = 48
+    block_size = 62
+    offset = base_offset + block_size * i
+    db342 += offset_spec_block(db3xxTrcTemplate, offset).format(number=str(i))
+
+#############################################################################################
+# St5x
+#############################################################################################
+db351 = db3xxHead
+db351 += offset_spec_block(db3xxTrcHead, 46)
+for i in range(0, 1):  # append 1 traceability templates.
+    base_offset = 48
+    block_size = 62
+    offset = base_offset + block_size * i
+    db351 += offset_spec_block(db3xxTrcTemplate, offset).replace("{number}", str(i))
+
+db352 = db3xxHead
+db352 += offset_spec_block(db3xxTrcHead, 46)
+for i in range(0, 1):  # append 1 traceability template.
+    base_offset = 48
+    block_size = 62
+    offset = base_offset + block_size * i
+    db352 += offset_spec_block(db3xxTrcTemplate, offset).format(number=str(i))
+
+db353 = db3xxHead
+db353 += offset_spec_block(db3xxTrcHead, 46)
+for i in range(0, 1):  # append 1 traceability templates.
+    base_offset = 48
+    block_size = 62
+    offset = base_offset + block_size * i
+    db353 += offset_spec_block(db3xxTrcTemplate, offset).format(number=str(i))
+
+db354 = db3xxHead
+db354 += offset_spec_block(db3xxTrcHead, 46)
+for i in range(0, 1):  # append 1 traceability templates.
+    base_offset = 48
+    block_size = 62
+    offset = base_offset + block_size * i
+    db354 += offset_spec_block(db3xxTrcTemplate, offset).format(number=str(i))
+
+db355 = db3xxHead
+db355 += offset_spec_block(db3xxTrcHead, 46)
+for i in range(0, 2):  # append 2 traceability templates.
+    base_offset = 48
+    block_size = 62
+    offset = base_offset + block_size * i
+    db355 += offset_spec_block(db3xxTrcTemplate, offset).format(number=str(i))
+
+#############################################################################################
+# St5x
+#############################################################################################
+db361 = db3xxHead
+db361 += offset_spec_block(db3xxTrcHead, 46)
+for i in range(0, 1):  # append 1 traceability templates.
+    base_offset = 48
+    block_size = 62
+    offset = base_offset + block_size * i
+    db361 += offset_spec_block(db3xxTrcTemplate, offset).replace("{number}", str(i))
 
 
 # special cases hacking...
