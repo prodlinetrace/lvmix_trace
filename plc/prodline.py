@@ -113,8 +113,11 @@ class ProdLineBase(object):
             iden = self._config[ctrl]['id'][0]
             datablocks = []
             for cblock in self._config[ctrl]['blocks']:
-                dbid = int(self._config[cblock]['id'][0])
-                datablocks.append(dbid)
+                if cblock in self._config:
+                    dbid = int(self._config[cblock]['id'][0])
+                    datablocks.append(dbid)
+                else:
+                    logger.error("Controller: %s is configured to use block: %s but this block is missing from configuration file. " % (ctrl, cblock))
 
             if self._config[ctrl]['status'][0] != '1':
                 logger.warning("Controller: %s (id: %s) is in status %s. Skipped" % (ctrl, self._config[ctrl]['id'], self._config[ctrl]['status']))
@@ -127,7 +130,7 @@ class ProdLineBase(object):
             logger.debug("Controller: %s (id: %s) set active data blocks to %s" % (ctrl, self._config[ctrl]['id'], str(datablocks)))
             c.set_active_datablock_list(datablocks)
             logger.debug("Controller: %s (id: %s) configured" % (ctrl, self._config[ctrl]['id']))
-
+            
             self.__ctrl_list.append(c)
         return True
 

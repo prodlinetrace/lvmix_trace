@@ -23,7 +23,14 @@ class DataBlock(object):
 
         # handle specification
         if _specification is None:
-            var_name = 'db' + str(self.db_number)
+            # db specification = db_number + controller * 10. DB 300 remains unchanged
+            # ugly hack caused by Diko lazyness to make db specifications unique across whole production line.
+            if self.db_number == 300:
+                spec_number = self.db_number
+            else:
+                spec_number = self.db_number + self.controller.get_id() * 10
+            logger.debug("Controller: %s reading db spec number: %s " % (self.controller.get_id(), spec_number))
+            var_name = 'db' + str(spec_number)
             _block_spec = getattr(plc.db_layouts, var_name)
         else:
             _block_spec = _specification
