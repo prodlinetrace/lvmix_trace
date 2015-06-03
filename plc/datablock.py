@@ -1,6 +1,6 @@
 import snap7
 import logging
-import plc.db_layouts
+from plc.db_layouts import db_specs
 import re
 from constants import PC_READY_FLAG, PLC_MESSAGE_FLAG, PLC_SAVE_FLAG
 
@@ -23,8 +23,12 @@ class DataBlock(object):
 
         # handle specification
         if _specification is None:
-            var_name = 'db' + str(self.db_number)
-            _block_spec = getattr(plc.db_layouts, var_name)
+            # db specification = db_number + controller * 10. DB 300 remains unchanged
+            # ugly hack caused by Diko lazyness to make db specifications unique across whole production line.
+            
+            db_name = 'db' + str(self.db_number)
+            logger.debug("Controller: %s reading db spec for: %s " % (self.controller.get_id(), db_name))
+            _block_spec = db_specs[self.controller.get_id()][db_name]
         else:
             _block_spec = _specification
         self._specification = snap7.util.parse_specification(_block_spec)
