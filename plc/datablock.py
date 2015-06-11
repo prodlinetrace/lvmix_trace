@@ -2,7 +2,7 @@ import snap7
 import logging
 from plc.db_layouts import db_specs
 import re
-from constants import PC_READY_FLAG, PLC_MESSAGE_FLAG, PLC_SAVE_FLAG
+from constants import PC_READY_FLAG, PLC_MESSAGE_FLAG, PLC_SAVE_FLAG, TRC_TMPL_COUNT
 
 logger = logging.getLogger(__name__)
 
@@ -17,6 +17,7 @@ class DataBlock(object):
     def __init__(self, db_number, controller=None, _bytearray=None, _specification=None):
         self.db_number = db_number
         self.controller = controller
+        self.db_name = 'db' + str(self.db_number)
 
         self.db_offset = 0          # start point of row data in db
         self.layout_offset = 0  # start point of row data in layout
@@ -25,13 +26,12 @@ class DataBlock(object):
         if _specification is None:
             # db specification = db_number + controller * 10. DB 300 remains unchanged
             # ugly hack caused by Diko lazyness to make db specifications unique across whole production line.
-            
-            db_name = 'db' + str(self.db_number)
-            logger.debug("Controller: %s reading db spec for: %s " % (self.controller.get_id(), db_name))
-            _block_spec = db_specs[self.controller.get_id()][db_name]
+            logger.debug("Controller: %s reading db spec for: %s " % (self.controller.get_id(), self.db_name))
+            _block_spec = db_specs[self.controller.get_id()][self.db_name]
         else:
             _block_spec = _specification
         self._specification = snap7.util.parse_specification(_block_spec)
+        logger.debug("Controller: %s db:  %s spec: %s" % (self.controller.get_id(), self.db_name, self._specification))
 
         # handle bytearray
         if _bytearray is None:  # read byte array from controller if not passed.
@@ -64,8 +64,19 @@ class DataBlock(object):
         """
         Get a specific db field
         """
-        assert key in self._specification
-        index, _type = self._specification[key]
+        logger.debug("Controller: %s db:  %s reading key: %s" % (self.controller.get_id(), self.db_name, key))
+        try:
+            assert key in self._specification
+            index, _type = self._specification[key]
+        except AssertionError, e:
+            logger.error("Controller: %s db:  %s unable to read key: %s" % (self.controller.get_id(), self.db_name, key))
+            logger.warning("Controller: %s db:  %s specification: %s" % (self.controller.get_id(), self.db_name, self._specification))
+            if TRC_TMPL_COUNT in self._specification:
+                template_count = self.__getitem__(TRC_TMPL_COUNT)
+                logger.warn("PLC: %s db block: %r tracebility template count: %r" % (self.controller.get_id(), self.db_name, template_count))
+            import traceback            
+            logger.error("Controller: %s db:  %s Raise exception:" % (self.controller.get_id(), self.db_name))
+            raise(e)
         return self.get_value(index, _type)
 
     def __setitem__(self, key, value):

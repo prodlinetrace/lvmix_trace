@@ -367,6 +367,7 @@ class Controller(ControllerBase):
 
         if TRC_TMPL_COUNT in block.export():
             template_count = block.__getitem__(TRC_TMPL_COUNT)
+            logger.debug("PLC: %s db block: %r tracebility template count: %r" % (self.get_id(), dbid, template_count))
             # query db for basic fields...
             for field in [STATION_ID, SERIAL_NUMBER, PRODUCT_TYPE]:
                 if field not in block.export():
