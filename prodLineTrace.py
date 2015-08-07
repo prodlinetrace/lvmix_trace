@@ -64,7 +64,6 @@ class MainWindow(wx.App):
         self.errlog = helpers.parse_config(_opts.config)['main']['errorlog'][0]
         self.starttime = datetime.datetime.now()
 
-
         # bind verbosity choice box with selector function
         self.Bind(wx.EVT_CHOICE, self.OnVerbositySelect, self.valueMainVerbosity)
 
@@ -127,6 +126,48 @@ class MainWindow(wx.App):
             tb = traceback.format_exc()
             logger.critical( "Traceback: %s" % tb)
 
+    def runExtrasThread(self):
+        """
+        This is extras application thread.
+        """
+        self.application.init_controllers()
+        self.application.connect_controllers()
+        
+        try:
+            self.application.runExtras()
+        except Exception, e:
+            logger.critical("exception %r" % e)
+            tb = traceback.format_exc()
+            logger.critical( "Traceback: %s" % tb)
+
+    def runStatusProcessorThread(self):
+        """
+        This is status processor application thread.
+        """
+        self.application.init_controllers()
+        self.application.connect_controllers()
+        
+        try:
+            self.application.runStatusProcessor()
+        except Exception, e:
+            logger.critical("exception %r" % e)
+            tb = traceback.format_exc()
+            logger.critical( "Traceback: %s" % tb)
+
+    def runOperationProcessorThread(self):
+        """
+        This is operation processor application thread.
+        """
+        self.application.init_controllers()
+        self.application.connect_controllers()
+        
+        try:
+            self.application.runOperationProcessor()
+        except Exception, e:
+            logger.critical("exception %r" % e)
+            tb = traceback.format_exc()
+            logger.critical( "Traceback: %s" % tb)
+
     def makeControllerBox(self, name, adress):
         pnl = wx.Panel(self)
         box = {}
@@ -140,7 +181,7 @@ class MainWindow(wx.App):
 
     def _ResultNotifier(self, delayedResult):
         """
-        Recieves the return from the result of the worker thread and
+        Receives the return from the result of the worker thread and
         notifies the interested party with the result.
         @param delayedResult:  value from worker thread
         """
@@ -151,8 +192,8 @@ class MainWindow(wx.App):
             e = delayedResult.get()
             logger.critical("exception %r" % e)
         except Exception, e:
-            # tb = traceback.extract_stack()
-            # logger.critical( "Traceback: %r" % tb)
+            tb = traceback.extract_stack()
+            logger.critical( "Traceback: %r" % tb)
             logger.critical("GUI Thread failed with following exception: %r" % e.__str__())
 
 
@@ -169,12 +210,15 @@ if __name__ == "__main__":
     tw = app.GetTopWindow()
     tw.PushStatusText('status text')
 
-
     # start the threads
     startWorker(app._ResultNotifier, app.updateLogWindow)
     startWorker(app._ResultNotifier, app.updateErrorLogWindow)
     startWorker(app._ResultNotifier, app.updateControllersStatus)
-    startWorker(app._ResultNotifier, app.mainThread)
+    
+    startWorker(app._ResultNotifier, app.runStatusProcessorThread)
+    startWorker(app._ResultNotifier, app.runOperationProcessorThread)
+    startWorker(app._ResultNotifier, app.runExtrasThread)
+    
     #startWorker(application._ResultNotifier, application.webAppThread)
     # start main loop
     app.MainLoop()

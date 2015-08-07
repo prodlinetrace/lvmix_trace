@@ -208,15 +208,32 @@ class ProdLine(ProdLineBase):
         self.test_time_get()
 
     def poll(self):
+        self.pollStatus()
+        self.pollOperations()
+
+    def pollStatus(self):
         for ctrl in self.controllers:
             for dbid in ctrl.get_active_datablock_list():
+                if dbid != 300:
+                    continue
+                try:
+                    ctrl.poll_db(dbid)
+                except snap7.snap7exceptions.Snap7Exception:
+                    logging.critical("Connection to %s lost. Trying to re-establish connection." % ctrl)
+                    ctrl.connect()
+        
+    def pollOperations(self):
+        for ctrl in self.controllers:
+            for dbid in ctrl.get_active_datablock_list():
+                if dbid == 300:
+                    continue
                 try:
                     ctrl.poll_db(dbid)
                 except snap7.snap7exceptions.Snap7Exception:
                     logging.critical("Connection to %s lost. Trying to re-establish connection." % ctrl)
                     ctrl.connect()
 
-    def run(self, runtime=10, frequency=10):
+    def run(self, runtime=10, frequency=20):
         """"
             runs main loop of the class.
             @param time [s] defines how log loop should last. (0 for infinity)
@@ -237,10 +254,45 @@ class ProdLine(ProdLineBase):
             # change the value of PC heartbeat flag (every 100ms by default)
             self.pc_heartbeat()
 
+    def runExtras(self):
+        """"
+            run extras: in sync controller time and update heartbeat bit. 
+        """
+        i = 0
+        while True:
+            time.sleep(0.1)
+            i += 1
+            # try to sync controllers time if needed (every 60s by default) - first sync after 5 sec.
+            if i % 600 == 50:
+                self.sync_controllers_time_if_needed()
+            # change the value of PC heartbeat flag (every 100ms by default)
+            self.pc_heartbeat()
+            
+        return True
+
+    def runStatusProcessor(self):
+        """
+            Process db300 statuses in infinite loop.
+        """
+        while True:
+            self.pollStatus()
+        
+        return True
+
+    def runOperationProcessor(self):
+        """
+            Process assembly operations in infinite loop.
+        """
+        while True:
+            self.pollOperations()
+            
+        return True
+
+
     def main(self):
         # initialize controllers - list of active controllers will be available as self.controllers
         self.init_controllers()
         self.connect_controllers()
-        self.run(0)
+        self.run(0)  # do not use single loop.
         # close controller connections and exit cleanly
         self.disconnect_controllers()
