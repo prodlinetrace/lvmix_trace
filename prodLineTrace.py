@@ -14,7 +14,6 @@ from plc import __version__ as version
 from plc.db_models import __version__ as dbmodel_version
 from plc.prodline import ProdLine
 from plc.util import file_name_with_size
-# from plcweb import application as webapp
 
 
 logger = logging.getLogger(__name__)
@@ -124,49 +123,8 @@ class MainWindow(wx.App):
         except Exception, e:
             logger.critical("exception %r" % e)
             tb = traceback.format_exc()
-            logger.critical( "Traceback: %s" % tb)
+            logger.critical("Traceback: %s" % tb)
 
-    def runExtrasThread(self):
-        """
-        This is extras application thread.
-        """
-        self.application.init_controllers()
-        self.application.connect_controllers()
-        
-        try:
-            self.application.runExtras()
-        except Exception, e:
-            logger.critical("exception %r" % e)
-            tb = traceback.format_exc()
-            logger.critical( "Traceback: %s" % tb)
-
-    def runStatusProcessorThread(self):
-        """
-        This is status processor application thread.
-        """
-        self.application.init_controllers()
-        self.application.connect_controllers()
-        
-        try:
-            self.application.runStatusProcessor()
-        except Exception, e:
-            logger.critical("exception %r" % e)
-            tb = traceback.format_exc()
-            logger.critical( "Traceback: %s" % tb)
-
-    def runOperationProcessorThread(self):
-        """
-        This is operation processor application thread.
-        """
-        self.application.init_controllers()
-        self.application.connect_controllers()
-        
-        try:
-            self.application.runOperationProcessor()
-        except Exception, e:
-            logger.critical("exception %r" % e)
-            tb = traceback.format_exc()
-            logger.critical( "Traceback: %s" % tb)
 
     def makeControllerBox(self, name, adress):
         pnl = wx.Panel(self)
@@ -214,12 +172,8 @@ if __name__ == "__main__":
     startWorker(app._ResultNotifier, app.updateLogWindow)
     startWorker(app._ResultNotifier, app.updateErrorLogWindow)
     startWorker(app._ResultNotifier, app.updateControllersStatus)
+    startWorker(app._ResultNotifier, app.mainThread)
     
-    startWorker(app._ResultNotifier, app.runStatusProcessorThread)
-    startWorker(app._ResultNotifier, app.runOperationProcessorThread)
-    startWorker(app._ResultNotifier, app.runExtrasThread)
-    
-    #startWorker(application._ResultNotifier, application.webAppThread)
     # start main loop
     app.MainLoop()
 

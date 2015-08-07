@@ -123,11 +123,11 @@ class ControllerBase(object):
                 return
 
     def disconnect(self):
-        logger.debug("PLC: %s. disconnecting procedure started..." % (self.get_id()))
-        self.cancel_pc_busy_flags()
+        logger.info("%s. disconnection procedure started..." % (self))
         if self.database_engine is not None:
             self.database_engine.disconnect()
         self.client.disconnect()
+        self.cancel_pc_busy_flags()
 
     def cancel_pc_busy_flags(self):
         for _dbno in self.get_active_dbs():

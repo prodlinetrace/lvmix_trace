@@ -4,6 +4,9 @@ import logging
 import helpers
 import snap7
 from plc.database import Database
+import threading
+import concurrent.futures
+import traceback
 
 logger = logging.getLogger(__name__)
 
@@ -72,8 +75,8 @@ class ProdLineBase(object):
     # close controller connections
     def disconnect_controllers(self):
         for ctrl in self.controllers:
+            logger.debug("Controller id: %s ip: %s port: %s. Disconnecting." % (ctrl.get_id(), ctrl.get_ip(), ctrl.get_port()))
             ctrl.disconnect()
-            logger.debug("Controller id: %s ip: %s port: %s. Disconnected." % (ctrl.get_id(), ctrl.get_ip(), ctrl.get_port()))
 
     def pc_heartbeat(self):
         for c in self.controllers:
@@ -233,25 +236,21 @@ class ProdLine(ProdLineBase):
                     logging.critical("Connection to %s lost. Trying to re-establish connection." % ctrl)
                     ctrl.connect()
 
-    def run(self, runtime=10, frequency=20):
+    def run(self, times=10):
         """"
             runs main loop of the class.
-            @param time [s] defines how log loop should last. (0 for infinity)
-            @param frequency [Hz] defines controller poll frequency
+            @param times -  defines how many poll loops should be executed. (0 for infinity)
         """
-        logger.info("Polling for %d[s] with frequency %d[Hz]" % (runtime, frequency))
-        times = runtime * frequency
+        logger.info("Polling for %d[s] times" % (times))
         i = 0
-        while i < times or runtime == 0:
+        while i < times or times == 0:
             self.poll()
-            time.sleep(float(1) / frequency)
             i += 1
-
-            # try to sync controllers time if needed (every 60s by default) - first sync after 5 sec.
-            if i % 600 == 50:
+            # try to sync controllers every 1000 times if needed - first sync after 5 times.
+            if i % 1000 == 5:
                 self.sync_controllers_time_if_needed()
 
-            # change the value of PC heartbeat flag (every 100ms by default)
+            # change the value of PC heartbeat flag
             self.pc_heartbeat()
 
     def runExtras(self):
@@ -288,11 +287,50 @@ class ProdLine(ProdLineBase):
             
         return True
 
+    def runController(self, ctrl):
+        logging.info("Started Controller Processing Thread: {c}, {dbs}".format(c=ctrl, dbs=ctrl.get_active_datablock_list()))
+        threading.currentThread().setName(ctrl.get_name())
+        while True:
+            # blink heartbeat
+            try:
+                ctrl.blink_pc_heartbeat()
+            except snap7.snap7exceptions.Snap7Exception:
+                logger.critical("Connection to %s lost. Trying to re-establish connection." % c)
+                ctrl.connect()
 
+            # poll all db
+            for dbid in ctrl.get_active_datablock_list():
+                try:
+                    ctrl.poll_db(dbid)
+                except snap7.snap7exceptions.Snap7Exception:
+                    logger.critical("Connection to %s lost. Trying to re-establish connection." % ctrl)
+                    ctrl.connect()
+    
+            # sync time
+            try:
+                ctrl.sync_time_if_needed()
+            except snap7.snap7exceptions.Snap7Exception:
+                logger.critical("Connection to %s lost. Trying to re-establish connection." % c)
+                ctrl.connect()
+            
+        return True
+                
     def main(self):
         # initialize controllers - list of active controllers will be available as self.controllers
         self.init_controllers()
         self.connect_controllers()
-        self.run(0)  # do not use single loop.
-        # close controller connections and exit cleanly
+        #self.run(0)  # old method
+
+        # start each controller for processing in separate thread.         
+        with concurrent.futures.ThreadPoolExecutor(max_workers=20) as executor:
+            future_to_ctrl = {executor.submit(self.runController, ctrl): ctrl for ctrl in self.controllers}
+            for future in concurrent.futures.as_completed(future_to_ctrl):
+                try:
+                    data = future.result()
+                except Exception as exc:
+                    tb = traceback.format_exc()
+                    logger.error('Thread %r generated an exception: %s, %s' % (future, exc, tb))
+                else:
+                    logger.error('%r' % (data))
+
         self.disconnect_controllers()
