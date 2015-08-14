@@ -2,7 +2,7 @@ import snap7
 import logging
 from plc.db_layouts import db_specs
 import re
-from constants import PC_READY_FLAG, PLC_MESSAGE_FLAG, PLC_SAVE_FLAG, TRC_TMPL_COUNT
+from constants import PC_READY_FLAG, PLC_MESSAGE_FLAG, PLC_SAVE_FLAG, TRC_TMPL_COUNT, PC_OPEN_BROWSER_FLAG
 
 logger = logging.getLogger(__name__)
 
@@ -296,6 +296,12 @@ class DataBlock(object):
         """
         return self[PC_READY_FLAG]
 
+    def pc_open_browser_flag(self):
+        """
+        returns value of PC_OPEN_BROWSER_FLAG
+        """
+        return self[PC_OPEN_BROWSER_FLAG]
+
     def plc_message_flag(self):
         """
         returns value of PLC_MESSAGE_FLAG
@@ -319,6 +325,11 @@ class DataBlock(object):
     def set_pc_ready_flag(self, value=True, check=False):
         flag = PC_READY_FLAG
         return self.set_flag(flag, value, check)
+
+    def set_pc_open_browser_flag(self, value=True, check=False):
+        flag = PC_OPEN_BROWSER_FLAG
+        return self.set_flag(flag, value, check)
+
 
     def set_flag(self, flag, value, check=False):
         logger.debug("PLC: %s block: %s flag '%s' set to: %s " % (self.controller.get_id(), self.get_db_number(), flag, value))

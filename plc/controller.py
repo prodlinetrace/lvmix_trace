@@ -9,6 +9,7 @@ from plc.database import Database
 from datetime import datetime
 from time import sleep
 import webbrowser
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -251,11 +252,11 @@ class Controller(ControllerBase):
 
         # status exchange on db300 only
         if dbid == 300:
+            # reset pc_ready flag in case it get's accidentally changed.
+            block.set_pc_ready_flag(True)
             self.read_status(dbid)
             self.save_status(dbid)
             self.show_product_details(dbid)
-            # reset pc_ready flag in case it get's accidentally changed.
-            block.set_pc_ready_flag(True)
         else:
             self.save_operation(dbid)
 
@@ -469,11 +470,13 @@ class Controller(ControllerBase):
 
                 baseurl = 'http://localhost/app' # TODO: read value from config file
                 if True: # TODO: change to if popups enabled in configuration
-                    url = os.path.join(baseurl, 'product', get_product_id(product_type, serial_number))
-                    if webbrowser.open():
+                    url = "/".join([baseurl, 'product', str(get_product_id(product_type, serial_number))])
+                    if webbrowser.open(url):
                         logger.info("PLC: {plc} ST: {station} URL: {url} product details window opened successfully.".format(plc=self.get_id(), station=station_id, type=product_type, serial=serial_number, url=url))
                     else:
                         logger.warning("PLC: {plc} ST: {station} URL: {url} failed to open product details window".format(plc=self.get_id(), station=station_id, type=product_type, serial=serial_number, url=url))
 
                 self.counter_show_product_details += 1
+                block.set_pc_open_browser_flag(False) # cancel PC_OPEN_BROWSER flag
                 block.set_pc_ready_flag(True)  # set PC ready flag back to true
+        
