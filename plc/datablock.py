@@ -26,12 +26,12 @@ class DataBlock(object):
         if _specification is None:
             # db specification = db_number + controller * 10. DB 300 remains unchanged
             # ugly hack caused by Diko lazyness to make db specifications unique across whole production line.
-            logger.debug("Controller: %s reading db spec for: %s " % (self.controller.get_id(), self.db_name))
+            #logger.debug("Controller: %s reading db spec for: %s " % (self.controller.get_id(), self.db_name))
             _block_spec = db_specs[self.controller.get_id()][self.db_name]
         else:
             _block_spec = _specification
         self._specification = snap7.util.parse_specification(_block_spec)
-        logger.debug("Controller: %s db:  %s spec: %s" % (self.controller.get_id(), self.db_name, self._specification))
+        #logger.debug("Controller: %s db:  %s spec: %s" % (self.controller.get_id(), self.db_name, self._specification))
 
         # handle bytearray
         if _bytearray is None:  # read byte array from controller if not passed.
@@ -64,7 +64,7 @@ class DataBlock(object):
         """
         Get a specific db field
         """
-        logger.debug("Controller: %s db:  %s reading key: %s" % (self.controller.get_id(), self.db_name, key))
+        #logger.debug("Controller: %s db:  %s reading key: %s" % (self.controller.get_id(), self.db_name, key))
         try:
             assert key in self._specification
             index, _type = self._specification[key]
