@@ -6,12 +6,12 @@ Pre-requisites
 --------------
 
 - Some Python coding experience
-- Basic knowledge of ctypes
+- Basic knowledge of python ctypes
 
 Requirements
 ------------
 
-- Python 2.7 or 3.3+ on any supported OS (even Windows!)
+- Python 2.7 or 3.4+ on any supported OS (even Windows!)
 - virtualenv (or pyvenv if you are using Python 3.4)
 - snap7 in version 1.3.0 or higher
 - configured PLC controller. 
@@ -52,3 +52,15 @@ For Windows users working on the standard command prompt:
 **Step 4**: build windows installer (optional)
 
     (venv) $ python setup.py bdist_msi
+    
+Additional Info
+---------------
+Starting with version 0.1.3 application can open URL witth product details page.
+
+In order to open product details in same tab please reconfigure your firefox:
+- type "about:config" in firefox address bar
+- set browser.link.open_newwindow property to value 1
+more info on:
+http://kb.mozillazine.org/Browser.link.open_newwindow
+http://superuser.com/questions/138298/force-firefox-to-open-pages-in-a-specific-tab-using-command-line
+
