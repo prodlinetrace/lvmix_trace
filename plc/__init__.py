@@ -1,7 +1,7 @@
 """
 The PLC Python library.
 """
-__version__ = '0.1.2'
+__version__ = '0.1.3'
 AUTHOR = "Piotr Wilkosz"
 EMAIL = "Piotr.Wilkosz@gmail.com"
 NAME = "ProdLineTrace"

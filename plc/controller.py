@@ -8,6 +8,7 @@ from plc.custom_exceptions import UnknownDb
 from plc.database import Database
 from datetime import datetime
 from time import sleep
+import webbrowser
 
 logger = logging.getLogger(__name__)
 
@@ -32,6 +33,7 @@ class ControllerBase(object):
         self.counter_status_message_read = 0
         self.counter_status_message_write = 0
         self.counter_saved_operations = 0
+        self.counter_show_product_details = 0
 
     def _init_database(self, dbfile='data/prodline.db'):
         self.database_engine = Database()
@@ -234,6 +236,7 @@ class Controller(ControllerBase):
         2.1. reset pc_ready to have clean start
         2.2. Read station status from database and respond to status query message.
         2.3. Save station status to database.
+        2.4. Open popup window with product details.
         3. Save operations from tracebility template blocks to database.
         """
         # logger.debug("PLC: %s polling db: %s" % (self.get_id(), db))
@@ -248,10 +251,11 @@ class Controller(ControllerBase):
 
         # status exchange on db300 only
         if dbid == 300:
-            # reset pc_ready flag in case it get's accidentally changed.
-            block.set_pc_ready_flag(True)
             self.read_status(dbid)
             self.save_status(dbid)
+            self.show_product_details(dbid)
+            # reset pc_ready flag in case it get's accidentally changed.
+            block.set_pc_ready_flag(True)
         else:
             self.save_operation(dbid)
 
@@ -263,26 +267,34 @@ class Controller(ControllerBase):
 
         if PLC_MESSAGE_FLAG in block.export():
             if block.__getitem__(PLC_MESSAGE_FLAG):  # get the station status from db
-                # body.PC_Redy set false
                 block.set_pc_ready_flag(False)  # set PC ready flag to False
                 # body
                 if STATION_NUMBER not in block.export():
                     logger.warning("PLC: %s, block: %s, has no %s, in block body: %s. Message (block) skipped." % (self.get_id(), block.get_db_number(), STATION_NUMBER, block.export()))
+                    block.set_pc_ready_flag(True)  # set PC ready flag back to true
                     return
-                product_type = block[PRODUCT_TYPE]
-                serial_number = block[SERIAL_NUMBER]
-                station_number = block[STATION_NUMBER]
-                logger.debug("PLC: %s, block: %s, PT %s, SN: %s, reading status from database for station: %s" % (self.get_id(), block.get_db_number(), product_type, serial_number, station_number))
+                try:
+                    product_type = int(block[PRODUCT_TYPE])
+                except ValueError:
+                    product_type = 0
+                try:
+                    serial_number = int(block[SERIAL_NUMBER])
+                except ValueError:
+                    serial_number = 0
+                try:
+                    station_number = block[STATION_NUMBER]
+                except ValueError:
+                    station_number = 0
+                logger.debug("PLC: {plc}, block: {block}, PT: {type}, SN: {serial}, reading status from database for station: {station}".format(plc=self.get_id(), block=block.get_db_number(), type=product_type, serial=serial_number, station=station_number))
 
                 result = self.database_engine.read_status(int(product_type), int(serial_number), int(station_number))
                 _status = result
                 status = STATION_STATUS_CODES[_status]['result']
                 block.store_item(STATION_STATUS, _status)
                 logger.info("PLC: %s, block: %s, PT: %s, SN: %s, ST: %s, status from database: %s (%s)" % (self.get_id(), block.get_db_number(), product_type, serial_number, station_number, _status, status))
-                block.set_pc_ready_flag(True)  # set busy flag to ready
                 self.counter_status_message_read += 1
-
                 block.set_plc_message_flag(False)
+                block.set_pc_ready_flag(True)  # set pc_ready flag back to true
 
             else:
                 pass
@@ -298,14 +310,13 @@ class Controller(ControllerBase):
 
         if PLC_SAVE_FLAG in block.export():
             if block.__getitem__(PLC_SAVE_FLAG):  # get the station status from db
-                # body.PC_Redy set false
                 block.set_pc_ready_flag(False)  # set PC ready flag to False
-                # query controller. for required fields...
+                # query controller for required fields...
                 for field in [STATION_NUMBER, STATION_STATUS, SERIAL_NUMBER, PRODUCT_TYPE]:
                     if field not in block.export():
                         logger.warning("PLC: %s, block: %s, is missing field %s, in block body: %s. Message skipped." % (self.get_id(), block.get_db_number(), field, block.export()))
+                        block.set_pc_ready_flag(True)  # set busy flag back to ready
                         return
-
                 try:
                     station_number = int(block[STATION_ID])
                 except ValueError:
@@ -314,26 +325,21 @@ class Controller(ControllerBase):
                     _status = int(block[STATION_STATUS])
                 except ValueError:
                     _status = 0
-
                 try:
                     status = STATION_STATUS_CODES[_status]['result']
                 except ValueError:
                     logger.warning("PLC: %s, block: %s wrong value for status, returning undefined" % (self.get_id(), block.get_db_number()))
                     status = STATION_STATUS_CODES[99]['result']
-
                 try:
                     serial_number = int(block[SERIAL_NUMBER])
                 except ValueError:
                     serial_number = 0
-                    
                 try:
                     product_type = int(block[PRODUCT_TYPE])
                 except ValueError:
                     product_type = 0
-
                 logger.info("PLC: %s, block: %s, PT: %s, SN: %s, ST: %s, saving status: %s (%s), to database" % (self.get_id(), block.get_db_number(), product_type, serial_number, station_number, _status, status))
-
-                # store additional data:
+                # get additional data from PLC:
                 try:
                     week_number = int(block['head.week_number'])
                 except ValueError:
@@ -348,11 +354,9 @@ class Controller(ControllerBase):
                     date_time = str(datetime.datetime.now())
 
                 self.database_engine.write_status(product_type, serial_number, station_number, _status, week_number, year_number, date_time)
-
-                block.set_pc_ready_flag(True)  # set PC ready flag
                 self.counter_status_message_write += 1
-
                 block.set_plc_save_flag(False)
+                block.set_pc_ready_flag(True)  # set PC ready flag back to true
             else:
                 pass
                 # too verbose
@@ -368,12 +372,12 @@ class Controller(ControllerBase):
         if TRC_TMPL_COUNT in block.export():
             template_count = block.__getitem__(TRC_TMPL_COUNT)
             logger.debug("PLC: %s db block: %r tracebility template count: %r" % (self.get_id(), dbid, template_count))
-            # query db for basic fields...
+            # make sure that basic data is set on PLC (skip otherwise)
             for field in [STATION_ID, SERIAL_NUMBER, PRODUCT_TYPE]:
                 if field not in block.export():
                     logger.warning("PLC: %s, block: %s, is missing field %s, in block body: %s. Message skipped." % (self.get_id(), block.get_db_number(), field, block.export()))
                     return
-            # get some basic data from the header
+            # get some basic data from data block
             try:
                 product_type = int(block[PRODUCT_TYPE])
             except ValueError:
@@ -415,7 +419,6 @@ class Controller(ControllerBase):
                 result_3_status_name = "body.trc.tmpl.__no__.3.result_status".replace("__no__", str(template_number))
 
                 if block.__getitem__(pc_save_flag_name):  # process only if PLC_Save flag is set for given template
-
                     # read
                     operation_status = block.__getitem__(operation_status_name)
                     operation_type = block.__getitem__(operation_type_name)
@@ -437,7 +440,40 @@ class Controller(ControllerBase):
                     logger.info("PLC: %s, block: %s, PT: %s, SN: %s, ST: %s, FN: %s" % (self.get_id(), block.get_db_number(), product_type, serial_number, station_number, pc_save_flag_name))
 
                     self.database_engine.write_operation(product_type, serial_number, week_number, year_number, station_number, operation_status, operation_type, date_time, result_1, result_1_max, result_1_min, result_1_status, result_2, result_2_max, result_2_min, result_2_status, result_3, result_3_max, result_3_min, result_3_status)
-
                     self.counter_saved_operations += 1
-                    # cancel save flag:
-                    block.set_flag(pc_save_flag_name, False)
+                    block.set_flag(pc_save_flag_name, False)  # cancel save flag:
+
+    def show_product_details(self, dbid):
+        block = self.get_db(dbid)
+        if block is None:
+            logger.warn("PLC: %s db block: %r is missing on controller. Skipping" % (self.get_id(), dbid))
+            return
+
+        if PC_OPEN_BROWSER_FLAG in block.export():
+            if block.__getitem__(PC_OPEN_BROWSER_FLAG):  # get the station status from db
+                block.set_pc_ready_flag(False)  # set PC ready flag to False
+
+                try:
+                    product_type = int(block[PRODUCT_TYPE])
+                except ValueError:
+                    product_type = 0
+                try:
+                    serial_number = int(block[SERIAL_NUMBER])
+                except ValueError:
+                    serial_number = 0
+                try:
+                    station_id = block[STATION_ID]
+                except ValueError:
+                    station_id = 0
+                logger.info("PLC: {plc} ST: {station} PT: {type} SN: {serial} browser opening request - show product details.".format(plc=self.get_id(), station=station_id, type=product_type, serial=serial_number))
+
+                baseurl = 'http://localhost/app' # TODO: read value from config file
+                if True: # TODO: change to if popups enabled in configuration
+                    url = os.path.join(baseurl, 'product', get_product_id(product_type, serial_number))
+                    if webbrowser.open():
+                        logger.info("PLC: {plc} ST: {station} URL: {url} product details window opened successfully.".format(plc=self.get_id(), station=station_id, type=product_type, serial=serial_number, url=url))
+                    else:
+                        logger.warning("PLC: {plc} ST: {station} URL: {url} failed to open product details window".format(plc=self.get_id(), station=station_id, type=product_type, serial=serial_number, url=url))
+
+                self.counter_show_product_details += 1
+                block.set_pc_ready_flag(True)  # set PC ready flag back to true

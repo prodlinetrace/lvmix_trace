@@ -28,6 +28,8 @@ class ProdLineBase(object):
         _fh = logging.FileHandler(self._config['main']['logfile'][0])
         _ch = logging.StreamHandler()
         self.__PLCClass = None
+        self._baseurl = 'http://localhost:5000/'
+        self._popups  = True
 
         if self._opts.quiet:
             # log errors to console
@@ -50,6 +52,20 @@ class ProdLineBase(object):
 
         self.__ctrl_list = []
         self.controllers = []
+
+    def get_popups(self):
+        return self._popups
+
+    def set_popups(self, popups=True):
+        logger.info("Popups set to: {popups}".format(popups=popups))
+        self._popups = popups
+
+    def get_baseurl(self):
+        return self._baseurl
+
+    def set_baseurl(self, baseurl):
+        logger.info("Baseurl set to: {baseurl}".format(baseurl=baseurl))
+        self._baseurl = baseurl
 
     def get_config(self):
         return self._config
@@ -133,7 +149,7 @@ class ProdLineBase(object):
             logger.debug("Controller: %s (id: %s) set active data blocks to %s" % (ctrl, self._config[ctrl]['id'], str(datablocks)))
             c.set_active_datablock_list(datablocks)
             logger.debug("Controller: %s (id: %s) configured" % (ctrl, self._config[ctrl]['id']))
-            
+
             self.__ctrl_list.append(c)
         return True
 
@@ -157,6 +173,9 @@ class ProdLine(ProdLineBase):
 
     def get_counter_saved_operations(self):
         return sum([ctrl.counter_saved_operations for ctrl in self.controllers])
+
+    def get_counter_product_details_display(self):
+        return sum([ctrl.counter_show_product_details for ctrl in self.controllers])
 
     def get_product_count(self):
         return self.database.get_product_count()
@@ -224,7 +243,7 @@ class ProdLine(ProdLineBase):
                 except snap7.snap7exceptions.Snap7Exception:
                     logging.critical("Connection to %s lost. Trying to re-establish connection." % ctrl)
                     ctrl.connect()
-        
+
     def pollOperations(self):
         for ctrl in self.controllers:
             for dbid in ctrl.get_active_datablock_list():
@@ -255,7 +274,7 @@ class ProdLine(ProdLineBase):
 
     def runExtras(self):
         """"
-            run extras: in sync controller time and update heartbeat bit. 
+            run extras: in sync controller time and update heartbeat bit.
         """
         i = 0
         while True:
@@ -266,7 +285,7 @@ class ProdLine(ProdLineBase):
                 self.sync_controllers_time_if_needed()
             # change the value of PC heartbeat flag (every 100ms by default)
             self.pc_heartbeat()
-            
+
         return True
 
     def runStatusProcessor(self):
@@ -275,7 +294,7 @@ class ProdLine(ProdLineBase):
         """
         while True:
             self.pollStatus()
-        
+
         return True
 
     def runOperationProcessor(self):
@@ -284,7 +303,7 @@ class ProdLine(ProdLineBase):
         """
         while True:
             self.pollOperations()
-            
+
         return True
 
     def runController(self, ctrl):
@@ -305,23 +324,23 @@ class ProdLine(ProdLineBase):
                 except snap7.snap7exceptions.Snap7Exception:
                     logger.critical("Connection to %s lost. Trying to re-establish connection." % ctrl)
                     ctrl.connect()
-    
+
             # sync time
             try:
                 ctrl.sync_time_if_needed()
             except snap7.snap7exceptions.Snap7Exception:
                 logger.critical("Connection to %s lost. Trying to re-establish connection." % c)
                 ctrl.connect()
-            
+
         return True
-                
+
     def main(self):
         # initialize controllers - list of active controllers will be available as self.controllers
         self.init_controllers()
         self.connect_controllers()
         #self.run(0)  # old method
 
-        # start each controller for processing in separate thread.         
+        # start each controller for processing in separate thread.
         with concurrent.futures.ThreadPoolExecutor(max_workers=20) as executor:
             future_to_ctrl = {executor.submit(self.runController, ctrl): ctrl for ctrl in self.controllers}
             for future in concurrent.futures.as_completed(future_to_ctrl):

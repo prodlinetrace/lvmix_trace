@@ -1,4 +1,4 @@
-from constants import PC_READY_FLAG, PLC_MESSAGE_FLAG, PLC_SAVE_FLAG
+from constants import PC_READY_FLAG, PLC_MESSAGE_FLAG, PLC_SAVE_FLAG, DB_BUSY_FLAG, PC_OPEN_BROWSER_FLAG
 from plc.util import offset_spec_block
 
 """
@@ -15,10 +15,11 @@ db3xxHead = """
 """
 
 db300Body = """
-46.0   {flag_pc_ready}              BOOL        # PC_Ready flag. Monitored by PLC. PCL waits for True. PC sets to False when it starts processing. PC sets back to True once processing is finished.
-46.1   {flag_plc_message}           BOOL        # PLC_Query bit - monitored by PC. PC reads status from database if set to True. Once PC finishes it sets it back to False.
-46.2   {flag_plc_save}              BOOL        # PLC_Save bit - monitored by PC. PC saves status if set to True. Once PC finishes it sets it back to False.
-46.4   body.res_1                   BOOL
+46.0   {flag_pc_ready}              BOOL        # PC_Ready bit. Monitored by PLC. PCL waits for True. PC sets to False when it starts processing. PC sets back to True once processing is finished.
+46.1   {flag_plc_message}           BOOL        # PLC_Query bit - monitored by PC, set by PLC. PC reads status from database if set to True. Once PC finishes it sets it back to False.
+46.2   {flag_plc_save}              BOOL        # PLC_Save bit - monitored by PC, set by PLC. PC saves status if set to True. Once PC finishes it sets it back to False.
+46.3   {flag_db_busy}               BOOL        # DB_Busy bit - not really used currently.
+46.4   {flag_pc_browser}            BOOL        # PC_OpenBrowser bit - monitored by PC, set by PLC. PC opens new browser tab with product details page if set to True (popups has to be enabled in program configuration). Once done it sets it back to False.
 46.5   body.res_2                   BOOL
 46.6   body.res_3                   BOOL
 46.7   body.res_4                   BOOL
@@ -27,7 +28,7 @@ db300Body = """
 49.0   body.byte_res_3              BYTE
 50.0   body.station_number          BYTE        # station_number - used when reading or saving station status. Value set by PLC when reading/writing status to/from database.
 51.0   body.station_status          BYTE        # station_status - used when reading or saving station status. Value set by PLC when saving status. Value set by PC when reading status from database.
-""".format(flag_pc_ready=PC_READY_FLAG, flag_plc_message=PLC_MESSAGE_FLAG, flag_plc_save=PLC_SAVE_FLAG)
+""".format(flag_pc_ready=PC_READY_FLAG, flag_plc_message=PLC_MESSAGE_FLAG, flag_plc_save=PLC_SAVE_FLAG, flag_db_busy=DB_BUSY_FLAG, flag_pc_browser=PC_OPEN_BROWSER_FLAG)
 
 db300Ctrl = """
 52.0    ctrl.plc.live                BOOL        # blinks every 300[ms]. Indicates that PLC is alive.
@@ -92,7 +93,7 @@ db3xxTrcTemplate = """
 
 # create db map for given controller.
 # controller id from config file should be used as key. currently controller id's are hardcoded
-db_specs = { 
+db_specs = {
       'c1': {},
       'c2': {},
       'c3': {},
@@ -109,9 +110,9 @@ def generate_db_spec(trcTemplateNumber=1):
         block_size = 62
         offset = base_offset + block_size * i
         tmp_db += offset_spec_block(db3xxTrcTemplate, offset).replace("{number}", str(i))
-        
+
     return tmp_db
-    
+
 
 #############################################################################################
 # St1x

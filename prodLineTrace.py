@@ -15,7 +15,6 @@ from plc.db_models import __version__ as dbmodel_version
 from plc.prodline import ProdLine
 from plc.util import file_name_with_size
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -33,15 +32,19 @@ class MainWindow(wx.App):
         self.valueMainLogFile = xrc.XRCCTRL(frame, "valueMainLogFile")
         self.valueMainErrorLogFile = xrc.XRCCTRL(frame, "valueMainErrorLogFile")
         self.valueMainVerbosity = xrc.XRCCTRL(frame, "valueMainVerbosity")
+        self.valueMainPopups = xrc.XRCCTRL(frame, "valueMainPopups")
         self.valueMainVersion = xrc.XRCCTRL(frame, "valueMainVersion")
         self.valueMainDBModelVersion = xrc.XRCCTRL(frame, "valueMainDBModelVersion")
         self.valueMainDBFile = xrc.XRCCTRL(frame, "valueMainDBFile")
         self.valueMainUptime = xrc.XRCCTRL(frame, "valueMainUptime")
-        self.valueMainControllerCount = xrc.XRCCTRL(frame, "valueMainControllerCount")
         self.valueMainDBSize = xrc.XRCCTRL(frame, "valueMainDBSize")
+        self.valueMainBaseUrl = xrc.XRCCTRL(frame, "valueMainBaseUrl")
+
+        self.valueMainControllerCount = xrc.XRCCTRL(frame, "valueMainControllerCount")
         self.valueMainMsgRead = xrc.XRCCTRL(frame, "valueMainMsgRead")
         self.valueMainMsgWrite = xrc.XRCCTRL(frame, "valueMainMsgWrite")
         self.valueMainOperWrite = xrc.XRCCTRL(frame, "valueMainOperWrite")
+        self.valueMainDetailsDisplay = xrc.XRCCTRL(frame, "valueMainDetailsDisplay")
 
         self.valueMainDBProdCount = xrc.XRCCTRL(frame, "valueMainDBProdCount")
         self.valueMainDBStationCount = xrc.XRCCTRL(frame, "valueMainDBStationCount")
@@ -62,9 +65,15 @@ class MainWindow(wx.App):
         self.logfile = self._config['main']['logfile'][0]
         self.errlog = helpers.parse_config(_opts.config)['main']['errorlog'][0]
         self.starttime = datetime.datetime.now()
+        self.baseUrl = self._config['main']['baseurl'][0]
 
         # bind verbosity choice box with selector function
         self.Bind(wx.EVT_CHOICE, self.OnVerbositySelect, self.valueMainVerbosity)
+
+        # bind popups selectbox with selector function
+        self.Bind(wx.EVT_CHOICE, self.OnPopupSelect, self.valueMainPopups)
+        self.application.set_baseurl(self.baseUrl)
+        self.application.set_popups(True)
 
         return True
 
@@ -73,6 +82,14 @@ class MainWindow(wx.App):
         logger.info("Changing log level to: %s" % level)
         logger.root.setLevel(level)
         logging.root.setLevel(level)
+
+    def OnPopupSelect(self, event):
+        _popup = self.valueMainPopups.GetStringSelection()
+        popup = False
+        if _popup == "Yes":
+            popup = True
+        logger.info("Changing Product Details Popup to: %r" % popup)
+        self.application.set_popups(popup)
 
     def updateLogWindow(self):
         self._mode = self.ID_UPDATE_LOG
@@ -88,6 +105,7 @@ class MainWindow(wx.App):
         # push some initial data
         self.valueMainVersion.SetLabelText(version)
         self.valueMainDBModelVersion.SetLabelText(dbmodel_version)
+        self.valueMainBaseUrl.SetLabelText(str(self.baseUrl))
 
         while True:
             self.valueMainLogFile.SetLabelText(file_name_with_size(self.logfile))
@@ -95,14 +113,16 @@ class MainWindow(wx.App):
             self.valueMainConfigFile.SetLabelText(file_name_with_size(self._opts.config))
             self.valueMainDBFile.SetLabelText(file_name_with_size(self.dbfile))
 
-            self.valueMainControllerCount.SetLabelText(str(len(self.application.controllers)))
             self.valueMainStatus.SetLabelText(str(self.application.get_status()))
             self.valueMainUptime.SetLabelText(str(datetime.datetime.now() - self.starttime))
 
             # message statistics
+            self.valueMainControllerCount.SetLabelText(str(len(self.application.controllers)))
             self.valueMainMsgRead.SetLabelText(str(self.application.get_counter_status_message_read()))
             self.valueMainMsgWrite.SetLabelText(str(self.application.get_counter_status_message_write()))
             self.valueMainOperWrite.SetLabelText(str(self.application.get_counter_saved_operations()))
+            self.valueMainDetailsDisplay.SetLabelText(str(self.application.get_counter_product_details_display()))
+
             # update db statistics
             self.valueMainDBProdCount.SetLabelText(str(self.application.get_product_count()))
             self.valueMainDBStationCount.SetLabelText(str(self.application.get_station_count()))
@@ -124,7 +144,6 @@ class MainWindow(wx.App):
             logger.critical("exception %r" % e)
             tb = traceback.format_exc()
             logger.critical("Traceback: %s" % tb)
-
 
     def makeControllerBox(self, name, adress):
         pnl = wx.Panel(self)
@@ -166,14 +185,14 @@ if __name__ == "__main__":
 
     # update status bar
     tw = app.GetTopWindow()
-    tw.PushStatusText('status text')
+    tw.PushStatusText('starting')
 
     # start the threads
     startWorker(app._ResultNotifier, app.updateLogWindow)
     startWorker(app._ResultNotifier, app.updateErrorLogWindow)
     startWorker(app._ResultNotifier, app.updateControllersStatus)
     startWorker(app._ResultNotifier, app.mainThread)
-    
+
     # start main loop
     app.MainLoop()
 

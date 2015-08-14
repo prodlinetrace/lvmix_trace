@@ -1,18 +1,20 @@
-PC_READY_FLAG       = 'body.PC_Ready'
-PLC_MESSAGE_FLAG    = 'body.PLC_Query'
-PLC_SAVE_FLAG       = 'body.PLC_Save'
+PC_READY_FLAG           = 'body.PC_Ready'
+PC_OPEN_BROWSER_FLAG    = 'body.PC_OpenBrowser'
+PLC_MESSAGE_FLAG        = 'body.PLC_Query'
+PLC_SAVE_FLAG           = 'body.PLC_Save'
+DB_BUSY_FLAG            = 'body.DB_Busy'
 
-STATION_NUMBER      = 'body.station_number'  # byte
-STATION_STATUS      = 'body.station_status'  # byte
-STATION_ID          = 'head.station_id'      # byte
-SERIAL_NUMBER       = 'head.serial_number'   # string(8)
-PRODUCT_TYPE        = 'head.product_type'   # string(12)
+STATION_NUMBER          = 'body.station_number'  # byte
+STATION_STATUS          = 'body.station_status'  # byte
+STATION_ID              = 'head.station_id'      # byte
+SERIAL_NUMBER           = 'head.serial_number'   # string(8)
+PRODUCT_TYPE            = 'head.product_type'    # string(12)
 
-PC_HEARTBEAT_FLAG   = 'ctrl.pc.live'
-PLC_HEARTBEAT_FLAG  = 'ctrl.plc.live'
+PC_HEARTBEAT_FLAG       = 'ctrl.pc.live'
+PLC_HEARTBEAT_FLAG      = 'ctrl.plc.live'
 
-TRC_TMPL_COUNT      = 'body.trc.template_count'
-TRC_TMPL_SAVE_FLAG  = 'body.trc.tmpl.__no__.PLC_Save'
+TRC_TMPL_COUNT          = 'body.trc.template_count'
+TRC_TMPL_SAVE_FLAG      = 'body.trc.tmpl.__no__.PLC_Save'
 
 SQLALCHEMY_DATABASE_URI_PREFIX = 'sqlite:///'
 
