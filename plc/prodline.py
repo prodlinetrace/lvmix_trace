@@ -314,7 +314,7 @@ class ProdLine(ProdLineBase):
             try:
                 ctrl.blink_pc_heartbeat()
             except snap7.snap7exceptions.Snap7Exception:
-                logger.critical("Connection to %s lost. Trying to re-establish connection." % c)
+                logger.critical("Connection to %s lost. Trying to re-establish connection." % ctrl)
                 ctrl.connect()
 
             # poll all db
@@ -329,7 +329,7 @@ class ProdLine(ProdLineBase):
             try:
                 ctrl.sync_time_if_needed()
             except snap7.snap7exceptions.Snap7Exception:
-                logger.critical("Connection to %s lost. Trying to re-establish connection." % c)
+                logger.critical("Connection to %s lost. Trying to re-establish connection." % ctrl)
                 ctrl.connect()
 
         return True
