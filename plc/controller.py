@@ -470,6 +470,15 @@ class Controller(ControllerBase):
 
                 baseurl = 'http://localhost/app' # TODO: read value from config file
                 if True: # TODO: change to if popups enabled in configuration
+                    """
+                    In order to open product details in same tab please reconfigure your firefox:
+                    1) type about:config in firefox address bar
+                    2) set browser.link.open_newwindow property to value 1
+                    more info on:
+                    http://kb.mozillazine.org/Browser.link.open_newwindow
+                    http://superuser.com/questions/138298/force-firefox-to-open-pages-in-a-specific-tab-using-command-line
+                    """
+                    
                     url = "/".join([baseurl, 'product', str(get_product_id(product_type, serial_number))])
                     if webbrowser.open(url):
                         logger.info("PLC: {plc} ST: {station} URL: {url} product details window opened successfully.".format(plc=self.get_id(), station=station_id, type=product_type, serial=serial_number, url=url))
