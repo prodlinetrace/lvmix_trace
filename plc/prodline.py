@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import time
 import logging
-import helpers
+from plc.helpers import parse_config, parse_args
 import snap7
 from plc.database import Database
 import threading
@@ -15,7 +15,7 @@ class ProdLineBase(object):
 
     def __init__(self, argv, loglevel=logging.INFO):
         self._argv = argv
-        self._opts, self._args = helpers.parse_args(self._argv)
+        self._opts, self._args = parse_args(self._argv)
 
         # handle logging - set root logger level
         logging.root.setLevel(logging.INFO)
@@ -24,7 +24,7 @@ class ProdLineBase(object):
 
         # parse config file
         logger.debug("using config file %s" % self._opts.config)
-        self._config = helpers.parse_config(self._opts.config)
+        self._config = parse_config(self._opts.config)
         _fh = logging.FileHandler(self._config['main']['logfile'][0])
         _ch = logging.StreamHandler()
         self.__PLCClass = None
@@ -344,6 +344,7 @@ class ProdLine(ProdLineBase):
         with concurrent.futures.ThreadPoolExecutor(max_workers=20) as executor:
             future_to_ctrl = {executor.submit(self.runController, ctrl): ctrl for ctrl in self.controllers}
             for future in concurrent.futures.as_completed(future_to_ctrl):
+                print future
                 try:
                     data = future.result()
                 except Exception as exc:

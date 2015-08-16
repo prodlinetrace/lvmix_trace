@@ -294,7 +294,6 @@ class Operation_Status(db.Model):
 
     status = db.relationship('Status', lazy='dynamic', backref='status_name', foreign_keys='Status.status')
 
-
     def __init__(self, id, name="Default Operation Status", description="Default Operation Status Description"):
         self.id = id
         self.name = name
@@ -336,4 +335,3 @@ class Operation_Type(db.Model):
             'name': self.name,
             'description': self.description,
         }
-

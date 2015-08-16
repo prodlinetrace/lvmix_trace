@@ -74,7 +74,7 @@ class DataBlock(object):
             if TRC_TMPL_COUNT in self._specification:
                 template_count = self.__getitem__(TRC_TMPL_COUNT)
                 logger.warn("PLC: %s db block: %r tracebility template count: %r" % (self.controller.get_id(), self.db_name, template_count))
-            import traceback            
+            import traceback
             logger.error("Controller: %s db:  %s Raise exception:" % (self.controller.get_id(), self.db_name))
             raise(e)
         return self.get_value(index, _type)
@@ -329,7 +329,6 @@ class DataBlock(object):
     def set_pc_open_browser_flag(self, value=True, check=False):
         flag = PC_OPEN_BROWSER_FLAG
         return self.set_flag(flag, value, check)
-
 
     def set_flag(self, flag, value, check=False):
         logger.debug("PLC: %s block: %s flag '%s' set to: %s " % (self.controller.get_id(), self.get_db_number(), flag, value))

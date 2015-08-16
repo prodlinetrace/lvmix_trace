@@ -1,7 +1,7 @@
 # this is a class of PLC controller
 import snap7
 import logging
-from constants import *
+from constants import PC_HEARTBEAT_FLAG, PLC_MESSAGE_FLAG, PLC_SAVE_FLAG, STATION_NUMBER, STATION_STATUS, PRODUCT_TYPE, SERIAL_NUMBER, STATION_STATUS_CODES, STATION_ID, TRC_TMPL_COUNT, TRC_TMPL_SAVE_FLAG, PC_OPEN_BROWSER_FLAG, DATE_TIME, WEEK_NUMBER, YEAR_NUMBER
 from plc.util import get_product_id
 from plc.datablocks import DataBlocks
 from plc.custom_exceptions import UnknownDb
@@ -9,7 +9,6 @@ from plc.database import Database
 from datetime import datetime
 from time import sleep
 import webbrowser
-import os
 
 logger = logging.getLogger(__name__)
 
@@ -342,15 +341,15 @@ class Controller(ControllerBase):
                 logger.info("PLC: {plc}, block: {block}, PT: {type}, SN: {serial}, ST: {station}, saving status: {_status} ({status}), to database".format(plc=self, block=block.get_db_number(), type=product_type, serial=serial_number, station=station_number, _status=_status, status=status))
                 # get additional data from PLC:
                 try:
-                    week_number = int(block['head.week_number'])
+                    week_number = int(block[WEEK_NUMBER])
                 except ValueError:
                     week_number = 0
                 try:
-                    year_number = int(block['head.year_number'])
+                    year_number = int(block[YEAR_NUMBER])
                 except ValueError:
                     year_number = 0
                 try:
-                    date_time = str(block['head.date_time'])
+                    date_time = str(block[DATE_TIME])
                 except ValueError:
                     date_time = str(datetime.datetime.now())
 
@@ -392,16 +391,16 @@ class Controller(ControllerBase):
             except ValueError:
                 station_number = 0
             try:
-                week_number = int(block['head.week_number'])
+                week_number = int(block[WEEK_NUMBER])
             except ValueError:
                 week_number = 0
             try:
-                year_number = int(block['head.year_number'])
+                year_number = int(block[YEAR_NUMBER])
             except ValueError:
                 year_number = 0
 
             for template_number in range(0, template_count):
-                pc_save_flag_name = "body.trc.tmpl.__no__.PLC_Save".replace("__no__", str(template_number))
+                pc_save_flag_name = TRC_TMPL_SAVE_FLAG.replace("__no__", str(template_number))
                 operation_status_name = "body.trc.tmpl.__no__.operation_status".replace("__no__", str(template_number))
                 operation_type_name = "body.trc.tmpl.__no__.operation_type".replace("__no__", str(template_number))
                 date_time_name = "body.trc.tmpl.__no__.date_time".replace("__no__", str(template_number))

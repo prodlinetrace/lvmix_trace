@@ -1,4 +1,4 @@
-from constants import PC_READY_FLAG, PLC_MESSAGE_FLAG, PLC_SAVE_FLAG, DB_BUSY_FLAG, PC_OPEN_BROWSER_FLAG
+from constants import PC_READY_FLAG, PLC_MESSAGE_FLAG, PLC_SAVE_FLAG, DB_BUSY_FLAG, PC_OPEN_BROWSER_FLAG, STATION_ID, PRODUCT_TYPE, SERIAL_NUMBER, WEEK_NUMBER, YEAR_NUMBER, DATE_TIME, PLC_HEARTBEAT_FLAG, PC_HEARTBEAT_FLAG, TRC_TMPL_COUNT, STATION_NUMBER, STATION_STATUS, PLC_TRC_ON
 from plc.util import offset_spec_block
 
 """
@@ -6,13 +6,13 @@ Define DB blocks used.
 """
 
 db3xxHead = """
-0.0    head.station_id              BYTE             # station_id of given PLC. (0-255 typically: 10, 11, 20, 21, 22, 23, 30, 31)
-2.0    head.product_type            STRING[12]       # product_type from nameplate (10 digits)
-16.0   head.serial_number           STRING[8]        # serial_number from nameplate (6 digits)
-26.0   head.week_number             STRING[4]        # month number from nameplate (2 digits)
-32.0   head.year_number             STRING[4]        # year number from nameplate  (2 digits)
-38.0   head.date_time               DATETIME         # size is 8 bytes
-"""
+0.0    {station_id}                 BYTE             # station_id of given PLC. (0-255 typically: 10, 11, 20, 21, 22, 23, 30, 31)
+2.0    {product_type}               STRING[12]       # product_type from nameplate (10 digits)
+16.0   {serial_number}              STRING[8]        # serial_number from nameplate (6 digits)
+26.0   {week_number}                STRING[4]        # month number from nameplate (2 digits)
+32.0   {year_number}                STRING[4]        # year number from nameplate  (2 digits)
+38.0   {date_time}                  DATETIME         # size is 8 bytes
+""".format(station_id=STATION_ID, product_type=PRODUCT_TYPE, serial_number=SERIAL_NUMBER, week_number=WEEK_NUMBER, year_number=YEAR_NUMBER, date_time=DATE_TIME)
 
 db300Body = """
 46.0   {flag_pc_ready}              BOOL        # PC_Ready bit. Monitored by PLC. PCL waits for True. PC sets to False when it starts processing. PC sets back to True once processing is finished.
@@ -26,21 +26,21 @@ db300Body = """
 47.0   body.byte_res_1              BYTE
 48.0   body.byte_res_2              BYTE
 49.0   body.byte_res_3              BYTE
-50.0   body.station_number          BYTE        # station_number - used when reading or saving station status. Value set by PLC when reading/writing status to/from database.
-51.0   body.station_status          BYTE        # station_status - used when reading or saving station status. Value set by PLC when saving status. Value set by PC when reading status from database.
-""".format(flag_pc_ready=PC_READY_FLAG, flag_plc_message=PLC_MESSAGE_FLAG, flag_plc_save=PLC_SAVE_FLAG, flag_db_busy=DB_BUSY_FLAG, flag_pc_browser=PC_OPEN_BROWSER_FLAG)
+50.0   {station_number}             BYTE        # station_number - used when reading or saving station status. Value set by PLC when reading/writing status to/from database.
+51.0   {station_status}             BYTE        # station_status - used when reading or saving station status. Value set by PLC when saving status. Value set by PC when reading status from database.
+""".format(flag_pc_ready=PC_READY_FLAG, flag_plc_message=PLC_MESSAGE_FLAG, flag_plc_save=PLC_SAVE_FLAG, flag_db_busy=DB_BUSY_FLAG, flag_pc_browser=PC_OPEN_BROWSER_FLAG, station_number=STATION_NUMBER, station_status=STATION_STATUS)
 
 db300Ctrl = """
-52.0    ctrl.plc.live                BOOL        # blinks every 300[ms]. Indicates that PLC is alive.
-52.1    ctrl.plc.trc_on              BOOL        # traceability flag. used by PLC to indicate if tracaebility should be switched on.
-52.2    ctrl.plc.data_ready          BOOL        # not used.
-52.3    ctrl.plc.reserve             BOOL
-52.4    ctrl.pc.live                 BOOL        # Watched by PLC. PC should blink this bit every 300[ms] to notify that application is connected.
-52.5    ctrl.pc.trc_on               BOOL        # not used
-52.6    ctrl.pc.data_ready           BOOL
-52.7    ctrl.pc.reserve              BOOL
-53.0    ctrl.reserve                 BYTE
-"""
+52.0    {plc_live}                  BOOL        # blinks every 300[ms]. Indicates that PLC is alive.
+52.1    {plc_trc_on}                BOOL        # traceability flag. used by PLC to indicate if tracaebility should be switched on.
+52.2    ctrl.PLC_data_ready         BOOL        # not used.
+52.3    ctrl.PLC_reserve            BOOL
+52.4    {pc_live}                   BOOL        # Watched by PLC. PC should blink this bit every 300[ms] to notify that application is connected.
+52.5    ctrl.PC_trc_on              BOOL        # not used
+52.6    ctrl.PC_data_ready          BOOL        # not used
+52.7    ctrl.PC_reserve             BOOL
+53.0    ctrl.reserve                BYTE
+""".format(plc_live=PLC_HEARTBEAT_FLAG, pc_live=PC_HEARTBEAT_FLAG, plc_trc_on=PLC_TRC_ON)
 
 db300 = db3xxHead
 db300 += db300Body
@@ -48,9 +48,9 @@ db300 += db300Ctrl
 
 
 db3xxTrcHead = """
-0.0    body.trc.template_count                 BYTE        # number of traceability template blocks in message body.
-1.0    body.res_1                              BYTE
-"""
+0.0    {trc_template_count}         BYTE        # number of traceability template blocks in message body.
+1.0    body.res_1                   BYTE
+""".format(trc_template_count=TRC_TMPL_COUNT)
 
 db3xxTrcTail = """
 

@@ -18,11 +18,13 @@ class UnknownDb(KeyError, NotFound):
     """
     pass
 
+
 class UnknownStation(KeyError, NotFound):
     """
     PLC Controller does not recognize the Station requested.
     """
     pass
+
 
 class UnknownSN(KeyError, NotFound):
     """
@@ -30,10 +32,9 @@ class UnknownSN(KeyError, NotFound):
     """
     pass
 
+
 class PLCSendRcvTimeOut(PLCAPIException):
     """
-    Polling Send and Recieve timeout.  
+    Polling Send and Recieve timeout.
     """
     pass
-
-

@@ -6,12 +6,17 @@ DB_BUSY_FLAG            = 'body.DB_Busy'
 
 STATION_NUMBER          = 'body.station_number'  # byte
 STATION_STATUS          = 'body.station_status'  # byte
-STATION_ID              = 'head.station_id'      # byte
-SERIAL_NUMBER           = 'head.serial_number'   # string(8)
-PRODUCT_TYPE            = 'head.product_type'    # string(12)
 
-PC_HEARTBEAT_FLAG       = 'ctrl.pc.live'
-PLC_HEARTBEAT_FLAG      = 'ctrl.plc.live'
+STATION_ID              = 'head.station_id'      # byte
+SERIAL_NUMBER           = 'head.serial_number'   # string(8) - 6 digits
+PRODUCT_TYPE            = 'head.product_type'    # string(12) - 10 digits
+DATE_TIME               = 'head.date_time'       # 8 bytes
+WEEK_NUMBER             = 'head.week_number'     # string(4) - 2 digits
+YEAR_NUMBER             = 'head.year_number'     # string(4) - 2 digits
+
+PC_HEARTBEAT_FLAG       = 'ctrl.PC_live'
+PLC_HEARTBEAT_FLAG      = 'ctrl.PLC_live'
+PLC_TRC_ON              = 'ctrl.PLC_trc_on'
 
 TRC_TMPL_COUNT          = 'body.trc.template_count'
 TRC_TMPL_SAVE_FLAG      = 'body.trc.tmpl.__no__.PLC_Save'

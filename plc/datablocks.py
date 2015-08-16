@@ -5,6 +5,7 @@ from plc.custom_exceptions import UnknownDb
 
 logger = logging.getLogger(__name__)
 
+
 class DataBlocks(object):
     """
     This class provides a container-like API which gives
@@ -14,7 +15,6 @@ class DataBlocks(object):
     """
 
     def __init__(self, controller):
-
         self.blockType = snap7.snap7types.block_types['DB']
         self.controller = controller
 

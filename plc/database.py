@@ -1,5 +1,4 @@
 #!/usr/bin/python
-
 from plc.db_models import *
 from plc.util import get_product_id
 from datetime import datetime
@@ -19,7 +18,6 @@ class Database(object):
             cursor.close()
         db.create_all()  # initialize empty database if required.
 
-
     def read_status(self, product_type, serial_number, station):
         product_type = int(product_type)
         serial_number = int(serial_number)
@@ -32,7 +30,6 @@ class Database(object):
         ret = res[-1].status
         logger.info("record for PT: %s SN: %s ST: %d has status: %s" % (product_type, serial_number, station, ret))
         return ret
-
 
     def write_status(self, product_type, serial_number, station, status, week_number=48, year_number=15, date_time=datetime.now()):
         product_type = int(product_type)
@@ -50,9 +47,7 @@ class Database(object):
         self.add_operation_status_if_required(status)  # status and operation status names are kept in one and same table
         self.add_status(status, product_id, station, date_time)
 
-
     def write_operation(self, product_type, serial_number, week_number, year_number, station_id, operation_status, operation_type, date_time, result_1, result_1_max, result_1_min, result_1_status, result_2, result_2_max, result_2_min, result_2_status, result_3, result_3_max, result_3_min, result_3_status):
-
         product_type = int(product_type)
         serial_number = int(serial_number)
         product_id = get_product_id(product_type, serial_number)
@@ -66,7 +61,6 @@ class Database(object):
         self.add_operation_status_if_required(result_3_status)
         self.add_operation_type_if_required(operation_type)
         self.add_operation(product_id, station_id, operation_status, operation_type, date_time, result_1, result_1_max, result_1_min, result_1_status, result_2, result_2_max, result_2_min, result_2_status, result_3, result_3_max, result_3_min, result_3_status)
-
 
     def add_operation(self, product_id, station_id, operation_status, operation_type, date_time, result_1, result_1_max, result_1_min, result_1_status, result_2, result_2_max, result_2_min, result_2_status, result_3, result_3_max, result_3_min, result_3_status):
         product_id,
@@ -102,7 +96,6 @@ class Database(object):
             return False
         return True
 
-
     def add_status(self, status, product, station, date_time=None):
         status = int(status)
         product = int(product)
@@ -123,7 +116,6 @@ class Database(object):
             logger.error("Database: {database} is locked. Error: {error}".format(database=db.get_app().config['SQLALCHEMY_DATABASE_URI'], error=e.__str__()))
             return False
         return True
-
 
     def add_product_if_required(self, product_type, serial_number, week_number=48, year_number=15):
         product_type = int(product_type)
@@ -147,7 +139,6 @@ class Database(object):
             return False
         return True
 
-
     def add_station_if_required(self, station):
         station = int(station)
         try:
@@ -167,7 +158,6 @@ class Database(object):
             logger.error("Database: %s is locked. Error: %s" % (db.get_app().config['SQLALCHEMY_DATABASE_URI'], e.__str__()))
             return False
         return True
-
 
     def add_operation_type_if_required(self, operation_type):
         operation_type = int(operation_type)
@@ -189,7 +179,6 @@ class Database(object):
             return False
         return True
 
-
     def add_operation_status_if_required(self, operation_status):
         operation_status = int(operation_status)
 
@@ -209,7 +198,6 @@ class Database(object):
             logger.error("Database: %s is locked. Error: %s" % (db.get_app().config['SQLALCHEMY_DATABASE_URI'], e.__str__()))
             return False
         return True
-
 
     def get_product_count(self):
         return Product.query.count()
