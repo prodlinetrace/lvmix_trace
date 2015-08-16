@@ -34,6 +34,8 @@ class ControllerBase(object):
         self.counter_status_message_write = 0
         self.counter_saved_operations = 0
         self.counter_show_product_details = 0
+        self._baseurl = 'http://localhosts/app'
+        self._popups = True
 
     def _init_database(self, dbfile='data/prodline.db'):
         self.database_engine = Database()
@@ -215,6 +217,18 @@ class ControllerBase(object):
 
     def get_active_datablock_list(self):
         return self._active_data_blocks
+    
+    def set_baseurl(self, baseurl):
+        self._baseurl = baseurl
+        
+    def get_baseurl(self):
+        return self._baseurl
+    
+    def set_popups(self, popups=True):
+        self._popups = popups
+        
+    def get_popups(self):
+        return self._popups
 
 
 class Controller(ControllerBase):
@@ -467,8 +481,8 @@ class Controller(ControllerBase):
                     station_id = 0
                 logger.info("PLC: {plc} ST: {station} PT: {type} SN: {serial} browser opening request - show product details.".format(plc=self.get_id(), station=station_id, type=product_type, serial=serial_number))
 
-                baseurl = 'http://localhost/app' # TODO: read value from config file
-                if True: # TODO: change to if popups enabled in configuration
+                url = "/".join([self.get_baseurl(), 'product', str(get_product_id(product_type, serial_number))])
+                if self.get_popups():
                     """
                     In order to open product details in same tab please reconfigure your firefox:
                     1) type about:config in firefox address bar
@@ -478,11 +492,12 @@ class Controller(ControllerBase):
                     http://superuser.com/questions/138298/force-firefox-to-open-pages-in-a-specific-tab-using-command-line
                     """
 
-                    url = "/".join([baseurl, 'product', str(get_product_id(product_type, serial_number))])
                     if webbrowser.open(url):
                         logger.info("PLC: {plc} ST: {station} URL: {url} product details window opened successfully.".format(plc=self.get_id(), station=station_id, type=product_type, serial=serial_number, url=url))
                     else:
                         logger.warning("PLC: {plc} ST: {station} URL: {url} failed to open product details window".format(plc=self.get_id(), station=station_id, type=product_type, serial=serial_number, url=url))
+                else:
+                    logger.warning("PLC: {plc} ST: {station} URL: {url} Popup event registered but popups are disabled by configuration.".format(plc=self.get_id(), station=station_id, type=product_type, serial=serial_number, url=url))
 
                 self.counter_show_product_details += 1
                 block.set_pc_open_browser_flag(False) # cancel PC_OPEN_BROWSER flag

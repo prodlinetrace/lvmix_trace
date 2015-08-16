@@ -309,6 +309,7 @@ class ProdLine(ProdLineBase):
     def runController(self, ctrl):
         logging.info("Started Controller Processing Thread: {c}, {dbs}".format(c=ctrl, dbs=ctrl.get_active_datablock_list()))
         threading.currentThread().setName(ctrl.get_name())
+        ctrl.set_baseurl(self.get_baseurl())  # set baseurl per controller
         while True:
             # blink heartbeat
             try:
@@ -332,6 +333,14 @@ class ProdLine(ProdLineBase):
                 logger.critical("Connection to %s lost. Trying to re-establish connection." % ctrl)
                 ctrl.connect()
 
+            # get configuration update
+            try:
+                ctrl.set_popups(self.get_popups())
+                # logging.debug("{plc} baseurl: {baseurl} popups: {popups}".format(plc=ctrl, popups=ctrl.get_popups(), baseurl=ctrl.get_baseurl()))
+            except snap7.snap7exceptions.Snap7Exception:
+                logger.critical("Connection to %s lost. Trying to re-establish connection." % ctrl)
+                ctrl.connect()
+
         return True
 
     def main(self):
@@ -344,7 +353,6 @@ class ProdLine(ProdLineBase):
         with concurrent.futures.ThreadPoolExecutor(max_workers=20) as executor:
             future_to_ctrl = {executor.submit(self.runController, ctrl): ctrl for ctrl in self.controllers}
             for future in concurrent.futures.as_completed(future_to_ctrl):
-                print future
                 try:
                     data = future.result()
                 except Exception as exc:
