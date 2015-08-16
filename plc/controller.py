@@ -120,14 +120,14 @@ class ControllerBase(object):
                 sleep(1)
 
             if self.client.get_connected():
-                logger.info("PLC: %s connected to server: IP %s PORT %s" % (self.__id, self.__ip, self.__port))
+                logger.info("PLC: {plc} connected to server: IP {ip} PORT {port}".format(plc=self, ip=self.__ip, port=self.__port))
             else:
-                logger.error("PLC: %s connection to server: IP %s PORT %s Failed attempt %s/%s" % (self.__id, self.__ip, self.__port, attempt, self._reconnect))
+                logger.error("PLC: {plc} connection to server: IP {ip} PORT {port} Failed attempt {item}/{total}".format(plc=self, ip=self.__ip, port=self.__port, item=attempt, total=self._reconnect))
                 self.connect(attempt)
                 return
 
     def disconnect(self):
-        logger.info("%s. disconnection procedure started..." % (self))
+        logger.info("PLC {plc}. disconnection procedure started...".format(plc=self))
         if self.database_engine is not None:
             self.database_engine.disconnect()
         self.client.disconnect()

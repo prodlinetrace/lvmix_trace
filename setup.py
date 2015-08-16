@@ -9,7 +9,7 @@ PROJECT_NAME = plc.NAME
 PROJECT_AUTHORS = plc.AUTHOR
 # Please see readme.rst for a complete list of contributors
 PROJECT_EMAILS = plc.EMAIL
-PROJECT_URL = "https://code.google.com/p/prodlinetrace/"
+PROJECT_URL = "https://bitbucket.org/wilkpio/prodlinetrace"
 SHORT_DESCRIPTION = 'Tracebility application for PLC based production line.'
 
 try:
@@ -132,6 +132,7 @@ hidden_imports = [
                 "markdown",
                 "bleach",
                 "itsdangerous",
+                "werkzeug.http",
 ]
 
 zip_includes = [
@@ -149,7 +150,7 @@ include_files = [
 # Dependencies are automatically detected, but it might need fine tuning.
 build_exe_options = {
                      "packages": hidden_imports,
-                     "excludes": ["tkinter"], 
+                     "excludes": ["tkinter", "werkzeug.http.sys", "werkzeug.http._sre", "werkzeug.http.array"], 
                      "includes":["plc", "flask"], 
                      "include_files": include_files,
                      'include_msvcr': True,

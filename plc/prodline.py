@@ -79,9 +79,9 @@ class ProdLineBase(object):
     # start controller connections
     def connect_controllers(self):
         for ctrl in self.__ctrl_list:
-            logging.debug("Connecting controller: %s " % ctrl.get_id())
+            logging.debug("Connecting controller: {plc} ".format(plc=ctrl))
             ctrl.connect()
-            logger.info("Controller id: %s has status: %s " % (ctrl.get_id(), ctrl.get_status()))
+            logger.info("Controller: {plc} has status: {status} ".format(plc=ctrl, status=ctrl.get_status()))
             if ctrl.get_status():
                 self.controllers.append(ctrl)
                 logger.debug("Controller id: %s with name: %s. Added to the active ones." % (ctrl.get_id(), ctrl.get_name()))
