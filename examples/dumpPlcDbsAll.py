@@ -2,6 +2,7 @@
 import logging
 import os
 import sys
+sys.path.append(os.path.dirname(os.path.abspath(os.curdir)))
 from plc import controller
 from plc.prodline import ProdLineBase
 
@@ -18,7 +19,7 @@ class PlcDbDumper(ProdLineBase):
         self.init_controllers()
         self.connect_controllers()
         for _ctrl in self.controllers:
-            for _dbno, _db in _ctrl.get_dbs():
+            for _dbno, _db in _ctrl.get_active_dbs():
                 _bytearray = _db.get_bytearray()
                 f = os.path.join(os.path.dirname(os.path.abspath(os.path.curdir)), 'data', 'dbdump', _ctrl.get_id() + "_" + str(_dbno) + '.db')
                 print "saving data item %s to %s file" % (_dbno, f)
@@ -29,7 +30,7 @@ class PlcDbDumper(ProdLineBase):
 
 def main():
     sys.argv.append("-c")
-    sys.argv.append("../prodLine.conf")
+    sys.argv.append("../prodLineTrace.conf")
     dumper = PlcDbDumper(sys.argv, logging.INFO)
     dumper.run()
 
