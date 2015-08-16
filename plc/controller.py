@@ -169,7 +169,7 @@ class ControllerBase(object):
         ctrl_time = self.get_time()
         delta = datetime.now() - ctrl_time
         if abs(delta.total_seconds()) > diff:
-            logger.info("PLC: %s. Time diff between PLC and PC (%d) is bigger than the trigger(%d). Synchronizing." % (self, abs(delta.total_seconds()), diff))
+            logger.info("PLC: {plc}. Time diff between PLC and PC {delta} is bigger than the trigger {trigger}. Synchronizing.".format(plc=self, delta=abs(delta.total_seconds()), trigger=diff))
             self.sync_time()
 
     def blink_pc_heartbeat(self):
@@ -339,7 +339,7 @@ class Controller(ControllerBase):
                     product_type = int(block[PRODUCT_TYPE])
                 except ValueError:
                     product_type = 0
-                logger.info("PLC: %s, block: %s, PT: %s, SN: %s, ST: %s, saving status: %s (%s), to database" % (self.get_id(), block.get_db_number(), product_type, serial_number, station_number, _status, status))
+                logger.info("PLC: {plc}, block: {block}, PT: {type}, SN: {serial}, ST: {station}, saving status: {_status} ({status}), to database".format(plc=self, block=block.get_db_number(), type=product_type, serial=serial_number, station=station_number, _status=_status, status=status))
                 # get additional data from PLC:
                 try:
                     week_number = int(block['head.week_number'])
@@ -438,7 +438,7 @@ class Controller(ControllerBase):
                     result_3_min = block.__getitem__(result_3_min_name)
                     result_3_status = block.__getitem__(result_3_status_name)
 
-                    logger.info("PLC: %s, block: %s, PT: %s, SN: %s, ST: %s, FN: %s" % (self.get_id(), block.get_db_number(), product_type, serial_number, station_number, pc_save_flag_name))
+                    logger.info("PLC: {plc}, block: {block}, PT: {type}, SN: {serial}, ST: {station}, FN: {flag}".format(plc=self, block=block.get_db_number(), type=product_type, serial=serial_number, station=station_number, flag=pc_save_flag_name))
 
                     self.database_engine.write_operation(product_type, serial_number, week_number, year_number, station_number, operation_status, operation_type, date_time, result_1, result_1_max, result_1_min, result_1_status, result_2, result_2_max, result_2_min, result_2_status, result_3, result_3_max, result_3_min, result_3_status)
                     self.counter_saved_operations += 1
@@ -478,7 +478,7 @@ class Controller(ControllerBase):
                     http://kb.mozillazine.org/Browser.link.open_newwindow
                     http://superuser.com/questions/138298/force-firefox-to-open-pages-in-a-specific-tab-using-command-line
                     """
-                    
+
                     url = "/".join([baseurl, 'product', str(get_product_id(product_type, serial_number))])
                     if webbrowser.open(url):
                         logger.info("PLC: {plc} ST: {station} URL: {url} product details window opened successfully.".format(plc=self.get_id(), station=station_id, type=product_type, serial=serial_number, url=url))
@@ -488,4 +488,3 @@ class Controller(ControllerBase):
                 self.counter_show_product_details += 1
                 block.set_pc_open_browser_flag(False) # cancel PC_OPEN_BROWSER flag
                 block.set_pc_ready_flag(True)  # set PC ready flag back to true
-        

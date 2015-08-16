@@ -90,7 +90,7 @@ class Database(object):
 
         try:
             new_operation = Operation(product_id, station_id, operation_status, operation_type, date_time, result_1, result_1_max, result_1_min, result_1_status, result_2, result_2_max, result_2_min, result_2_status, result_3, result_3_max, result_3_min, result_3_status)
-            logger.info("Adding new Operation to database: %r" % new_operation)
+            logger.info("Adding new Operation to database: {operation}".format(operation=new_operation))
             db.session.add(new_operation)
             try:
                 db.session.commit()
@@ -112,7 +112,7 @@ class Database(object):
 
         try:
             new_status = Status(status, product, station, date_time)
-            logger.info("Adding new Status to database: %r" % new_status)
+            logger.info("Adding new Status to database: {status}".format(status=new_status))
             db.session.add(new_status)
             try:
                 db.session.commit()
@@ -120,7 +120,7 @@ class Database(object):
                 logger.error("%s : %s " % (repr(e), e.__str__()))
 
         except sqlalchemy.exc.OperationalError, e:
-            logger.error("Database: %s is locked. Error: %s" % (db.get_app().config['SQLALCHEMY_DATABASE_URI'], e.__str__()))
+            logger.error("Database: {database} is locked. Error: {error}".format(database=db.get_app().config['SQLALCHEMY_DATABASE_URI'], error=e.__str__()))
             return False
         return True
 
@@ -135,7 +135,7 @@ class Database(object):
             _product = Product.query.filter_by(type=int(product_type)).filter_by(serial=int(serial_number)).first()
             if _product is None:  # add item if not exists yet.
                 new_prod = Product(product_type, serial_number, week_number, year_number)
-                logger.info("Adding new Product to database: %s" % str(new_prod))
+                logger.info("Adding new Product to database: {prod}".format(prod={new_prod}))
                 db.session.add(new_prod)
                 try:
                     db.session.commit()
