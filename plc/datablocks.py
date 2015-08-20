@@ -45,11 +45,7 @@ class DataBlocks(object):
         return [x for x in self.iteritems()]
 
     def __getitem__(self, db):
-        for block in self.controller.get_client().list_blocks_of_type(self.blockType):
-            if block == db:
-                return DataBlock(db, self.controller)
-
-        logger.warn("failed to find db: %s" % db)
+            return DataBlock(db, self.controller)
 
     def __contains__(self, db):
         """
