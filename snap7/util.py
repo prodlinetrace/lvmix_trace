@@ -10,7 +10,7 @@ see test code test_s7util
 from collections import OrderedDict
 import struct
 from snap7 import six, types
-import datetime
+from datetime import datetime
 import logging
 
 logger = logging.getLogger(__name__)
@@ -39,7 +39,7 @@ def bytearray_2_time_struct(_bytearray, add_offset=True):
         ptime_struct["tm_year"] += 1900
         ptime_struct["tm_mon"] += 1
 
-    struct_time = datetime.datetime.strptime("%s %s %s %s %s %s" % (ptime_struct["tm_year"], ptime_struct["tm_mon"], ptime_struct["tm_mday"], ptime_struct["tm_hour"], ptime_struct["tm_min"], ptime_struct["tm_sec"]), "%Y %m %d %H %M %S")
+    struct_time = datetime.strptime("%s %s %s %s %s %s" % (ptime_struct["tm_year"], ptime_struct["tm_mon"], ptime_struct["tm_mday"], ptime_struct["tm_hour"], ptime_struct["tm_min"], ptime_struct["tm_sec"]), "%Y %m %d %H %M %S")
     return struct_time
 
 
@@ -74,9 +74,9 @@ def get_datetime(_bytearray, byte_index):
     microsec = int("%x" % msec) * 10000 + int("%x" % usec) * 10
     # handle incorrect data input and return current date in that case.
     try:
-        struct_time = datetime.datetime.strptime("%x %x %x %x %x %x %d" % (year, month, day, hour, minute, sec, microsec), "%y %m %d %H %M %S %f")
+        struct_time = datetime.strptime("%x %x %x %x %x %x %d" % (year, month, day, hour, minute, sec, microsec), "%y %m %d %H %M %S %f")
     except ValueError:
-        return datetime.datetime.now()
+        return datetime.now()
     return struct_time
 
 
