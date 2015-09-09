@@ -8,9 +8,9 @@ from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
 from flask import request, current_app
 from flask.ext.login import UserMixin
 import logging
-__version__ = '0.2.3'
-
 logger = logging.getLogger(__name__)
+
+__version__ = '0.2.4'
 
 
 class User(UserMixin, db.Model):
@@ -23,7 +23,7 @@ class User(UserMixin, db.Model):
     location = db.Column(db.String(64))
     locale = db.Column(db.String(16))
     bio = db.Column(db.Text())
-    member_since = db.Column(db.DateTime(), default=datetime.utcnow)
+    member_since = db.Column(db.DateTime(), default=datetime.now)
     avatar_hash = db.Column(db.String(32))
     comments = db.relationship('Comment', lazy='dynamic', backref='author')
 
@@ -75,7 +75,7 @@ class Comment(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     body = db.Column(db.Text)
     body_html = db.Column(db.Text)
-    timestamp = db.Column(db.DateTime, index=True, default=datetime.utcnow)
+    timestamp = db.Column(db.DateTime, index=True, default=datetime.now)
     author_id = db.Column(db.Integer, db.ForeignKey('users.id'))
     product_id = db.Column(db.Integer, db.ForeignKey('product.id'))
 
@@ -98,7 +98,7 @@ class Product(db.Model):
     serial = db.Column(db.Integer, index=True, unique=False)
     week = db.Column(db.Integer, unique=False)
     year = db.Column(db.Integer, unique=False)
-    date_added = db.Column(db.DateTime(), index=True, default=datetime.utcnow)
+    date_added = db.Column(db.DateTime(), index=True, default=datetime.now)
     comments = db.relationship('Comment', lazy='dynamic', backref='product')
     statuses = db.relationship('Status', lazy='dynamic', backref='product')
     operations = db.relationship('Operation', lazy='dynamic', backref='product')
@@ -286,6 +286,7 @@ class Operation_Status(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(64))
     description = db.Column(db.String(255))
+    unit_id = db.Column(db.Integer, db.ForeignKey('unit.id'))
     operations = db.relationship('Operation', lazy='dynamic', backref='operation_status',  foreign_keys='Operation.operation_status_id')
 
     result_1_status = db.relationship('Operation', lazy='dynamic', backref='result_1_status', foreign_keys='Operation.result_1_status_id')
@@ -294,10 +295,11 @@ class Operation_Status(db.Model):
 
     status = db.relationship('Status', lazy='dynamic', backref='status_name', foreign_keys='Status.status')
 
-    def __init__(self, id, name="Default Operation Status", description="Default Operation Status Description"):
+    def __init__(self, id, name="Default Operation Status", description="Default Operation Status Description", unit_id=0):
         self.id = id
         self.name = name
         self.description = description
+        self.unit_id = unit_id
 
     def __repr__(self):
         return '<Operation_Type Id: %r Name: %r Description: %r>' % (self.id, self.name, self.description)
@@ -309,6 +311,7 @@ class Operation_Status(db.Model):
             'id': self.id,
             'name': self.name,
             'description': self.description,
+            'unit_id': self.unit_id,
         }
 
 
@@ -333,5 +336,33 @@ class Operation_Type(db.Model):
         return {
             'id': self.id,
             'name': self.name,
+            'description': self.description,
+        }
+
+
+class Unit(db.Model):
+    __tablename__ = 'unit'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(64))
+    symbol = db.Column(db.String(16))
+    description = db.Column(db.String(255))
+    unit = db.relationship('Operation_Status', lazy='dynamic', backref='unit', foreign_keys='Operation_Status.unit_id')
+
+    def __init__(self, id, name="Default Unit Name", symbol="Default Unit Symbol", description="Default Unit Description"):
+        self.id = id
+        self.name = name
+        self.symbol = symbol
+        self.description = description
+
+    def __repr__(self):
+        return '<Unit Id: %r Name: %r Symbol: %r Description: %r>' % (self.id, self.name, self.symbol, self.description)
+
+    @property
+    def serialize(self):
+        """Return object data in easily serializeable format"""
+        return {
+            'id': self.id,
+            'name': self.name,
+            'symbol': self.symbol,
             'description': self.description,
         }
