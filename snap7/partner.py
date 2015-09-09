@@ -13,7 +13,6 @@ import re
 from snap7.common import load_library, check_error, ipv4
 import snap7.snap7types
 from snap7.snap7exceptions import Snap7Exception
-from test.test_fileinput import BufferSizesTests
 
 
 logger = logging.getLogger(__name__)
