@@ -7,6 +7,7 @@ from plc.database import Database
 import threading
 import concurrent.futures
 import traceback
+from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +22,9 @@ class ProdLineBase(object):
         logging.root.setLevel(logging.INFO)
         logger = logging.getLogger(__name__)
         logger.setLevel(loglevel)
+        
+        # init datetime.strptime so it is available in threads (http://www.mail-archive.com/python-list@python.org/msg248846.html)
+        year = datetime.strptime("01","%y")
 
         # parse config file
         logger.debug("using config file %s" % self._opts.config)
