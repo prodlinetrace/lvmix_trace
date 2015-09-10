@@ -409,43 +409,7 @@ class Controller(ControllerBase):
         if TRC_TMPL_COUNT in block.export():
             template_count = block.__getitem__(TRC_TMPL_COUNT)
             logger.debug("PLC: %s db block: %r tracebility template count: %r" % (self.get_id(), dbid, template_count))
-            # make sure that basic data is set on PLC (skip otherwise)
-            for field in [STATION_ID, SERIAL_NUMBER, PRODUCT_TYPE]:
-                if field not in block.export():
-                    logger.warning("PLC: %s, block: %s, is missing field %s, in block body: %s. Message skipped." % (self.get_id(), block.get_db_number(), field, block.export()))
-                    return
-            # get some basic data from data block
-            try:
-                data = block[PRODUCT_TYPE]
-                product_type = int(data)
-            except ValueError, e:
-                logger.error("Data read error from PLC: {plc} DB: {db} Input: {data} Exception: {e}, TB: {tb}".format(plc=self, db=dbid, data=data, e=e, tb=traceback.format_exc()))
-                product_type = 0
-            try:
-                data = block[SERIAL_NUMBER]
-                serial_number = int(data)
-            except ValueError, e:
-                logger.error("Data read error from PLC: {plc} DB: {db} Input: {data} Exception: {e}, TB: {tb}".format(plc=self, db=dbid, data=data, e=e, tb=traceback.format_exc()))
-                serial_number = 0
-            try:
-                data = block[STATION_ID]
-                station_id = int(data)
-            except ValueError, e:
-                logger.error("Data read error from PLC: {plc} DB: {db} Input: {data} Exception: {e}, TB: {tb}".format(plc=self, db=dbid, data=data, e=e, tb=traceback.format_exc()))
-                station_id = 0
-            try:
-                data = block[WEEK_NUMBER]
-                week_number = int(data)
-            except ValueError, e:
-                logger.warning("PLC: {plc}, block: {db} wrong value for status, returning undefined. Exception: {e}".format(plc=self, db=block.get_db_number(), e=e))
-                week_number = 0
-            try:
-                data = block[YEAR_NUMBER]
-                year_number = int(data)
-            except ValueError, e:
-                logger.warning("PLC: {plc}, block: {db} wrong value for status, returning undefined. Exception: {e}".format(plc=self, db=block.get_db_number(), e=e))
-                year_number = 0
-
+      
             for template_number in range(0, template_count):
                 pc_save_flag_name = TRC_TMPL_SAVE_FLAG.replace("__no__", str(template_number))
                 operation_status_name = "body.trc.tmpl.__no__.operation_status".replace("__no__", str(template_number))
@@ -466,7 +430,45 @@ class Controller(ControllerBase):
                 result_3_status_name = "body.trc.tmpl.__no__.3.result_status".replace("__no__", str(template_number))
 
                 if block.__getitem__(pc_save_flag_name):  # process only if PLC_Save flag is set for given template
-                    # read
+                    # read basic data
+                    # make sure that basic data is set on PLC (skip otherwise)
+                    for field in [STATION_ID, SERIAL_NUMBER, PRODUCT_TYPE]:
+                        if field not in block.export():
+                            logger.warning("PLC: %s, block: %s, is missing field %s, in block body: %s. Message skipped." % (self.get_id(), block.get_db_number(), field, block.export()))
+                            return
+                    # get some basic data from data block
+                    try:
+                        data = block[PRODUCT_TYPE]
+                        product_type = int(data)
+                    except ValueError, e:
+                        logger.error("Data read error from PLC: {plc} DB: {db} Input: {data} Exception: {e}, TB: {tb}".format(plc=self, db=dbid, data=data, e=e, tb=traceback.format_exc()))
+                        product_type = 0
+                    try:
+                        data = block[SERIAL_NUMBER]
+                        serial_number = int(data)
+                    except ValueError, e:
+                        logger.error("Data read error from PLC: {plc} DB: {db} Input: {data} Exception: {e}, TB: {tb}".format(plc=self, db=dbid, data=data, e=e, tb=traceback.format_exc()))
+                        serial_number = 0
+                    try:
+                        data = block[STATION_ID]
+                        station_id = int(data)
+                    except ValueError, e:
+                        logger.error("Data read error from PLC: {plc} DB: {db} Input: {data} Exception: {e}, TB: {tb}".format(plc=self, db=dbid, data=data, e=e, tb=traceback.format_exc()))
+                        station_id = 0
+                    try:
+                        data = block[WEEK_NUMBER]
+                        week_number = int(data)
+                    except ValueError, e:
+                        logger.warning("PLC: {plc}, block: {db} wrong value for status, returning undefined. Exception: {e}".format(plc=self, db=block.get_db_number(), e=e))
+                        week_number = 0
+                    try:
+                        data = block[YEAR_NUMBER]
+                        year_number = int(data)
+                    except ValueError, e:
+                        logger.warning("PLC: {plc}, block: {db} wrong value for status, returning undefined. Exception: {e}".format(plc=self, db=block.get_db_number(), e=e))
+                        year_number = 0
+                    
+                    # read specific data
                     operation_status = block.__getitem__(operation_status_name)
                     operation_type = block.__getitem__(operation_type_name)
                     date_time = block.__getitem__(date_time_name)
