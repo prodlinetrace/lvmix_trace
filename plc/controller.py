@@ -301,18 +301,28 @@ class Controller(ControllerBase):
                     logger.error("Data read error from PLC: {plc} DB: {db} Input: {data} Exception: {e}, TB: {tb}".format(plc=self, db=dbid, data=data, e=e, tb=traceback.format_exc()))
                     serial_number = 0
                 try:
+                    data = block[STATION_ID]
+                    station_id = int(data)
+                except ValueError, e:
+                    logger.error("Data read error from PLC: {plc} DB: {db} Input: {data} Exception: {e}, TB: {tb}".format(plc=self, db=dbid, data=data, e=e, tb=traceback.format_exc()))
+                    station_id = 0
+                try:
                     data = block[STATION_NUMBER]
                     station_number = int(data)
                 except ValueError, e:
                     logger.error("Data read error from PLC: {plc} DB: {db} Input: {data} Exception: {e}, TB: {tb}".format(plc=self, db=dbid, data=data, e=e, tb=traceback.format_exc()))
                     station_number = 0
-                logger.debug("PLC: {plc}, block: {block}, PT: {type}, SN: {serial}, reading status from database for station: {station}".format(plc=self.get_id(), block=block.get_db_number(), type=product_type, serial=serial_number, station=station_number))
-
-                result = self.database_engine.read_status(int(product_type), int(serial_number), int(station_number))
-                _status = result
-                status = STATION_STATUS_CODES[_status]['result']
-                block.store_item(STATION_STATUS, _status)
-                logger.info("PLC: %s, block: %s, PT: %s, SN: %s, ST: %s, status from database: %s (%s)" % (self.get_id(), block.get_db_number(), product_type, serial_number, station_number, _status, status))
+                logger.debug("PLC: {plc}, DB: {db}, PT: {type}, SN: {serial}, trying to read status from database for station: {station}".format(plc=self.get_id(), db=block.get_db_number(), type=product_type, serial=serial_number, station=station_number))
+                station_status = self.database_engine.read_status(int(product_type), int(serial_number), int(station_number))
+                
+                try:
+                    status = STATION_STATUS_CODES[station_status]['result']
+                except ValueError, e:
+                    logger.warning("PLC: {plc}, DB: {db} wrong value for status, returning undefined. Exception: {e}".format(plc=self, db=block.get_db_number(), e=e))
+                    status = STATION_STATUS_CODES[99]['result']
+                
+                block.store_item(STATION_STATUS, station_status)
+                logger.info("PLC: {plc}, DB: {db}, PT: {type}, SN: {serial}, queried from SID: {station_id}, status of station ST: {station_number} taken from database is: {station_status} ({status})".format(plc=self.get_id(), db=block.get_db_number(), type=product_type, serial=serial_number, station_id=station_id, station_number=station_number, station_status=station_status, status=status))
                 self.counter_status_message_read += 1
                 block.set_plc_message_flag(False)
                 block.set_pc_ready_flag(True)  # set pc_ready flag back to true
