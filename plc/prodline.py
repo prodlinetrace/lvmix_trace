@@ -188,7 +188,7 @@ class ProdLine(ProdLineBase):
         return self.database.get_station_count()
 
     def get_status_count(self):
-        return self.database.get_station_count()
+        return self.database.get_status_count()
 
     def get_opertation_count(self):
         return self.database.get_opertation_count()
