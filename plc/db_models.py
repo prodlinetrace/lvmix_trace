@@ -10,7 +10,7 @@ from flask.ext.login import UserMixin
 import logging
 logger = logging.getLogger(__name__)
 
-__version__ = '0.2.4'
+__version__ = '0.2.5'
 
 
 class User(UserMixin, db.Model):
@@ -69,13 +69,16 @@ class User(UserMixin, db.Model):
             return User.query.get(_id)
         return None
 
+    def __repr__(self):
+        return '<User {id} Login {login} Name {name}>'.format(id=self.id, login=self.login, name=self.name)
+
 
 class Comment(db.Model):
     __tablename__ = 'comments'
     id = db.Column(db.Integer, primary_key=True)
     body = db.Column(db.Text)
     body_html = db.Column(db.Text)
-    timestamp = db.Column(db.DateTime, index=True, default=datetime.now)
+    timestamp = db.Column(db.DateTime, index=True, default=datetime.utcnow)
     author_id = db.Column(db.Integer, db.ForeignKey('users.id'))
     product_id = db.Column(db.Integer, db.ForeignKey('product.id'))
 
@@ -87,6 +90,10 @@ class Comment(db.Model):
         target.body_html = bleach.linkify(bleach.clean(
             markdown(value, output_format='html'),
             tags=allowed_tags, strip=True))
+
+    def __repr__(self):
+        return '<Comment {id} Product {product} Author {author}>'.format(id=self.id, product=self.product_id, author=self.author_id)
+
 
 db.event.listen(Comment.body, 'set', Comment.on_changed_body)
 
@@ -111,7 +118,7 @@ class Product(db.Model):
         self.id = self.get_product_id(self.type, self.serial)
 
     def __repr__(self):
-        return '<Product %d>' % self.id
+        return '<Product {id}>'.format(id=self.id)
 
     def get_product_id(self, type=None, serial=None):
         """
@@ -158,7 +165,7 @@ class Station(db.Model):
         self.slot = slot
 
     def __repr__(self):
-        return '<Station %r>' % self.id
+        return '<Station {id}>'.format(id=self.id)
 
     @property
     def serialize(self):
@@ -190,7 +197,7 @@ class Status(db.Model):
         self.date_time = str(date_time)
 
     def __repr__(self):
-        return '<Status Product: %d Station: %r Status: %r>' % (self.product_id, self.station_id, self.status)
+        return '<Status Id: {id} for Product: {product} Station: {station} Status: {status}>'.format(id=self.id, product=self.product_id, station=self.station_id, status=self.status)
 
     @property
     def serialize(self):
@@ -250,7 +257,7 @@ class Operation(db.Model):
         self.result_3_status_id = r3_stat
 
     def __repr__(self):
-        return '<Assembly Operation for: Product: %r Station: %r Operation_type: %r>' % (self.product_id, self.station_id, self.operation_type_id)
+        return '<Assembly Operation Id: {id} for: Product: {product} Station: {station} Operation_type: {operation_type}>'.format(id=self.id, product=self.product_id, station=self.station_id, operation_type=self.operation_type_id)
 
     @property
     def serialize(self):
@@ -302,7 +309,7 @@ class Operation_Status(db.Model):
         self.unit_id = unit_id
 
     def __repr__(self):
-        return '<Operation_Type Id: %r Name: %r Description: %r>' % (self.id, self.name, self.description)
+        return '<Operation_Status Id: {id} Name: {name} Description: {desc}>'.format(id=self.id, name=self.name, desc=self.description)
 
     @property
     def serialize(self):
@@ -328,7 +335,7 @@ class Operation_Type(db.Model):
         self.description = description
 
     def __repr__(self):
-        return '<Operation_Type Id: %r Name: %r Description: %r>' % (self.id, self.name, self.description)
+        return '<Operation_Type Id: {id} Name: {name} Description: {desc}>'.format(id=self.id, name=self.name, desc=self.description)
 
     @property
     def serialize(self):
@@ -355,7 +362,7 @@ class Unit(db.Model):
         self.description = description
 
     def __repr__(self):
-        return '<Unit Id: %r Name: %r Symbol: %r Description: %r>' % (self.id, self.name, self.symbol, self.description)
+        return '<Unit Id: {id} Name: {name} Symbol: {symbol} Description: {desc}>'.format(id=self.id, name=self.name, symbol=self.symbol, desc=self.description)
 
     @property
     def serialize(self):
