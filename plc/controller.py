@@ -284,10 +284,14 @@ class Controller(ControllerBase):
             if block.__getitem__(PLC_MESSAGE_FLAG):  # get the station status from db
                 block.set_pc_ready_flag(False)  # set PC ready flag to False
                 # body
-                if STATION_NUMBER not in block.export():
-                    logger.warning("PLC: %s, block: %s, has no %s, in block body: %s. Message (block) skipped." % (self.get_id(), block.get_db_number(), STATION_NUMBER, block.export()))
-                    block.set_pc_ready_flag(True)  # set PC ready flag back to true
-                    return
+                
+                for field in [STATION_ID, STATION_NUMBER, STATION_STATUS, SERIAL_NUMBER, PRODUCT_TYPE]:
+                    if field not in block.export():
+                        logger.warning("PLC: %s, block: %s, is missing field %s, in block body: %s. Message skipped." % (self.get_id(), block.get_db_number(), field, block.export()))
+                        block.set_plc_message_flag(False) # switch off PLC_Query bit
+                        block.set_pc_ready_flag(True)  # set PC ready flag back to true
+                        return
+
                 try:
                     data = block[PRODUCT_TYPE]
                     product_type = int(data)
@@ -312,6 +316,13 @@ class Controller(ControllerBase):
                 except ValueError, e:
                     logger.error("Data read error from PLC: {plc} DB: {db} Input: {data} Exception: {e}, TB: {tb}".format(plc=self, db=dbid, data=data, e=e, tb=traceback.format_exc()))
                     station_number = 0
+                try:
+                    data = block[STATION_STATUS]
+                    station_status_initial = int(data)
+                except ValueError, e:
+                    logger.error("Data read error from PLC: {plc} DB: {db} Input: {data} Exception: {e}, TB: {tb}".format(plc=self, db=dbid, data=data, e=e, tb=traceback.format_exc()))
+                    station_status_initial = 0
+
                 logger.debug("PLC: {plc}, DB: {db}, PT: {type}, SN: {serial}, trying to read status from database for station: {station}".format(plc=self.get_id(), db=block.get_db_number(), type=product_type, serial=serial_number, station=station_number))
                 station_status = self.database_engine.read_status(int(product_type), int(serial_number), int(station_number))
                 
@@ -321,8 +332,18 @@ class Controller(ControllerBase):
                     logger.warning("PLC: {plc}, DB: {db} wrong value for status, returning undefined. Exception: {e}".format(plc=self, db=block.get_db_number(), e=e))
                     status = STATION_STATUS_CODES[99]['result']
                 
+                
                 block.store_item(STATION_STATUS, station_status)
-                logger.info("PLC: {plc}, DB: {db}, PT: {type}, SN: {serial}, queried from SID: {station_id}, status of station ST: {station_number} taken from database is: {station_status} ({status})".format(plc=self.get_id(), db=block.get_db_number(), type=product_type, serial=serial_number, station_id=station_id, station_number=station_number, station_status=station_status, status=status))
+                sleep(0.1)  # 100ms sleep requested by Marcin Kusnierz @ 24-09-2015
+                # try to read data from PLC as test
+                try:
+                    data = block[STATION_STATUS]
+                    station_status_stored = int(data)
+                except ValueError, e:
+                    logger.error("Data read error from PLC: {plc} DB: {db} Input: {data} Exception: {e}, TB: {tb}".format(plc=self, db=dbid, data=data, e=e, tb=traceback.format_exc()))
+                    station_status_stored = 0
+ 
+                logger.info("PLC: {plc}, DB: {db}, PT: {type}, SN: {serial}, queried from SID: {station_id}, status of station ST: {station_number} taken from database is: {station_status} ({status}). Initial/Stored Status: {station_status_initial}/{station_status_stored} ".format(plc=self.get_id(), db=block.get_db_number(), type=product_type, serial=serial_number, station_id=station_id, station_number=station_number, station_status=station_status, status=status, station_status_initial=station_status_initial, station_status_stored=station_status_stored))
                 self.counter_status_message_read += 1
                 block.set_plc_message_flag(False)
                 block.set_pc_ready_flag(True)  # set pc_ready flag back to true
@@ -346,6 +367,7 @@ class Controller(ControllerBase):
                 for field in [STATION_ID, STATION_STATUS, SERIAL_NUMBER, PRODUCT_TYPE]:
                     if field not in block.export():
                         logger.warning("PLC: %s, block: %s, is missing field %s, in block body: %s. Message skipped." % (self.get_id(), block.get_db_number(), field, block.export()))
+                        block.set_plc_save_flag(False)
                         block.set_pc_ready_flag(True)  # set busy flag back to ready
                         return
                 try:
