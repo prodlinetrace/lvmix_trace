@@ -284,7 +284,7 @@ class Controller(ControllerBase):
             if block.__getitem__(PLC_MESSAGE_FLAG):  # get the station status from db
                 block.set_pc_ready_flag(False)  # set PC ready flag to False
                 # body
-                
+
                 for field in [STATION_ID, STATION_NUMBER, STATION_STATUS, SERIAL_NUMBER, PRODUCT_TYPE]:
                     if field not in block.export():
                         logger.warning("PLC: %s, block: %s, is missing field %s, in block body: %s. Message skipped." % (self.get_id(), block.get_db_number(), field, block.export()))
@@ -325,14 +325,13 @@ class Controller(ControllerBase):
 
                 logger.debug("PLC: {plc}, DB: {db}, PT: {type}, SN: {serial}, trying to read status from database for station: {station}".format(plc=self.get_id(), db=block.get_db_number(), type=product_type, serial=serial_number, station=station_number))
                 station_status = self.database_engine.read_status(int(product_type), int(serial_number), int(station_number))
-                
+
                 try:
                     status = STATION_STATUS_CODES[station_status]['result']
                 except ValueError, e:
                     logger.warning("PLC: {plc}, DB: {db} wrong value for status, returning undefined. Exception: {e}".format(plc=self, db=block.get_db_number(), e=e))
                     status = STATION_STATUS_CODES[99]['result']
-                
-                
+
                 block.store_item(STATION_STATUS, station_status)
                 sleep(0.1)  # 100ms sleep requested by Marcin Kusnierz @ 24-09-2015
                 # try to read data from PLC as test
@@ -342,8 +341,11 @@ class Controller(ControllerBase):
                 except ValueError, e:
                     logger.error("Data read error from PLC: {plc} DB: {db} Input: {data} Exception: {e}, TB: {tb}".format(plc=self, db=dbid, data=data, e=e, tb=traceback.format_exc()))
                     station_status_stored = 0
- 
+
+                if station_status != station_status_stored:
+                    logger.error("PLC: {plc}, DB: {db}, PT: {type}, SN: {serial}, SID: {station_id}, status of station ST: {station_number} from database {station_status} if different than one stored on PLC {station_status_stored} (save on PLC failed.)".format(plc=self.get_id(), db=block.get_db_number(), type=product_type, serial=serial_number, station_id=station_id, station_number=station_number, station_status=station_status, status=status, station_status_initial=station_status_initial, station_status_stored=station_status_stored))
                 logger.info("PLC: {plc}, DB: {db}, PT: {type}, SN: {serial}, queried from SID: {station_id}, status of station ST: {station_number} taken from database is: {station_status} ({status}). Initial/Stored Status: {station_status_initial}/{station_status_stored} ".format(plc=self.get_id(), db=block.get_db_number(), type=product_type, serial=serial_number, station_id=station_id, station_number=station_number, station_status=station_status, status=status, station_status_initial=station_status_initial, station_status_stored=station_status_stored))
+
                 self.counter_status_message_read += 1
                 block.set_plc_message_flag(False)
                 block.set_pc_ready_flag(True)  # set pc_ready flag back to true
@@ -441,7 +443,7 @@ class Controller(ControllerBase):
         if TRC_TMPL_COUNT in block.export():
             template_count = block.__getitem__(TRC_TMPL_COUNT)
             logger.debug("PLC: %s db block: %r tracebility template count: %r" % (self.get_id(), dbid, template_count))
-      
+
             for template_number in range(0, template_count):
                 pc_save_flag_name = TRC_TMPL_SAVE_FLAG.replace("__no__", str(template_number))
                 operation_status_name = "body.trc.tmpl.__no__.operation_status".replace("__no__", str(template_number))
@@ -499,7 +501,7 @@ class Controller(ControllerBase):
                     except ValueError, e:
                         logger.warning("PLC: {plc}, block: {db} wrong value for status, returning undefined. Exception: {e}".format(plc=self, db=block.get_db_number(), e=e))
                         year_number = 0
-                    
+
                     # read specific data
                     operation_status = block.__getitem__(operation_status_name)
                     operation_type = block.__getitem__(operation_type_name)
