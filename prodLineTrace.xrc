@@ -106,6 +106,48 @@
                                     <object class="sizeritem">
                                         <flag>wxALIGN_LEFT|wxALIGN_TOP|wxALL</flag>
                                         <border>5</border>
+                                        <object class="wxStaticText" name="labelMainPollSleep">
+                                            <label>Poll Sleep</label>
+                                        </object>
+                                    </object>
+                                    <object class="sizeritem">
+                                        <flag>wxALIGN_LEFT|wxALIGN_TOP|wxALL</flag>
+                                        <border>5</border>
+                                        <object class="wxStaticText" name="valueMainPollSleep">
+                                            <label>Poll Sleep</label>
+                                        </object>
+                                    </object>
+                                    <object class="sizeritem">
+                                        <flag>wxALIGN_LEFT|wxALIGN_TOP|wxALL</flag>
+                                        <border>5</border>
+                                        <object class="wxStaticText" name="labelMainPollDBSleep">
+                                            <label>Poll DB Sleep</label>
+                                        </object>
+                                    </object>
+                                    <object class="sizeritem">
+                                        <flag>wxALIGN_LEFT|wxALIGN_TOP|wxALL</flag>
+                                        <border>5</border>
+                                        <object class="wxStaticText" name="valueMainPollDBSleep">
+                                            <label>Poll DB Sleep</label>
+                                        </object>
+                                    </object>
+                                    <object class="sizeritem">
+                                        <flag>wxALIGN_LEFT|wxALIGN_TOP|wxALL</flag>
+                                        <border>5</border>
+                                        <object class="wxStaticText" name="labelMainPCReadyResetOnPoll">
+                                            <label>Reset PC Ready Flag On Poll</label>
+                                        </object>
+                                    </object>
+                                    <object class="sizeritem">
+                                        <flag>wxALIGN_LEFT|wxALIGN_TOP|wxALL</flag>
+                                        <border>5</border>
+                                        <object class="wxStaticText" name="valueMainPCReadyResetOnPoll">
+                                            <label>Reset PC Ready Flag On Poll</label>
+                                        </object>
+                                    </object>
+                                    <object class="sizeritem">
+                                        <flag>wxALIGN_LEFT|wxALIGN_TOP|wxALL</flag>
+                                        <border>5</border>
                                         <object class="wxStaticText" name="labelMainVersion">
                                             <label>ProdLineTrace Version</label>
                                         </object>

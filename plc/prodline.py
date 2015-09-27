@@ -34,6 +34,9 @@ class ProdLineBase(object):
         self.__PLCClass = None
         self._baseurl = 'http://localhost:5000/'
         self._popups  = True
+        self._pc_ready_flag_on_poll = False
+        self._pollsleep = 0.1
+        self._polldbsleep = 0.01
 
         if self._opts.quiet:
             # log errors to console
@@ -70,6 +73,27 @@ class ProdLineBase(object):
     def set_baseurl(self, baseurl):
         logger.info("Baseurl set to: {baseurl}".format(baseurl=baseurl))
         self._baseurl = baseurl
+
+    def get_pollsleep(self):
+        return self._pollsleep
+
+    def set_pollsleep(self, sleep):
+        logger.info("pollsleep set to: {sleep}".format(sleep=sleep))
+        self._pollsleep = sleep
+
+    def get_polldbsleep(self):
+        return self._polldbsleep
+
+    def set_polldbsleep(self, sleep):
+        logger.info("polldbsleep set to: {sleep}".format(sleep=sleep))
+        self._polldbsleep = sleep
+
+    def get_pc_ready_flag_on_poll(self):
+        return self._pc_ready_flag_on_poll
+
+    def set_pc_ready_flag_on_poll(self, flag):
+        logger.info("pc_ready_flag_on_poll set to: {flag}".format(flag=flag))
+        self._pc_ready_flag_on_poll = flag
 
     def get_config(self):
         return self._config
@@ -311,8 +335,13 @@ class ProdLine(ProdLineBase):
 
     def runController(self, ctrl):
         logger.info("Started Processing Thread for PLC: {plc}, {dbs}".format(plc=ctrl.id, dbs=ctrl.get_active_datablock_list()))
+        # set some initial values
         threading.currentThread().setName(ctrl.get_name())
         ctrl.set_baseurl(self.get_baseurl())  # set baseurl per controller
+        ctrl.set_pollsleep(self.get_pollsleep())
+        ctrl.set_polldbsleep(self.get_polldbsleep())
+        ctrl.set_pc_ready_flag_on_poll(self.get_pc_ready_flag_on_poll())
+        #
         while True:
             # blink heartbeat
             try:
@@ -321,13 +350,12 @@ class ProdLine(ProdLineBase):
                 logger.critical("Connection to {plc} lost. Trying to re-establish connection.".format(plc=ctrl))
                 ctrl.connect()
 
-            # poll all db
-            for dbid in ctrl.get_active_datablock_list():
-                try:
-                    ctrl.poll_db(dbid)
-                except snap7.snap7exceptions.Snap7Exception:
-                    logger.critical("Connection to {plc} lost. Trying to re-establish connection.".format(plc=ctrl))
-                    ctrl.connect()
+            # poll controller
+            try:
+                ctrl.poll()
+            except snap7.snap7exceptions.Snap7Exception:
+                logger.critical("Connection to {plc} lost. Trying to re-establish connection.".format(plc=ctrl))
+                ctrl.connect()
 
             # sync time
             try:

@@ -39,6 +39,9 @@ class MainWindow(wx.App):
         self.valueMainUptime = xrc.XRCCTRL(frame, "valueMainUptime")
         self.valueMainDBSize = xrc.XRCCTRL(frame, "valueMainDBSize")
         self.valueMainBaseUrl = xrc.XRCCTRL(frame, "valueMainBaseUrl")
+        self.valueMainPollSleep = xrc.XRCCTRL(frame, "valueMainPollSleep")
+        self.valueMainPollDBSleep = xrc.XRCCTRL(frame, "valueMainPollDBSleep")
+        self.valueMainPCReadyResetOnPoll = xrc.XRCCTRL(frame, "valueMainPCReadyResetOnPoll")
 
         self.valueMainControllerCount = xrc.XRCCTRL(frame, "valueMainControllerCount")
         self.valueMainMsgRead = xrc.XRCCTRL(frame, "valueMainMsgRead")
@@ -65,16 +68,27 @@ class MainWindow(wx.App):
         self.logfile = self._config['main']['logfile'][0]
         self.errlog = helpers.parse_config(_opts.config)['main']['errorlog'][0]
         self.starttime = datetime.datetime.now()
-        self.baseUrl = self._config['main']['baseurl'][0]
+        self.baseUrl = 'http://localhost:5000/'
+        if 'baseurl' in self._config['main']:
+            self.baseUrl = self._config['main']['baseurl'][0]
+        self.pollSleep = self.pollDbSleep = self.pcReadyFlagOnPoll = 0  # set to zero by default
+        if 'poll_sleep' in self._config['main']:
+            self.pollSleep = self._config['main']['poll_sleep'][0]
+        if 'poll_db_sleep' in self._config['main']:
+            self.pollDbSleep = self._config['main']['poll_db_sleep'][0]
+        if 'pc_ready_flag_on_poll' in self._config['main']:
+            self.pcReadyFlagOnPoll = self._config['main']['pc_ready_flag_on_poll'][0]
 
         # bind verbosity choice box with selector function
         self.Bind(wx.EVT_CHOICE, self.OnVerbositySelect, self.valueMainVerbosity)
 
         # bind popups selectbox with selector function
         self.Bind(wx.EVT_CHOICE, self.OnPopupSelect, self.valueMainPopups)
-        self.application.set_baseurl(self.baseUrl)
         self.application.set_popups(True)
-
+        self.application.set_baseurl(self.baseUrl)
+        self.application.set_pollsleep(self.pollSleep)
+        self.application.set_polldbsleep(self.pollDbSleep)
+        self.application.set_pc_ready_flag_on_poll(self.pcReadyFlagOnPoll)
         return True
 
     def OnVerbositySelect(self, event):
@@ -106,6 +120,9 @@ class MainWindow(wx.App):
         self.valueMainVersion.SetLabelText(version)
         self.valueMainDBModelVersion.SetLabelText(dbmodel_version)
         self.valueMainBaseUrl.SetLabelText(str(self.baseUrl))
+        self.valueMainPollSleep.SetLabelText(str(self.pollSleep))
+        self.valueMainPollDBSleep.SetLabelText(str(self.pollDbSleep))
+        self.valueMainPCReadyResetOnPoll.SetLabelText(str(self.pcReadyFlagOnPoll))
 
         while True:
             self.valueMainLogFile.SetLabelText(file_name_with_size(self.logfile))
@@ -171,7 +188,6 @@ class MainWindow(wx.App):
             logger.critical("GUI Thread failed with following exception: {exc}".format(exc=e))
             logger.critical("Traceback: {tb}".format(tb=traceback.format_exc()))
 
-
     def OnClose(self):
         self.Destroy()
         self.Close(True)
@@ -208,4 +224,3 @@ if __name__ == "__main__":
                 logger.error("Traceback: {tb}".format(tb=traceback.format_exc()))
 
     #logger.info("final thread active count {count}".format(count=threading.active_count()))
-

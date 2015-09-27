@@ -37,6 +37,9 @@ class ControllerBase(object):
         self.counter_show_product_details = 0
         self._baseurl = 'http://localhosts/app'
         self._popups = True
+        self._pc_ready_flag_on_poll = False
+        self._pollsleep = 0.1
+        self._polldbsleep = 0.01
 
     def _init_database(self, dbfile='data/prodline.db'):
         self.database_engine = Database("plc_{plc}".format(plc=self.get_name()))
@@ -52,6 +55,8 @@ class ControllerBase(object):
     @property
     def active_dbs(self):
         # we should list configuration file activated data blocks only
+        # WARNING: this function reads value online from PLC and causes some network traffic that may cause connection errors.
+        # please consider to use get_active_datablock_list() instead that is offline equivalent.
         ret = {}
         for k, v in DataBlocks(self).items():
             if k in self._active_data_blocks:
@@ -122,6 +127,7 @@ class ControllerBase(object):
 
             if self.client.get_connected():
                 logger.info("PLC: {plc} connected to: {ip}:{port}".format(plc=self.id, ip=self.__ip, port=self.__port))
+                self.reset_pc_ready_flags()
             else:
                 logger.error("PLC: {plc} connection to: {ip}:{port} Failed. Attempt {attempt}/{total}".format(plc=self.id, ip=self.__ip, port=self.__port, attempt=attempt, total=self._reconnect))
                 self.connect(attempt)
@@ -132,9 +138,10 @@ class ControllerBase(object):
         if self.database_engine is not None:
             self.database_engine.disconnect()
         self.client.disconnect()
-        self.cancel_pc_busy_flags()
+        self.reset_pc_ready_flags()
 
-    def cancel_pc_busy_flags(self):
+    def reset_pc_ready_flags(self):
+        logger.info("PLC: {plc} resetting PC_Ready flags.")
         for _dbno in self.get_active_dbs():
             _block = self.get_db(_dbno)
             _block.set_pc_ready_flag(True)
@@ -235,6 +242,42 @@ class ControllerBase(object):
     def get_popups(self):
         return self._popups
 
+    def set_pollsleep(self, sleep=0):
+        try:
+            res = float(sleep)
+        except ValueError, e:
+            logging.error("PLC: {plc} Unable to set pollsleep value with '{val}' as input. Exception: {e}, TB: {tb}".format(plc=self.id, val=sleep, e=e, tb=traceback.format_exc()))
+            res = 0
+        logging.info("PLC: {plc} Setting pollsleep to: {val}".format(plc=self.id, val=res))
+        self._polldbsleep = res
+
+    def get_pollsleep(self):
+        return self._pollsleep
+
+    def set_polldbsleep(self, sleep=0):
+        try:
+            res = float(sleep)
+        except ValueError, e:
+            logging.error("PLC: {plc} Unable to set polldbsleep value with '{val}' as input. Exception: {e}, TB: {tb}".format(plc=self.id, val=sleep, e=e, tb=traceback.format_exc()))
+            res = 0
+        logging.info("PLC: {plc} Setting polldbsleep to: {val}".format(plc=self.id, val=res))
+        self._polldbsleep = res
+
+    def get_polldbsleep(self):
+        return self._polldbsleep
+
+    def set_pc_ready_flag_on_poll(self, val=True):
+        try:
+            res = int(val)
+        except ValueError, e:
+            logging.error("PLC: {plc} Unable to set pc_ready_flag_on_poll value with '{val}' as input. Exception: {e}, TB: {tb}".format(plc=self.id, val=val, e=e, tb=traceback.format_exc()))
+            res = 0
+        logging.info("PLC: {plc} Setting pc_ready_flag_on_poll to: {val}".format(plc=self.id, val=res))
+        self._pc_ready_flag_on_poll = bool(res)
+
+    def get_pc_ready_flag_on_poll(self):
+        return self._pc_ready_flag_on_poll
+
 
 class Controller(ControllerBase):
 
@@ -242,8 +285,10 @@ class Controller(ControllerBase):
         ControllerBase.__init__(self, ip, rack, slot, port, reconnect)
 
     def poll(self):
-        for dbid in self.get_active_dbs():
+        for dbid in self.get_active_datablock_list():
             self.poll_db(dbid)
+        # sleep for configurable amount of time.
+        sleep(self._pollsleep)
 
     def poll_db(self, dbid):
         """
@@ -251,11 +296,12 @@ class Controller(ControllerBase):
         It will take necessary actions if required.
         1. Remove missing blocks from plc
         2. db300 handling:
-        2.1. reset pc_ready to have clean start
+        2.1. reset pc_ready to have clean start (if set in configuration)
         2.2. Read station status from database and respond to status query message.
         2.3. Save station status to database.
         2.4. Open popup window with product details.
         3. Save operations from tracebility template blocks to database.
+        4. sleep for configurable amount of time.
         """
 
         # remove block from active list if not found.
@@ -268,13 +314,18 @@ class Controller(ControllerBase):
 
         # status exchange on db300 only
         if dbid == 300:
-            # reset pc_ready flag in case it get's accidentally changed.
-            block.set_pc_ready_flag(True)
+            if self.get_pc_ready_flag_on_poll():
+                # reset pc_ready flag in case it get's accidentally changed.
+                # unsafe - it may cause some race condition in special condition.
+                block.set_pc_ready_flag(True)
             self.read_status(dbid)
             self.save_status(dbid)
             self.show_product_details(dbid)
         else:
             self.save_operation(dbid)
+
+        # sleep for configurable amount of time.
+        sleep(self._polldbsleep)
 
     def read_status(self, dbid):
         block = self.get_db(dbid)
@@ -289,7 +340,7 @@ class Controller(ControllerBase):
 
                 for field in [STATION_ID, STATION_NUMBER, STATION_STATUS, SERIAL_NUMBER, PRODUCT_TYPE]:
                     if field not in block.export():
-                        logger.warning("PLC: {plc} DB: {db} is missing field {field} in block body: {body}. Message skipped.".format(plc=self.get_id(), db=block.get_db_number(), field=field, body=block.export()))
+                        logger.warning("PLC: {plc} DB: {db} is missing field {field} in block body: {body}. Message skipped. Switching off PLC_Query bit.".format(plc=self.get_id(), db=block.get_db_number(), field=field, body=block.export()))
                         block.set_plc_message_flag(False) # switch off PLC_Query bit
                         block.set_pc_ready_flag(True)  # set PC ready flag back to true
                         return
@@ -370,8 +421,7 @@ class Controller(ControllerBase):
                 # query controller for required fields...
                 for field in [STATION_ID, STATION_STATUS, SERIAL_NUMBER, PRODUCT_TYPE]:
                     if field not in block.export():
-                        logger.warning("PLC: {plc} DB: {db} is missing field {field} in block body: {body}. Message skipped.".format(plc=self.get_id(), db=block.get_db_number(), field=field, body=block.export()))
-
+                        logger.warning("PLC: {plc} DB: {db} is missing field {field} in block body: {body}. Message skipped. Switching off PLC_Save bit".format(plc=self.get_id(), db=block.get_db_number(), field=field, body=block.export()))
                         block.set_plc_save_flag(False)
                         block.set_pc_ready_flag(True)  # set busy flag back to ready
                         return
