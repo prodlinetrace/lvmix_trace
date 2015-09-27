@@ -27,7 +27,11 @@ class DataBlock(object):
             # db specification = db_number + controller * 10. DB 300 remains unchanged
             # ugly hack caused by Diko lazyness to make db specifications unique across whole production line.
             #logger.debug("Controller: %s reading db spec for: %s " % (self.controller.get_id(), self.db_name))
-            _block_spec = db_specs[self.controller.get_id()][self.db_name]
+            if self.db_name in db_specs[self.controller.get_id()]:
+                _block_spec = db_specs[self.controller.get_id()][self.db_name]
+            else:
+                logger.error("PLC: {plc} Data Block DB: {db} not configured in controller block definition. Returning empty spec.".format(plc=self.controller.get_id(), db=self.db_name))
+                _block_spec = ""
         else:
             _block_spec = _specification
         self._specification = snap7.util.parse_specification(_block_spec)

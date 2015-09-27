@@ -109,7 +109,7 @@ class ProdLineBase(object):
         for ctrl in self.__ctrl_list:
             logging.debug("Connecting PLC: {plc} ".format(plc=ctrl.id))
             ctrl.connect()
-            logger.info("PLC: {plc} has status: {status} ".format(plc=ctrl.id, status=ctrl.get_status()))
+            logger.debug("PLC: {plc} has status: {status} ".format(plc=ctrl.id, status=ctrl.get_status()))
             if ctrl.get_status():
                 self.controllers.append(ctrl)
                 logger.debug("PLC: {plc} Set as active.".format(plc=ctrl.get_id()))
@@ -334,14 +334,14 @@ class ProdLine(ProdLineBase):
         return True
 
     def runController(self, ctrl):
-        logger.info("Started Processing Thread for PLC: {plc}, {dbs}".format(plc=ctrl.id, dbs=ctrl.get_active_datablock_list()))
+        logger.info("PLC: {plc} Started Processing Thread for DBS: {dbs}".format(plc=ctrl.id, dbs=ctrl.get_active_datablock_list()))
         # set some initial values
         threading.currentThread().setName(ctrl.get_name())
         ctrl.set_baseurl(self.get_baseurl())  # set baseurl per controller
         ctrl.set_pollsleep(self.get_pollsleep())
         ctrl.set_polldbsleep(self.get_polldbsleep())
         ctrl.set_pc_ready_flag_on_poll(self.get_pc_ready_flag_on_poll())
-        #
+
         while True:
             # blink heartbeat
             try:

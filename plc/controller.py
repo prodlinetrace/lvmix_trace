@@ -127,6 +127,7 @@ class ControllerBase(object):
 
             if self.client.get_connected():
                 logger.info("PLC: {plc} connected to: {ip}:{port}".format(plc=self.id, ip=self.__ip, port=self.__port))
+                # clean pc_ready_flags
                 self.reset_pc_ready_flags()
             else:
                 logger.error("PLC: {plc} connection to: {ip}:{port} Failed. Attempt {attempt}/{total}".format(plc=self.id, ip=self.__ip, port=self.__port, attempt=attempt, total=self._reconnect))
@@ -141,9 +142,9 @@ class ControllerBase(object):
         self.reset_pc_ready_flags()
 
     def reset_pc_ready_flags(self):
-        logger.info("PLC: {plc} resetting PC_Ready flags.")
-        for _dbno in self.get_active_dbs():
-            _block = self.get_db(_dbno)
+        logger.info("PLC: {plc} resetting PC_Ready flags.".format(plc=self.id))
+        if 300 in self.get_active_datablock_list():
+            _block = self.get_db(300)
             _block.set_pc_ready_flag(True)
 
     def get_client(self):
@@ -246,9 +247,9 @@ class ControllerBase(object):
         try:
             res = float(sleep)
         except ValueError, e:
-            logging.error("PLC: {plc} Unable to set pollsleep value with '{val}' as input. Exception: {e}, TB: {tb}".format(plc=self.id, val=sleep, e=e, tb=traceback.format_exc()))
+            logger.error("PLC: {plc} Unable to set pollsleep value with '{val}' as input. Exception: {e}, TB: {tb}".format(plc=self.id, val=sleep, e=e, tb=traceback.format_exc()))
             res = 0
-        logging.info("PLC: {plc} Setting pollsleep to: {val}".format(plc=self.id, val=res))
+        logger.debug("PLC: {plc} Setting pollsleep to: {val}".format(plc=self.id, val=res))
         self._polldbsleep = res
 
     def get_pollsleep(self):
@@ -258,9 +259,9 @@ class ControllerBase(object):
         try:
             res = float(sleep)
         except ValueError, e:
-            logging.error("PLC: {plc} Unable to set polldbsleep value with '{val}' as input. Exception: {e}, TB: {tb}".format(plc=self.id, val=sleep, e=e, tb=traceback.format_exc()))
+            logger.error("PLC: {plc} Unable to set polldbsleep value with '{val}' as input. Exception: {e}, TB: {tb}".format(plc=self.id, val=sleep, e=e, tb=traceback.format_exc()))
             res = 0
-        logging.info("PLC: {plc} Setting polldbsleep to: {val}".format(plc=self.id, val=res))
+        logger.debug("PLC: {plc} Setting polldbsleep to: {val}".format(plc=self.id, val=res))
         self._polldbsleep = res
 
     def get_polldbsleep(self):
@@ -270,9 +271,9 @@ class ControllerBase(object):
         try:
             res = int(val)
         except ValueError, e:
-            logging.error("PLC: {plc} Unable to set pc_ready_flag_on_poll value with '{val}' as input. Exception: {e}, TB: {tb}".format(plc=self.id, val=val, e=e, tb=traceback.format_exc()))
+            logger.error("PLC: {plc} Unable to set pc_ready_flag_on_poll value with '{val}' as input. Exception: {e}, TB: {tb}".format(plc=self.id, val=val, e=e, tb=traceback.format_exc()))
             res = 0
-        logging.info("PLC: {plc} Setting pc_ready_flag_on_poll to: {val}".format(plc=self.id, val=res))
+        logger.debug("PLC: {plc} Setting pc_ready_flag_on_poll to: {val}".format(plc=self.id, val=res))
         self._pc_ready_flag_on_poll = bool(res)
 
     def get_pc_ready_flag_on_poll(self):

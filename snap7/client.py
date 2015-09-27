@@ -36,7 +36,7 @@ class Client(object):
         """
         create a SNAP7 client.
         """
-        logger.info("creating snap7 client")
+        logger.debug("creating snap7 client")
         self.library.Cli_Create.restype = c_void_p
         self.pointer = S7Object(self.library.Cli_Create())
 
@@ -44,7 +44,7 @@ class Client(object):
         """
         destroy a client.
         """
-        logger.info("destroying snap7 client")
+        logger.debug("destroying snap7 client")
         return self.library.Cli_Destroy(byref(self.pointer))
 
     def plc_stop(self):
@@ -85,7 +85,7 @@ class Client(object):
         :param rack: rack on server
         :param slot: slot on server.
         """
-        logger.info("connecting to %s:%s rack %s slot %s" % (address, tcpport,
+        logger.debug("connecting to %s:%s rack %s slot %s" % (address, tcpport,
                                                              rack, slot))
 
         self.set_param(snap7.snap7types.RemotePort, tcpport)
