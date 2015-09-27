@@ -3,7 +3,7 @@ import logging
 from plc.datablock import DataBlock
 from plc.custom_exceptions import UnknownDb
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger(__name__.ljust(12)[:12])
 
 
 class DataBlocks(object):

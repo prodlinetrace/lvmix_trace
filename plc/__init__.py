@@ -1,7 +1,7 @@
 """
 The PLC Python library.
 """
-__version__ = '0.1.10'
+__version__ = '0.1.11'
 AUTHOR = "Piotr Wilkosz"
 EMAIL = "Piotr.Wilkosz@gmail.com"
 NAME = "ProdLineTrace"
@@ -12,7 +12,7 @@ from constants import SQLALCHEMY_DATABASE_URI_PREFIX
 from flask import Flask
 from flask.ext.sqlalchemy import SQLAlchemy
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger(__package__.ljust(12)[:12])
 
 _opts, _args = parse_args()
 _config = {}
@@ -23,7 +23,7 @@ except Exception, e:
 
 db_connection_string = SQLALCHEMY_DATABASE_URI_PREFIX + _config['dbfile']
 
-logging.warn("Core application using SQLite db file: %s", _config['dbfile'])
+logging.warn("Core application using SQLite db file: {file}".format(file=_config['dbfile']))
 
 _app = Flask(__name__)
 _app.config['SQLALCHEMY_DATABASE_URI'] = db_connection_string

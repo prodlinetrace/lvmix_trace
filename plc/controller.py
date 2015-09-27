@@ -11,7 +11,7 @@ from time import sleep
 import webbrowser
 import traceback
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger(__name__.ljust(12)[:12])
 
 
 class ControllerBase(object):
@@ -39,7 +39,7 @@ class ControllerBase(object):
         self._popups = True
 
     def _init_database(self, dbfile='data/prodline.db'):
-        self.database_engine = Database()
+        self.database_engine = Database("plc_{plc}".format(plc=self.get_name()))
         logger.info("PLC: {plc} connected to SQLite @ {dbfile}. Status: {status}".format(plc=self.get_id(), dbfile=dbfile, status=self.database_engine.get_status()))
 
     def __repr__(self):
@@ -107,23 +107,23 @@ class ControllerBase(object):
             yield block
 
     def __str__(self):
-        return "PLC Controller Id: {id} Name: {name} @ {ip}:{port}" % (id=self.__id, name=self.__name, ip=self.__ip, port=self.__port)
+        return "PLC Controller Id: {id} Name: {name} @ {ip}:{port}".format(id=self.__id, name=self.__name, ip=self.__ip, port=self.__port)
 
     def connect(self, attempt=0):
         if attempt < self._reconnect:
             attempt += 1  # increment connection attempts
-            logger.debug("PLC: {plc} Trying to connect to server: {ip}:{port}. Attempt: {attempt}/{total}".format(plc=self.__id, ip=self.__ip, port=self.__port, attempt=attempt, total=self._reconnect))
+            logger.debug("PLC: {plc} Trying to connect to: {ip}:{port}. Attempt: {attempt}/{total}".format(plc=self.__id, ip=self.__ip, port=self.__port, attempt=attempt, total=self._reconnect))
             try:
                 self.client.connect(self.__ip, self.__rack, self.__slot, self.__port)
             except snap7.snap7exceptions.Snap7Exception:
-                logger.warning("PLC: {plc} connection to server: {ip}:{port} Failed. Attempt: {attempt}/{total}".format(plc=self.__id, ip=self.__ip, port=self.__port, attempt=attempt, total=self._reconnect))
+                logger.warning("PLC: {plc} connection to: {ip}:{port} Failed. Attempt: {attempt}/{total}".format(plc=self.__id, ip=self.__ip, port=self.__port, attempt=attempt, total=self._reconnect))
                 self.client.disconnect()
                 sleep(1)
 
             if self.client.get_connected():
-                logger.info("PLC: {plc} connected to server: {ip}:{port}".format(plc=self.id, ip=self.__ip, port=self.__port))
+                logger.info("PLC: {plc} connected to: {ip}:{port}".format(plc=self.id, ip=self.__ip, port=self.__port))
             else:
-                logger.error("PLC: {plc} connection to server: {ip}:{port} Failed. Attempt {attempt}/{total}".format(plc=self.id, ip=self.__ip, port=self.__port, attempt=attempt, total=self._reconnect))
+                logger.error("PLC: {plc} connection to: {ip}:{port} Failed. Attempt {attempt}/{total}".format(plc=self.id, ip=self.__ip, port=self.__port, attempt=attempt, total=self._reconnect))
                 self.connect(attempt)
                 return
 

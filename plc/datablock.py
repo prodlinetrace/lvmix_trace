@@ -4,7 +4,7 @@ from plc.db_layouts import db_specs
 import re
 from constants import PC_READY_FLAG, PLC_MESSAGE_FLAG, PLC_SAVE_FLAG, TRC_TMPL_COUNT, PC_OPEN_BROWSER_FLAG
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger(__name__.ljust(12)[:12])
 
 
 class DataBlock(object):
@@ -69,13 +69,13 @@ class DataBlock(object):
             assert key in self._specification
             index, _type = self._specification[key]
         except AssertionError, e:
-            logger.error("Controller: %s db:  %s unable to read key: %s" % (self.controller.get_id(), self.db_name, key))
-            logger.warning("Controller: %s db:  %s specification: %s" % (self.controller.get_id(), self.db_name, self._specification))
+            logger.error("PLC: {plc} DB: {db} unable to read key: {key}".format(plc=self.controller.get_id(), db=self.db_name, key=key))
+            logger.warning("PLC: {plc} DB: {db} specification: {spec}".format(plc=self.controller.get_id(), db=self.db_name, spec=self._specification))
             if TRC_TMPL_COUNT in self._specification:
                 template_count = self.__getitem__(TRC_TMPL_COUNT)
-                logger.warn("PLC: %s db block: %r tracebility template count: %r" % (self.controller.get_id(), self.db_name, template_count))
+                logger.warn("PLC: {plc} DB: {db} tracebility template count: {count}".format(plc=self.controller.get_id(), db=self.db_name, count=template_count))
             import traceback
-            logger.error("Controller: %s db:  %s Raise exception:" % (self.controller.get_id(), self.db_name))
+            logger.error("PLC: {plc} DB: {db} Raise exception: {exc}, TB: {tb}".format(plc=self.controller.get_id(), db=self.db_name, exc=e, tb=traceback.format_exc()))
             raise(e)
         return self.get_value(index, _type)
 
@@ -91,9 +91,9 @@ class DataBlock(object):
         return string
 
     def __str__(self):
-        string = """Data Block: #%d""" % (self.db_number)
+        string = """DataBlock: #{db}""".format(db=self.db_number)
         if self.controller is not None:
-            string += " of PLC Id: %s Name: %s Addr: %s:%s" % (self.get_controller().get_id(), self.get_controller().get_name(), self.get_controller().get_ip(), self.get_controller().get_port())
+            string += " of PLC: {plc}".format(plc=self.get_controller())
         return string
 
     def get_dict(self):
@@ -166,7 +166,8 @@ class DataBlock(object):
             try:
                 ret = snap7.util.set_string(_bytearray, byte_index, value, max_size)
             except ValueError, e:
-                logger.warning("Exception: %s, %s" % (e, e.__str__()))
+                import traceback
+                logger.warning("PLC: {plc} DB: {db} Unable to set string type. Exception: {exc}, TB: {tb}".format(plc=self.get_controller(), db=self.db_number, exc=e, tb=traceback.format_exc()))
                 return False
             return ret
 
@@ -331,7 +332,7 @@ class DataBlock(object):
         return self.set_flag(flag, value, check)
 
     def set_flag(self, flag, value, check=False):
-        logger.debug("PLC: %s block: %s flag '%s' set to: %s " % (self.controller.get_id(), self.get_db_number(), flag, value))
+        logger.debug("PLC: {plc} DB: {db} flag '{flag}' set to: {val}.".format(plc=self.controller.get_id(), db=self.get_db_number(), flag=flag, val=value))
         # set block value in memory
         self[flag] = value
         # write flag to PLC
@@ -340,4 +341,4 @@ class DataBlock(object):
             self.read_item(flag)
             block = self.get_parsed_data()
             actval = block.__getitem__(flag)
-            logger.debug("PLC: %s block: %s flag '%s' actual value is: %s " % (self.controller.get_id(), self.get_db_number(), flag, actval))
+            logger.debug("PLC: {plc} DB: {db} flag: '{flag}' actual value is: {val}.".format(plc=self.controller.get_id(), db=self.get_db_number(), flag=flag, val=actval))

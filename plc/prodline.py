@@ -9,7 +9,7 @@ import concurrent.futures
 import traceback
 from datetime import datetime
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger(__name__.ljust(12)[:12])
 
 
 class ProdLineBase(object):
@@ -22,12 +22,12 @@ class ProdLineBase(object):
         logging.root.setLevel(logging.INFO)
         logger = logging.getLogger(__name__)
         logger.setLevel(loglevel)
-        
+
         # init datetime.strptime so it is available in threads (http://www.mail-archive.com/python-list@python.org/msg248846.html)
         year = datetime.strptime("01","%y")
 
         # parse config file
-        logger.debug("using config file %s" % self._opts.config)
+        logger.info("Using config file {cfg}.".format(cfg=self._opts.config))
         self._config = parse_config(self._opts.config)
         _fh = logging.FileHandler(self._config['main']['logfile'][0])
         _ch = logging.StreamHandler()
@@ -83,19 +83,19 @@ class ProdLineBase(object):
     # start controller connections
     def connect_controllers(self):
         for ctrl in self.__ctrl_list:
-            logging.debug("Connecting controller: {plc} ".format(plc=ctrl))
+            logging.debug("Connecting PLC: {plc} ".format(plc=ctrl.id))
             ctrl.connect()
-            logger.info("Controller: {plc} has status: {status} ".format(plc=ctrl, status=ctrl.get_status()))
+            logger.info("PLC: {plc} has status: {status} ".format(plc=ctrl.id, status=ctrl.get_status()))
             if ctrl.get_status():
                 self.controllers.append(ctrl)
-                logger.debug("Controller id: %s with name: %s. Added to the active ones." % (ctrl.get_id(), ctrl.get_name()))
+                logger.debug("PLC: {plc} Set as active.".format(plc=ctrl.get_id()))
             else:
-                logger.warning("Unable to connect controller id: %s with name: %s. Skipping." % (ctrl.get_id(), ctrl.get_name()))
+                logger.warning("Unable connect to PLC: {plc}. Skipping.".format(plc=ctrl))
 
     # close controller connections
     def disconnect_controllers(self):
         for ctrl in self.controllers:
-            logger.debug("Controller id: %s ip: %s port: %s. Disconnecting." % (ctrl.get_id(), ctrl.get_ip(), ctrl.get_port()))
+            logger.debug("PLC: {plc} disconnecting.".format(plc=ctrl))
             ctrl.disconnect()
 
     def pc_heartbeat(self):
@@ -103,7 +103,7 @@ class ProdLineBase(object):
             try:
                 c.blink_pc_heartbeat()
             except snap7.snap7exceptions.Snap7Exception:
-                logging.critical("Connection to %s lost. Trying to re-establish connection." % c)
+                logging.critical("Connection to PLC: {plc} lost. Trying to re-establish connection.".format(plc=c))
                 c.connect()
 
     def sync_controllers_time(self):
@@ -115,15 +115,15 @@ class ProdLineBase(object):
             try:
                 c.sync_time_if_needed()
             except snap7.snap7exceptions.Snap7Exception:
-                logging.critical("Connection to %s lost. Trying to re-establish connection." % c)
+                logging.critical("Connection to PLC: {plc} lost. Trying to re-establish connection.".format(plc=c))
                 c.connect()
 
     def init_controllers(self):
         if 'main' not in self._config:
-            logger.warning("unable to find section main in configuration")
+            logger.warning("unable to find section main in configuration. File: {cfg}".format(cfg=self._opts.config))
 
         if 'controllers' not in self._config['main']:
-            logger.warning("unable to find section controllers in configuration main")
+            logger.warning("unable to find section controllers in configuration main. File: {cfg}".format(cfg=self._opts.config))
 
         self.__ctrl_list = []
 
@@ -140,19 +140,19 @@ class ProdLineBase(object):
                     dbid = int(self._config[cblock]['id'][0])
                     datablocks.append(dbid)
                 else:
-                    logger.error("Controller: %s is configured to use block: %s but this block is missing from configuration file. " % (ctrl, cblock))
+                    logger.error("PLC: {plc} is configured to use DB: {db} but this DB is missing in configuration file (not defined).".format(plc=ctrl.id, db=cblock))
 
             if self._config[ctrl]['status'][0] != '1':
-                logger.warning("Controller: %s (id: %s) is in status %s. Skipped" % (ctrl, self._config[ctrl]['id'], self._config[ctrl]['status']))
+                logger.warning("PLC: {plc} is in status: {status} (in configuration file). Skipped.".format(plc=ctrl, status=self._config[ctrl]['status']))
                 continue
             c = self.__PLCClass(ip, rack, slot, port)
             c.set_name(name)
             c.set_id(iden)
-            logger.debug("Controller: %s (id: %s) configuring database engine connectivity" % (ctrl, self._config[ctrl]['id']))
+            logger.debug("PLC: {plc} configuring database engine connectivity".format(plc=ctrl))
             c._init_database(dbfile=self.get_db_file())
-            logger.debug("Controller: %s (id: %s) set active data blocks to %s" % (ctrl, self._config[ctrl]['id'], str(datablocks)))
+            logger.debug("PLC: {plc} set active data blocks to: {dbs}".format(plc=ctrl, dbs=str(datablocks)))
             c.set_active_datablock_list(datablocks)
-            logger.debug("Controller: %s (id: %s) configured" % (ctrl, self._config[ctrl]['id']))
+            logger.debug("PLC: {plc} is configured now.".format(plc=ctrl))
 
             self.__ctrl_list.append(c)
         return True
@@ -162,7 +162,7 @@ class ProdLine(ProdLineBase):
 
     def __init__(self, argv, loglevel=logging.INFO):
         ProdLineBase.__init__(self, argv, loglevel)
-        self.database = Database()
+        self.database = Database(self.__class__.__name__)
         from plc.controller import Controller
         self.set_controller_class(Controller)
 
@@ -208,22 +208,21 @@ class ProdLine(ProdLineBase):
                 dbid = int(self._config[msg]['id'][0])
                 message = ctrl.getParsedDb(dbid)
                 timestamp = "%.2x-%.2x-%.2x %.2x:%.2x:%.2x.%.4x" % (message.__getitem__('head.time.year'), message.__getitem__('head.time.month'), message.__getitem__('head.time.day'), message.__getitem__('head.time.hour'), message.__getitem__('head.time.minute'), message.__getitem__('head.time.second'), message.__getitem__('head.time.msecond'))
-                logger.info("PLC: %s message: %s has timestamp: %s" % (ctrl.get_id(), dbid, timestamp))
+                logger.info("PLC: {plc} DB: {db} has timestamp: {timestamp}".format(plc=ctrl.id, db=dbid, timestamp=timestamp))
 
     def test_time_get(self):
         for ctrl in self.controllers:
-            logger.info("PLC: %s system time: %s" % (ctrl, ctrl.get_time()))
+            logger.info("PLC: {plc} system time: {time}".format(plc=ctrl, time=ctrl.get_time()))
 
     def test_time_set(self):
-        from datetime import datetime
         dtime = datetime(2015, 04, 01, 22, 12, 13)
         for ctrl in self.controllers:
-            logger.info("PLC: %s set system time to: %s" % (ctrl, dtime))
+            logger.info("PLC: {plc} set system time to: {dtime}".format(plc=ctrl, dtime=dtime))
             ctrl.set_time(dtime)
 
     def test_time_sync(self):
         for ctrl in self.controllers:
-            logger.info("PLC: %s Sync system time with PC" % ctrl)
+            logger.info("PLC: {plc} Sync system time with PC".format(plc=ctrl))
             ctrl.sync_time()
 
     def test_time(self):
@@ -245,7 +244,7 @@ class ProdLine(ProdLineBase):
                 try:
                     ctrl.poll_db(dbid)
                 except snap7.snap7exceptions.Snap7Exception:
-                    logging.critical("Connection to %s lost. Trying to re-establish connection." % ctrl)
+                    logging.critical("Connection to {plc} lost. Trying to re-establish connection.".format(plc=ctrl))
                     ctrl.connect()
 
     def pollOperations(self):
@@ -256,7 +255,7 @@ class ProdLine(ProdLineBase):
                 try:
                     ctrl.poll_db(dbid)
                 except snap7.snap7exceptions.Snap7Exception:
-                    logging.critical("Connection to %s lost. Trying to re-establish connection." % ctrl)
+                    logging.critical("Connection to {plc} lost. Trying to re-establish connection.".format(plc=ctrl))
                     ctrl.connect()
 
     def run(self, times=10):
@@ -264,7 +263,7 @@ class ProdLine(ProdLineBase):
             runs main loop of the class.
             @param times -  defines how many poll loops should be executed. (0 for infinity)
         """
-        logger.info("Polling for %d[s] times" % (times))
+        logger.info("Polling for {times} times (zero means infinity)".format(times=times))
         i = 0
         while i < times or times == 0:
             self.poll()
@@ -311,7 +310,7 @@ class ProdLine(ProdLineBase):
         return True
 
     def runController(self, ctrl):
-        logging.info("Started Controller Processing Thread: {c}, {dbs}".format(c=ctrl, dbs=ctrl.get_active_datablock_list()))
+        logger.info("Started Processing Thread for PLC: {plc}, {dbs}".format(plc=ctrl.id, dbs=ctrl.get_active_datablock_list()))
         threading.currentThread().setName(ctrl.get_name())
         ctrl.set_baseurl(self.get_baseurl())  # set baseurl per controller
         while True:
@@ -319,7 +318,7 @@ class ProdLine(ProdLineBase):
             try:
                 ctrl.blink_pc_heartbeat()
             except snap7.snap7exceptions.Snap7Exception:
-                logger.critical("Connection to %s lost. Trying to re-establish connection." % ctrl)
+                logger.critical("Connection to {plc} lost. Trying to re-establish connection.".format(plc=ctrl))
                 ctrl.connect()
 
             # poll all db
@@ -327,14 +326,14 @@ class ProdLine(ProdLineBase):
                 try:
                     ctrl.poll_db(dbid)
                 except snap7.snap7exceptions.Snap7Exception:
-                    logger.critical("Connection to %s lost. Trying to re-establish connection." % ctrl)
+                    logger.critical("Connection to {plc} lost. Trying to re-establish connection.".format(plc=ctrl))
                     ctrl.connect()
 
             # sync time
             try:
                 ctrl.sync_time_if_needed()
             except snap7.snap7exceptions.Snap7Exception:
-                logger.critical("Connection to %s lost. Trying to re-establish connection." % ctrl)
+                logger.critical("Connection to {plc} lost. Trying to re-establish connection.".format(plc=ctrl))
                 ctrl.connect()
 
             # get configuration update
@@ -342,7 +341,7 @@ class ProdLine(ProdLineBase):
                 ctrl.set_popups(self.get_popups())
                 # logging.debug("{plc} baseurl: {baseurl} popups: {popups}".format(plc=ctrl, popups=ctrl.get_popups(), baseurl=ctrl.get_baseurl()))
             except snap7.snap7exceptions.Snap7Exception:
-                logger.critical("Connection to %s lost. Trying to re-establish connection." % ctrl)
+                logger.critical("Connection to {plc} lost. Trying to re-establish connection.".format(plc=ctrl))
                 ctrl.connect()
 
         return True
@@ -361,8 +360,9 @@ class ProdLine(ProdLineBase):
                     data = future.result()
                 except Exception as exc:
                     tb = traceback.format_exc()
-                    logger.error('Thread %r generated an exception: %s, %s' % (future, exc, tb))
+                    logger.error('Thread {thread} generated an exception: {exc}, {tb}'.format(thread=future, exc=exc, tb=tb))
                 else:
-                    logger.error('%r' % (data))
+                    logger.error("{err}".format(err=data))
 
         self.disconnect_controllers()
+        logger.critical("Something went wrong. Main loop just finished. No controllers started/configured?")

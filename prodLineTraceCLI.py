@@ -2,10 +2,11 @@
 import logging
 import sys
 from plc.prodline import ProdLine
+logger = logging.getLogger(__name__.ljust(12)[:12])
 
 
 def main():
-    logging.info("running main app")
+    logger.info("Starting main app")
     # sys.argv.append("-v")
     app = ProdLine(sys.argv)
     app.main()

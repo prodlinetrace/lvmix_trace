@@ -5,7 +5,7 @@ import sys
 import os
 import logging
 from constants import PC_READY_FLAG
-logger = logging.getLogger(__name__)
+logger = logging.getLogger(__name__.ljust(12)[:12])
 
 
 def hex_dump(block):

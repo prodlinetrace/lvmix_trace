@@ -15,7 +15,7 @@ from plc.db_models import __version__ as dbmodel_version
 from plc.prodline import ProdLine
 from plc.util import file_name_with_size
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger(__name__.ljust(12)[:12])
 
 
 class MainWindow(wx.App):
@@ -79,7 +79,7 @@ class MainWindow(wx.App):
 
     def OnVerbositySelect(self, event):
         level = self.valueMainVerbosity.GetStringSelection()
-        logger.info("Changing log level to: %s" % level)
+        logger.info("Changing log level to: {level}".format(level=level))
         logger.root.setLevel(level)
         logging.root.setLevel(level)
 
@@ -88,7 +88,7 @@ class MainWindow(wx.App):
         popup = False
         if _popup == "Yes":
             popup = True
-        logger.info("Changing Product Details Popup to: %r" % popup)
+        logger.info("Changing Product Details Popup to: {popup}".format(popup=popup))
         self.application.set_popups(popup)
 
     def updateLogWindow(self):
@@ -141,9 +141,8 @@ class MainWindow(wx.App):
         try:
             self.application.main()
         except Exception, e:
-            logger.critical("exception %r" % e)
-            tb = traceback.format_exc()
-            logger.critical("Traceback: %s" % tb)
+            logger.critical("Exception: {exc}".format(exc=e))
+            logger.critical("Traceback: {tb}".format(tb=traceback.format_exc()))
 
     def makeControllerBox(self, name, adress):
         pnl = wx.Panel(self)
@@ -163,15 +162,14 @@ class MainWindow(wx.App):
         @param delayedResult:  value from worker thread
         """
 
-        logger.critical("GUI Thread failed: ID: %r JID: %r" % (repr(str(delayedResult)), delayedResult.getJobID()))
+        logger.critical("GUI Thread failed: ID: {id} JID: {jid}".format(id=repr(str(delayedResult)), jid=delayedResult.getJobID()))
         # log real exception
         try:
-            e = delayedResult.get()
-            logger.critical("exception %r" % e)
+            result = delayedResult.get()
+            logger.critical("Unexpected result. One of the threads just returned with result: {result}".format(result=result))
         except Exception, e:
-            tb = traceback.extract_stack()
-            logger.critical( "Traceback: %r" % tb)
-            logger.critical("GUI Thread failed with following exception: %r" % e.__str__())
+            logger.critical("GUI Thread failed with following exception: {exc}".format(exc=e))
+            logger.critical("Traceback: {tb}".format(tb=traceback.format_exc()))
 
 
     def OnClose(self):
@@ -206,6 +204,8 @@ if __name__ == "__main__":
                 if thread.getName() != 'MainThread':
                     thread.join()
             except Exception, e:
-                logger.error(str(thread.getName()) + ' could not be terminated ' + e.__str__())
-    #logger.info("final thread active count %r"% threading.active_count())
+                logger.error("Thread: {thread} could not be terminated. Exception: {exc} ".format(thread=str(thread.getName()), exc=e.__str__()))
+                logger.error("Traceback: {tb}".format(tb=traceback.format_exc()))
+
+    #logger.info("final thread active count {count}".format(count=threading.active_count()))
 

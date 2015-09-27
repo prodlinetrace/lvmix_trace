@@ -4,13 +4,14 @@ from plc.util import get_product_id
 from datetime import datetime
 import sqlalchemy
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger(__name__.ljust(12)[:12])
 
 
 class Database(object):
 
-    def __init__(self):
+    def __init__(self, name="DB connection"):
         # force foreign keys constraints. to check the data integrity.
+        self.name = name
         @sqlalchemy.event.listens_for(db.engine, "connect")
         def set_sqlite_pragma(dbapi_connection, connection_record):
             cursor = dbapi_connection.cursor()
@@ -25,10 +26,10 @@ class Database(object):
         station = int(station)
         res = Status.query.filter_by(product_id=product_id).filter_by(station_id=station).all()
         if len(res) == 0:
-            logger.warn("record for PT: %s SN: %s ST: %d not found - returning undefined" % (product_type, serial_number, station))
+            logger.warn("CON: {dbcon} PT: {product_type} SN: {serial_number} ST: {station} record not found in database - returning undefined".format(dbcon=self.name, product_type=product_type, serial_number=serial_number, station=station))
             return 0  # Wabco statuses are not used anymore. Current statuses: (0 undefined, 1 OK, 2 NOK)
         ret = res[-1].status
-        logger.info("record for PT: %s SN: %s ST: %d has status: %s" % (product_type, serial_number, station, ret))
+        logger.info("CON: {dbcon} PT: {product_type} SN: {serial_number} ST: {station} record has status: {status}".format(dbcon=self.name, product_type=product_type, serial_number=serial_number, station=station, status=ret))
         return ret
 
     def write_status(self, product_type, serial_number, station, status, week_number=48, year_number=15, date_time=datetime.now()):
@@ -40,7 +41,7 @@ class Database(object):
         week_number = int(week_number)
         year_number = int(year_number)
         date_time = str(date_time)
-        logger.debug("saving record for PT: %s SN: %s ST: %d STATUS: %d  PW:%s PY: %s DT: %s" % (product_type, serial_number, station, status, week_number, year_number, date_time))
+        logger.info("CON: {dbcon} PT: {product_type} SN: {serial_number} ST: {station} STATUS: {status} WEEK: {week} YEAR: {year} DT: {date_time}. Saving status record.".format(dbcon=self.name, product_type=product_type, serial_number=serial_number, station=station, status=status, week=week_number, year=year_number, date_time=date_time))
 
         self.add_product_if_required(product_type, serial_number, week_number, year_number)
         self.add_station_if_required(station)
@@ -84,15 +85,15 @@ class Database(object):
 
         try:
             new_operation = Operation(product_id, station_id, operation_status, operation_type, date_time, result_1, result_1_max, result_1_min, result_1_status, result_2, result_2_max, result_2_min, result_2_status, result_3, result_3_max, result_3_min, result_3_status)
-            logger.info("Adding new Operation to database: {operation}".format(operation=new_operation))
             db.session.add(new_operation)
             try:
                 db.session.commit()
             except sqlalchemy.exc.IntegrityError, e:
-                logger.error("%s : %s " % (repr(e), e.__str__()))
+                logger.error("CON: {dbcon} {rep} : {err}".format(dbcon=self.name, rep=repr(e), err=e.__str__()))
+            logger.info("CON: {dbcon} Adding new Operation to database: {operation}".format(dbcon=self.name, operation=new_operation))
 
         except sqlalchemy.exc.OperationalError, e:
-            logger.error("Database: %s is locked. Error: %s" % (db.get_app().config['SQLALCHEMY_DATABASE_URI'], e.__str__()))
+            logger.error("CON: {dbcon} Database: {dbfile} is locked. Error: {err}".format(dbcon=self.name, dbfile=db.get_app().config['SQLALCHEMY_DATABASE_URI'], err=e.__str__()))
             return False
         return True
 
@@ -105,15 +106,15 @@ class Database(object):
 
         try:
             new_status = Status(status, product, station, date_time)
-            logger.info("Adding new Status to database: {status}".format(status=new_status))
             db.session.add(new_status)
             try:
                 db.session.commit()
             except sqlalchemy.exc.IntegrityError, e:
-                logger.error("%s : %s " % (repr(e), e.__str__()))
+                logger.error("CON: {dbcon} {rep} : {err}".format(dbcon=self.name, rep=repr(e), err=e.__str__()))
+            logger.info("CON: {dbcon} Adding new Status to database: {status}".format(dbcon=self.name, status=new_status))
 
         except sqlalchemy.exc.OperationalError, e:
-            logger.error("Database: {database} is locked. Error: {error}".format(database=db.get_app().config['SQLALCHEMY_DATABASE_URI'], error=e.__str__()))
+            logger.error("CON: {dbcon} Database: {database} is locked. Error: {error}".format(dbcon=self.name, database=db.get_app().config['SQLALCHEMY_DATABASE_URI'], error=e.__str__()))
             return False
         return True
 
@@ -127,15 +128,15 @@ class Database(object):
             _product = Product.query.filter_by(type=int(product_type)).filter_by(serial=int(serial_number)).first()
             if _product is None:  # add item if not exists yet.
                 new_prod = Product(product_type, serial_number, week_number, year_number)
-                logger.info("Adding new Product to database: {prod}".format(prod={new_prod}))
                 db.session.add(new_prod)
                 try:
                     db.session.commit()
                 except sqlalchemy.exc.IntegrityError, e:
-                    logger.error("%s : %s " % (repr(e), e.__str__()))
+                    logger.error("CON: {dbcon} {rep} : {err}".format(dbcon=self.name, rep=repr(e), err=e.__str__()))
+                logger.info("CON: {dbcon} Adding new Product to database: {prod}".format(dbcon=self.name, prod=new_prod))
 
         except sqlalchemy.exc.OperationalError, e:
-            logger.error("Database: %s is locked. Error: %s" % (db.get_app().config['SQLALCHEMY_DATABASE_URI'], e.__str__()))
+            logger.error("CON: {dbcon} Database: {dbfile} is locked. Error: {err}".format(dbcon=self.name, dbfile=db.get_app().config['SQLALCHEMY_DATABASE_URI'], err=e.__str__()))
             return False
         return True
 
@@ -144,18 +145,16 @@ class Database(object):
         try:
             _station = Station.query.filter_by(id=int(station)).first()
             if _station is None:  # add new station if required (should not happen often)
-                # TODO: try to get ip. port, rack, slot from config file
                 new_station = Station(id=station, name=station)
-                logger.info("Adding new Station to database: %s" % str(new_station))
                 db.session.add(new_station)
-
-            try:
-                db.session.commit()
-            except sqlalchemy.exc.IntegrityError, e:
-                logger.error("%s : %s " % (repr(e), e.__str__()))
+                try:
+                    db.session.commit()
+                except sqlalchemy.exc.IntegrityError, e:
+                    logger.error("CON: {dbcon} {rep} : {err}".format(dbcon=self.name, rep=repr(e), err=e.__str__()))
+                logger.info("CON: {dbcon} Adding new Station to database: {station}".format(station=str(new_station)))
 
         except sqlalchemy.exc.OperationalError, e:
-            logger.error("Database: %s is locked. Error: %s" % (db.get_app().config['SQLALCHEMY_DATABASE_URI'], e.__str__()))
+            logger.error("CON: {dbcon} Database: {dbfile} is locked. Error: {err}".format(dbcon=self.name, dbfile=db.get_app().config['SQLALCHEMY_DATABASE_URI'], err=e.__str__()))
             return False
         return True
 
@@ -166,16 +165,15 @@ class Database(object):
             _operation_type = Operation_Type.query.filter_by(id=int(operation_type)).first()
             if _operation_type is None:  # add new operation_type if required (should not happen often)
                 new_operation_type = Operation_Type(id=operation_type, name=operation_type)
-                logger.info("Adding new Operation_Type to database: %s" % str(new_operation_type))
                 db.session.add(new_operation_type)
-
-            try:
-                db.session.commit()
-            except sqlalchemy.exc.IntegrityError, e:
-                logger.error("%s : %s " % (repr(e), e.__str__()))
+                try:
+                    db.session.commit()
+                except sqlalchemy.exc.IntegrityError, e:
+                    logger.error("CON: {dbcon} {rep} : {err}".format(dbcon=self.name, rep=repr(e), err=e.__str__()))
+                logger.info("CON: {dbcon} Adding new Operation_Type to database: {operation}".format(operation=str(new_operation_type)))
 
         except sqlalchemy.exc.OperationalError, e:
-            logger.error("Database: %s is locked. Error: %s" % (db.get_app().config['SQLALCHEMY_DATABASE_URI'], e.__str__()))
+            logger.error("CON: {dbcon} Database: {dbfile} is locked. Error: {err}".format(dbcon=self.name, dbfile=db.get_app().config['SQLALCHEMY_DATABASE_URI'], err=e.__str__()))
             return False
         return True
 
@@ -186,16 +184,15 @@ class Database(object):
             _operation_status = Operation_Status.query.filter_by(id=int(operation_status)).first()
             if _operation_status is None:  # add new operation_status if required (should not happen often)
                 new_operation_status = Operation_Status(id=operation_status, name=operation_status)
-                logger.info("Adding new Operation_Status to database: %s" % str(new_operation_status))
                 db.session.add(new_operation_status)
-
-            try:
-                db.session.commit()
-            except sqlalchemy.exc.IntegrityError, e:
-                logger.error("%s : %s " % (repr(e), e.__str__()))
+                try:
+                    db.session.commit()
+                except sqlalchemy.exc.IntegrityError, e:
+                    logger.error("CON: {dbcon} {rep} : {err}".format(dbcon=self.name, rep=repr(e), err=e.__str__()))
+                logger.info("CON: {dbcon} Adding new Operation_Status to database: {operation_status}".format(operation_status=str(new_operation_status)))
 
         except sqlalchemy.exc.OperationalError, e:
-            logger.error("Database: %s is locked. Error: %s" % (db.get_app().config['SQLALCHEMY_DATABASE_URI'], e.__str__()))
+            logger.error("CON: {dbcon} Database: {dbfile} is locked. Error: {err}".format(dbcon=self.name, dbfile=db.get_app().config['SQLALCHEMY_DATABASE_URI'], err=e.__str__()))
             return False
         return True
 
@@ -273,4 +270,4 @@ class Database(object):
         try:
             db.session.commit()
         except sqlalchemy.exc.IntegrityError, e:
-            logger.error("%s : %s " % (repr(e), e.__str__()))
+            logger.error("CON: {dbcon} {rep} : {err}".format(dbcon=self.name, rep=repr(e), err=e.__str__()))

@@ -9,7 +9,7 @@ from plc.custom_exceptions import PLCSendRcvTimeOut
 from plc.constants import STATION_STATUS, SERIAL_NUMBER, STATION_NUMBER, STATION_STATUS_CODES
 import random
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger(__name__.ljust(12)[:12])
 
 
 class Simulator(ControllerBase):
@@ -63,11 +63,11 @@ class Simulator(ControllerBase):
         if dbid is None:
             raise UnknownDb(dbid)
 
-        logger.info("PLC: %s DB: %s SN: %s ST: %s saving assembly information." % (self.get_id(), dbid, serial_number, station))
+        logger.info("PLC: {plc} DB: {db} SN: {sn} ST: {st} saving assembly information.".format(plc=self.get_id(), db=dbid, sn=serial_number, st=station))
         db = self.get_db(dbid)
 
-        # wait for PC_READY_FLAG to start processing 
-        logger.debug("PLC: %s DB: %s SN: %s ST: %s waiting for PC_READY_FLAG" % (self.get_id(), dbid, serial_number, station))
+        # wait for PC_READY_FLAG to start processing
+        logger.debug("PLC: {plc} DB: {db} SN: {sn} ST: {st} waiting for PC_READY_FLAG".format(plc=self.get_id(), db=dbid, sn=serial_number, st=station))
         i = 0
         while i < 30:
             i += 1
@@ -76,11 +76,11 @@ class Simulator(ControllerBase):
             time.sleep(0.1)
         print "I:", i
         if i == 30:
-            logger.warning("PLC: %s DB: %s SN: %s ST: %s Timeout getting PC_READY flag" % (self.get_id(), dbid, serial_number, station)) 
+            logger.warning("PLC: {plc} DB: {db} SN: {sn} ST: {st} Timeout getting PC_READY flag".format(plc=self.get_id(), db=dbid, sn=serial_number, st=station))
             return False # timeout
-        logger.debug("PLC: %s DB: %s SN: %s ST: %s got PC_READY_FLAG" % (self.get_id(), dbid, serial_number, station))
+        logger.debug("PLC: {plc} DB: {db} SN: {sn} ST: {st} got PC_READY_FLAG".format(plc=self.get_id(), db=dbid, sn=serial_number, st=station))
 
-        # write serial number to PLC memory before  
+        # write serial number to PLC memory before
         db.store_item(SERIAL_NUMBER, serial_number)
         # write station number to PLC memory
         db.store_item(STATION_NUMBER, station)
@@ -90,7 +90,7 @@ class Simulator(ControllerBase):
         db.set_plc_save_flag(True)  # set message flag - wait for PC to process it!
         time.sleep(0.5) # wait to save.
         # wait for response # check if PLC_SAVE_FLAG was cancelled by application
-        logger.debug("PLC: %s DB: %s SN: %s ST: %s waiting for PLC_SAVE_FLAG" % (self.get_id(), dbid, serial_number, station))
+        logger.debug("PLC: {plc} DB: {db} SN: {sn} ST: {st} waiting for PLC_SAVE_FLAG".format(plc=self.get_id(), db=dbid, sn=serial_number, st=station))
         i = 0
         while i < 30:
             i += 1
@@ -98,14 +98,14 @@ class Simulator(ControllerBase):
                 break
             time.sleep(0.1)
         if i == 30:
-            logger.warning("PLC: %s DB: %s SN: %s ST: %s Timeout getting PLC_SAVE_FLAG flag" % (self.get_id(), dbid, serial_number, station)) 
+            logger.warning("PLC: {plc} DB: {db} SN: {sn} ST: {st} Timeout getting PLC_SAVE_FLAG flag".format(plc=self.get_id(), db=dbid, sn=serial_number, st=station))
             return False # timeout
         #print "CAN SAVE NOW"
-        logger.debug("PLC: %s DB: %s SN: %s ST: %s got PLC_SAVE_FLAG" % (self.get_id(), dbid, serial_number, station))
+        logger.debug("PLC: {plc} DB: {db} SN: {sn} ST: {st} got PLC_SAVE_FLAG".format(plc=self.get_id(), db=dbid, sn=serial_number, st=station))
 
         # get the status description
         # status = STATION_STATUS_CODES[_status]['result']
-        logger.info("PLC: %s DB: %s SN: %s ST: %s assembly status saved and is: %s" % (self.get_id(), dbid, serial_number, station, status))
+        logger.info("PLC: {plc} DB: {db} SN: {sn} ST: {st} assembly status saved and is: {status}".format(plc=self.get_id(), db=dbid, sn=serial_number, st=station, status=status))
         # reset plc_message flag - should be done already by PC anyway
         db.set_plc_save_flag(False)
         return status
@@ -121,11 +121,11 @@ class Simulator(ControllerBase):
         if station is None:
             raise UnknownStation(station)
 
-        logger.info("PLC: %s DB: %s SN: %s reading assembly from station : %s" % (self.get_id(), dbid, serial_number, station))
+        logger.info("PLC: {plc} DB: {db} SN: {sn} reading assembly from ST: {st}".format(plc=self.get_id(), db=dbid, sn=serial_number, st=station))
         db = self.get_db(dbid)
 
         # wait for PC_READY_FLAG to start processing
-        logger.debug("PLC: %s DB: %s SN: %s ST: %s waiting for PC_READY_FLAG" % (self.get_id(), dbid, serial_number, station))
+        logger.debug("PLC: {plc} DB: {db} SN: {sn} ST: {st} waiting for PC_READY_FLAG".format(plc=self.get_id(), db=dbid, sn=serial_number, st=station))
         i = 0
         while i < 30:
             i += 1
@@ -134,9 +134,9 @@ class Simulator(ControllerBase):
             time.sleep(0.1)
         print "I:", i
         if i == 30:
-            logger.warning("PLC: %s DB: %s SN: %s ST: %s Timeout getting PC_READY flag" % (self.get_id(), dbid, serial_number, station)) 
+            logger.warning("PLC: {plc} DB: {db} SN: {sn} ST: {st} Timeout on getting PC_READY flag".format(plc=self.get_id(), db=dbid, sn=serial_number, st=station))
             return False # timeout
-        logger.debug("PLC: %s DB: %s SN: %s ST: %s got PC_READY_FLAG" % (self.get_id(), dbid, serial_number, station))
+        logger.debug("PLC: {plc} DB: {db} SN: {sn} ST: {st} got PC_READY_FLAG".format(plc=self.get_id(), db=dbid, sn=serial_number, st=station))
 
         # write serial number to PLC memory before
         #print "Storing: ", serial_number, "xx"
@@ -146,7 +146,7 @@ class Simulator(ControllerBase):
         db.set_plc_message_flag(True)  # set message flag
 
         # wait for response # check if PLC_SAVE_FLAG was cancelled by application
-        logger.debug("PLC: %s DB: %s SN: %s ST: %s waiting for PLC_MESSAGE_FLAG" % (self.get_id(), dbid, serial_number, station))
+        logger.debug("PLC: {plc} DB: {db} SN: {sn} ST: {st} waiting for PLC_MESSAGE_FLAG".format(plc=self.get_id(), db=dbid, sn=serial_number, st=station))
         i = 0
         while i < 30:
             i += 1
@@ -154,9 +154,9 @@ class Simulator(ControllerBase):
                 break
             time.sleep(0.1)
         if i == 30:
-            logger.warning("PLC: %s DB: %s SN: %s ST: %s Timeout getting PLC_MESSAGE_FLAG flag" % (self.get_id(), dbid, serial_number, station)) 
+            logger.warning("PLC: {plc} DB: {db} SN: {sn} ST: {st} Timeout getting PLC_MESSAGE_FLAG flag".format(plc=self.get_id(), db=dbid, sn=serial_number, st=station))
             return False # timeout
-        logger.debug("PLC: %s DB: %s SN: %s ST: %s got PLC_MESSAGE_FLAG" % (self.get_id(), dbid, serial_number, station))
+        logger.debug("PLC: {plc} DB: {db} SN: {sn} ST: {st} got PLC_MESSAGE_FLAG".format(plc=self.get_id(), db=dbid, sn=serial_number, st=station))
 
         """
         # wait for response # check if station status has changed.
@@ -171,7 +171,7 @@ class Simulator(ControllerBase):
         _status = db.read_item(STATION_STATUS)
         # get the status description
         status = STATION_STATUS_CODES[_status]['result']
-        logger.info("PLC: %s DB: %s SN: %s ST: %s assembly status is: %s" % (self.get_id(), dbid, serial_number, station, status))
+        logger.info("PLC: {plc} DB: {db} SN: {sn} ST: {st} assembly status is: {status}".format(plc=self.get_id(), db=dbid, sn=serial_number, st=station, status=status))
         # reset plc_message flag
         db.set_plc_message_flag(False)
         return status
@@ -187,11 +187,11 @@ class Simulator(ControllerBase):
         serial = random.choice(self.serial_numbers)
         station = random.choice(self.station_numbers)
         status = random.choice(self.assembly_statuses)
-        logger.info("Simulator: %s DB: %s SN: %s ST: %s Saving status %s" % (self.get_id(), dbid, serial, station, status))
+        logger.info("Simulator: {plc} DB: {db} SN: {sn} ST: {st} Saving status {status}".format(plc=self.get_id(), db=dbid, sn=serial, st=station, status=status))
         self.save_station_status(dbid, serial, station, status)
 
     def read_test(self, dbid):
         serial = random.choice(self.serial_numbers)
         station = random.choice(self.station_numbers)
-        logger.info("Simulator: %s DB: %s SN: %s ST: %s Reading status" % (self.get_id(), dbid, serial, station))
+        logger.info("Simulator: {plc} DB: {db} SN: {sn} ST: {st}s Reading status".format(plc=self.get_id(), db=dbid, sn=serial, st=station))
         self.get_station_status(dbid, serial, station)
