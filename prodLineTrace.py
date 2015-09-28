@@ -30,7 +30,6 @@ class MainWindow(wx.App):
         self.valueMainStatus = xrc.XRCCTRL(frame, "valueMainStatus")
         self.valueMainConfigFile = xrc.XRCCTRL(frame, "valueMainConfigFile")
         self.valueMainLogFile = xrc.XRCCTRL(frame, "valueMainLogFile")
-        self.valueMainErrorLogFile = xrc.XRCCTRL(frame, "valueMainErrorLogFile")
         self.valueMainVerbosity = xrc.XRCCTRL(frame, "valueMainVerbosity")
         self.valueMainPopups = xrc.XRCCTRL(frame, "valueMainPopups")
         self.valueMainVersion = xrc.XRCCTRL(frame, "valueMainVersion")
@@ -58,7 +57,8 @@ class MainWindow(wx.App):
         self.valueMainDBCommentCount = xrc.XRCCTRL(frame, "valueMainDBCommentCount")
 
         self.valueLogTextArea = xrc.XRCCTRL(frame, "valueLogTextArea")
-        self.valueErrorLogTextArea = xrc.XRCCTRL(frame, "valueErrorLogTextArea")
+        textAreaFont = wx.Font(10, wx.MODERN, wx.NORMAL, wx.NORMAL, False, u'Consolas')
+        self.valueLogTextArea .SetFont(textAreaFont)
 
         self.application = ProdLine(sys.argv)
         self._opts = self.application._opts
@@ -66,7 +66,6 @@ class MainWindow(wx.App):
 #        self.webapp = webapp
         self.dbfile = self._config['main']['dbfile'][0]
         self.logfile = self._config['main']['logfile'][0]
-        self.errlog = helpers.parse_config(_opts.config)['main']['errorlog'][0]
         self.starttime = datetime.datetime.now()
         self.baseUrl = 'http://localhost:5000/'
         if 'baseurl' in self._config['main']:
@@ -110,10 +109,6 @@ class MainWindow(wx.App):
         for line in tailer.follow(open(self.logfile)):
             self.valueLogTextArea.write(line + "\n")
 
-    def updateErrorLogWindow(self):
-        for line in tailer.follow(open(self.errlog)):
-            self.valueErrorLogTextArea.write(line + "\n")
-
     def updateControllersStatus(self):
         self._mode = self.ID_UPDATE_CTRL_STATUS
         # push some initial data
@@ -126,7 +121,6 @@ class MainWindow(wx.App):
 
         while True:
             self.valueMainLogFile.SetLabelText(file_name_with_size(self.logfile))
-            self.valueMainErrorLogFile.SetLabelText(file_name_with_size(self.errlog))
             self.valueMainConfigFile.SetLabelText(file_name_with_size(self._opts.config))
             self.valueMainDBFile.SetLabelText(file_name_with_size(self.dbfile))
 
@@ -194,8 +188,8 @@ class MainWindow(wx.App):
 
 if __name__ == "__main__":
     _opts, _args = helpers.parse_args()
-    errlog = helpers.parse_config(_opts.config)['main']['errorlog'][0]
-    app = MainWindow(redirect=True, filename=errlog)
+    # app = MainWindow(redirect=True, filename=errlog)
+    app = MainWindow(redirect=True)
 
     # update status bar
     tw = app.GetTopWindow()
@@ -203,7 +197,6 @@ if __name__ == "__main__":
 
     # start the threads
     startWorker(app._ResultNotifier, app.updateLogWindow)
-    startWorker(app._ResultNotifier, app.updateErrorLogWindow)
     startWorker(app._ResultNotifier, app.updateControllersStatus)
     startWorker(app._ResultNotifier, app.mainThread)
 

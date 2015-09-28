@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import time
 import logging
+from logging.handlers import TimedRotatingFileHandler
 from plc.helpers import parse_config, parse_args
 import snap7
 from plc.database import Database
@@ -20,7 +21,7 @@ class ProdLineBase(object):
 
         # handle logging - set root logger level
         logging.root.setLevel(logging.INFO)
-        logger = logging.getLogger(__name__)
+        logger = logging.getLogger(__name__.ljust(12)[:12])
         logger.setLevel(loglevel)
 
         # init datetime.strptime so it is available in threads (http://www.mail-archive.com/python-list@python.org/msg248846.html)
@@ -29,7 +30,8 @@ class ProdLineBase(object):
         # parse config file
         logger.info("Using config file {cfg}.".format(cfg=self._opts.config))
         self._config = parse_config(self._opts.config)
-        _fh = logging.FileHandler(self._config['main']['logfile'][0])
+        _fh = TimedRotatingFileHandler(self._config['main']['logfile'][0], when="M", interval=1, backupCount=5)
+        #_fh = logging.FileHandler(self._config['main']['logfile'][0])
         _ch = logging.StreamHandler()
         self.__PLCClass = None
         self._baseurl = 'http://localhost:5000/'
@@ -52,8 +54,8 @@ class ProdLineBase(object):
             logger.setLevel(logging.DEBUG)
             logging.root.setLevel(logging.DEBUG)
 
-        _fh.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
-        _ch.setFormatter(logging.Formatter('%(name)s - %(levelname)s - %(message)s'))
+        _fh.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)8s - %(message)s'))
+        _ch.setFormatter(logging.Formatter('%(name)s - %(levelname)8s - %(message)s'))
         # logger.addHandler(_fh)
         logging.root.addHandler(_fh)
 
