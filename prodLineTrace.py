@@ -2,6 +2,7 @@
 import wx
 from wx import xrc
 from wx.lib.delayedresult import startWorker
+import os
 import time
 import datetime
 import logging
@@ -188,8 +189,7 @@ class MainWindow(wx.App):
 
 if __name__ == "__main__":
     _opts, _args = helpers.parse_args()
-    # app = MainWindow(redirect=True, filename=errlog)
-    app = MainWindow(redirect=True)
+    app = MainWindow(redirect=True, filename=os.devnull)
 
     # update status bar
     tw = app.GetTopWindow()
