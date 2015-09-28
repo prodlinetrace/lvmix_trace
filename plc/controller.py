@@ -1,7 +1,8 @@
 # this is a class of PLC controller
 import snap7
 import logging
-from constants import PC_HEARTBEAT_FLAG, PLC_MESSAGE_FLAG, PLC_SAVE_FLAG, STATION_NUMBER, STATION_STATUS, PRODUCT_TYPE, SERIAL_NUMBER, STATION_STATUS_CODES, STATION_ID, TRC_TMPL_COUNT, TRC_TMPL_SAVE_FLAG, PC_OPEN_BROWSER_FLAG, DATE_TIME, WEEK_NUMBER, YEAR_NUMBER
+from constants import PC_HEARTBEAT_FLAG, PLC_QUERY_FLAG, PLC_SAVE_FLAG, STATION_NUMBER, STATION_STATUS, PRODUCT_TYPE, SERIAL_NUMBER, STATION_STATUS_CODES, STATION_ID, TRC_TMPL_COUNT, TRC_TMPL_SAVE_FLAG, PC_OPEN_BROWSER_FLAG, DATE_TIME, WEEK_NUMBER, YEAR_NUMBER,\
+    PC_READY_FLAG
 from plc.util import get_product_id
 from plc.datablocks import DataBlocks
 from plc.custom_exceptions import UnknownDb
@@ -143,9 +144,10 @@ class ControllerBase(object):
 
     def reset_pc_ready_flags(self):
         logger.info("PLC: {plc} resetting PC_Ready flags.".format(plc=self.id))
-        if 300 in self.get_active_datablock_list():
-            _block = self.get_db(300)
-            _block.set_pc_ready_flag(True)
+        for dbid in self.get_active_datablock_list():
+            _block = self.get_db(dbid)
+            if PC_READY_FLAG in _block.export():
+                _block.set_pc_ready_flag(True)
 
     def get_client(self):
         return self.client
@@ -334,15 +336,15 @@ class Controller(ControllerBase):
             logger.warn("PLC: {plc} DB: {db} is missing on controller. Skipping".format(plc=self.get_id(), db=dbid))
             return
 
-        if PLC_MESSAGE_FLAG in block.export():
-            if block.__getitem__(PLC_MESSAGE_FLAG):  # get the station status from db
+        if PLC_QUERY_FLAG in block.export():
+            if block.__getitem__(PLC_QUERY_FLAG):  # get the station status from db
                 block.set_pc_ready_flag(False)  # set PC ready flag to False
                 # body
 
                 for field in [STATION_ID, STATION_NUMBER, STATION_STATUS, SERIAL_NUMBER, PRODUCT_TYPE]:
                     if field not in block.export():
                         logger.warning("PLC: {plc} DB: {db} is missing field {field} in block body: {body}. Message skipped. Switching off PLC_Query bit.".format(plc=self.get_id(), db=block.get_db_number(), field=field, body=block.export()))
-                        block.set_plc_message_flag(False) # switch off PLC_Query bit
+                        block.set_plc_query_flag(False)  # switch off PLC_Query bit
                         block.set_pc_ready_flag(True)  # set PC ready flag back to true
                         return
 
@@ -401,13 +403,13 @@ class Controller(ControllerBase):
                 logger.info("PLC: {plc} DB: {db} PT: {type} SN: {serial} queried from SID: {station_id} status of station ST: {station_number} taken from database is: {station_status} ({status}). Initial/Stored Status: {station_status_initial}/{station_status_stored} ".format(plc=self.get_id(), db=block.get_db_number(), type=product_type, serial=serial_number, station_id=station_id, station_number=station_number, station_status=station_status, status=status, station_status_initial=station_status_initial, station_status_stored=station_status_stored))
 
                 self.counter_status_message_read += 1
-                block.set_plc_message_flag(False)
+                block.set_plc_query_flag(False)
                 block.set_pc_ready_flag(True)  # set pc_ready flag back to true
 
             else:
                 pass
                 # too verbose
-                # logger.debug("PLC: %s block: %s flag '%s' idle" % (self.get_id(), block.get_db_number(), PLC_MESSAGE_FLAG))
+                # logger.debug("PLC: %s block: %s flag '%s' idle" % (self.get_id(), block.get_db_number(), PLC_QUERY_FLAG))
 
     def save_status(self, dbid):
         # save the status to

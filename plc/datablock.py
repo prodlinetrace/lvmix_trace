@@ -2,7 +2,7 @@ import snap7
 import logging
 from plc.db_layouts import db_specs
 import re
-from constants import PC_READY_FLAG, PLC_MESSAGE_FLAG, PLC_SAVE_FLAG, TRC_TMPL_COUNT, PC_OPEN_BROWSER_FLAG
+from constants import PC_READY_FLAG, PLC_QUERY_FLAG, PLC_SAVE_FLAG, TRC_TMPL_COUNT, PC_OPEN_BROWSER_FLAG
 
 logger = logging.getLogger(__name__.ljust(12)[:12])
 
@@ -307,11 +307,11 @@ class DataBlock(object):
         """
         return self[PC_OPEN_BROWSER_FLAG]
 
-    def plc_message_flag(self):
+    def plc_query_flag(self):
         """
-        returns value of PLC_MESSAGE_FLAG
+        returns value of PLC_QUERY_FLAG
         """
-        return self[PLC_MESSAGE_FLAG]
+        return self[PLC_QUERY_FLAG]
 
     def plc_save_flag(self):
         """
@@ -319,24 +319,24 @@ class DataBlock(object):
         """
         return self[PLC_SAVE_FLAG]
 
-    def set_plc_save_flag(self, value=True, check=False):
+    def set_plc_save_flag(self, value=True, check=True):
         flag = PLC_SAVE_FLAG
         return self.set_flag(flag, value, check)
 
-    def set_plc_message_flag(self, value=True, check=False):
-        flag = PLC_MESSAGE_FLAG
+    def set_plc_query_flag(self, value=True, check=True):
+        flag = PLC_QUERY_FLAG
         return self.set_flag(flag, value, check)
 
-    def set_pc_ready_flag(self, value=True, check=False):
+    def set_pc_ready_flag(self, value=True, check=True):
         flag = PC_READY_FLAG
         return self.set_flag(flag, value, check)
 
-    def set_pc_open_browser_flag(self, value=True, check=False):
+    def set_pc_open_browser_flag(self, value=True, check=True):
         flag = PC_OPEN_BROWSER_FLAG
         return self.set_flag(flag, value, check)
 
-    def set_flag(self, flag, value, check=False):
-        logger.debug("PLC: {plc} DB: {db} flag '{flag}' set to: {val}.".format(plc=self.controller.get_id(), db=self.get_db_number(), flag=flag, val=value))
+    def set_flag(self, flag, value, check=True):
+        logger.debug("PLC: {plc} DB: {db} FLAG: {flag} set to: {value}.".format(plc=self.controller.get_id(), db=self.get_db_number(), flag=flag, value=value))
         # set block value in memory
         self[flag] = value
         # write flag to PLC
@@ -344,5 +344,7 @@ class DataBlock(object):
         if check:  # check actual value - optional
             self.read_item(flag)
             block = self.get_parsed_data()
-            actval = block.__getitem__(flag)
-            logger.debug("PLC: {plc} DB: {db} flag: '{flag}' actual value is: {val}.".format(plc=self.controller.get_id(), db=self.get_db_number(), flag=flag, val=actval))
+            checkedval = block.__getitem__(flag)
+            logger.info("PLC: {plc} DB: {db} FLAG: {flag} set/checked value: {value}/{checkedval}.".format(plc=self.controller.get_id(), db=self.get_db_number(), flag=flag, value=value, checkedval=checkedval))
+            if value != checkedval: 
+                logger.warning("PLC: {plc} DB: {db} FLAG: {flag} set/checked value does not match: {value}/{checkedval}.".format(plc=self.controller.get_id(), db=self.get_db_number(), flag=flag, value=value, checkedval=checkedval))

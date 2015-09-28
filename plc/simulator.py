@@ -143,14 +143,14 @@ class Simulator(ControllerBase):
         db.store_item(SERIAL_NUMBER, serial_number)
 
         db.store_item(STATION_STATUS, 9)  # reset station status to "waiting state"
-        db.set_plc_message_flag(True)  # set message flag
+        db.set_plc_query_flag(True)  # set message flag
 
         # wait for response # check if PLC_SAVE_FLAG was cancelled by application
         logger.debug("PLC: {plc} DB: {db} SN: {sn} ST: {st} waiting for PLC_MESSAGE_FLAG".format(plc=self.get_id(), db=dbid, sn=serial_number, st=station))
         i = 0
         while i < 30:
             i += 1
-            if db.plc_message_flag() == False:
+            if db.plc_query_flag() == False:
                 break
             time.sleep(0.1)
         if i == 30:
@@ -173,7 +173,7 @@ class Simulator(ControllerBase):
         status = STATION_STATUS_CODES[_status]['result']
         logger.info("PLC: {plc} DB: {db} SN: {sn} ST: {st} assembly status is: {status}".format(plc=self.get_id(), db=dbid, sn=serial_number, st=station, status=status))
         # reset plc_message flag
-        db.set_plc_message_flag(False)
+        db.set_plc_query_flag(False)
         return status
 
     def run(self):

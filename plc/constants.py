@@ -1,6 +1,6 @@
 PC_READY_FLAG           = 'body.PC_Ready'
 PC_OPEN_BROWSER_FLAG    = 'body.PC_OpenBrowser'
-PLC_MESSAGE_FLAG        = 'body.PLC_Query'
+PLC_QUERY_FLAG          = 'body.PLC_Query'
 PLC_SAVE_FLAG           = 'body.PLC_Save'
 DB_BUSY_FLAG            = 'body.DB_Busy'
 
