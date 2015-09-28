@@ -198,9 +198,9 @@ class ControllerBase(object):
             if PC_HEARTBEAT_FLAG in _block.export():
                 # change the status of PLC_HEARTBEAT_FLAG flag
                 if _block.__getitem__(PC_HEARTBEAT_FLAG) is True:
-                    _block.set_flag(PC_HEARTBEAT_FLAG, False)
+                    _block.set_flag(PC_HEARTBEAT_FLAG, False, False)
                 else:
-                    _block.set_flag(PC_HEARTBEAT_FLAG, True)
+                    _block.set_flag(PC_HEARTBEAT_FLAG, True, False)
 
     def get_name(self):
         return self.__name
