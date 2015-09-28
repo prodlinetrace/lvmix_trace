@@ -43,7 +43,7 @@ class ControllerBase(object):
         self._polldbsleep = 0.01
 
     def _init_database(self, dbfile='data/prodline.db'):
-        self.database_engine = Database("plc_{plc}".format(plc=self.get_name()))
+        self.database_engine = Database("{plc}".format(plc=self.get_id()))
         logger.info("PLC: {plc} connected to SQLite @ {dbfile}. Status: {status}".format(plc=self.get_id(), dbfile=dbfile, status=self.database_engine.get_status()))
 
     def __repr__(self):
