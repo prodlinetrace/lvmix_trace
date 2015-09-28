@@ -97,7 +97,7 @@ class DataBlock(object):
     def __str__(self):
         string = """DataBlock: #{db}""".format(db=self.db_number)
         if self.controller is not None:
-            string += " of PLC: {plc}".format(plc=self.get_controller())
+            string += " of PLC: {plc}".format(plc=self.controller.id)
         return string
 
     def get_dict(self):
@@ -342,9 +342,9 @@ class DataBlock(object):
         # write flag to PLC
         self.write_item(flag)
         if check:  # check actual value - optional
-            self.read_item(flag)
+            #self.read_item(flag)  # this shit shifts db block by 1 !!!!! DO NOT DO IT!!
             block = self.get_parsed_data()
-            checkedval = block.__getitem__(flag)
+            checkedval = self.__getitem__(flag)
             logger.info("PLC: {plc} DB: {db} FLAG: {flag} set/checked value: {value}/{checkedval}.".format(plc=self.controller.get_id(), db=self.get_db_number(), flag=flag, value=value, checkedval=checkedval))
             if value != checkedval: 
                 logger.warning("PLC: {plc} DB: {db} FLAG: {flag} set/checked value does not match: {value}/{checkedval}.".format(plc=self.controller.get_id(), db=self.get_db_number(), flag=flag, value=value, checkedval=checkedval))
