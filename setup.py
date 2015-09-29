@@ -150,7 +150,7 @@ include_files = [
 # Dependencies are automatically detected, but it might need fine tuning.
 build_exe_options = {
                      "packages": hidden_imports,
-                     "excludes": ["tkinter", "werkzeug.http.sys", "werkzeug.http._sre", "werkzeug.http.array"], 
+                     "excludes": ["tkinter", "werkzeug.http.sys", "werkzeug.http._sre", "werkzeug.http.array", "werkzeug.http._locale"], 
                      "includes":["plc", "flask"], 
                      "include_files": include_files,
                      'include_msvcr': True,

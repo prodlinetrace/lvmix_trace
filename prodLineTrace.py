@@ -7,7 +7,7 @@ import time
 import datetime
 import logging
 import sys
-import tailer
+from pygtail import Pygtail
 import traceback
 
 from plc import helpers
@@ -107,8 +107,10 @@ class MainWindow(wx.App):
 
     def updateLogWindow(self):
         self._mode = self.ID_UPDATE_LOG
-        for line in tailer.follow(open(self.logfile)):
-            self.valueLogTextArea.write(line + "\n")
+        while True:
+            for line in Pygtail(self.logfile):
+                self.valueLogTextArea.write(line)
+            time.sleep(0.3)
 
     def updateControllersStatus(self):
         self._mode = self.ID_UPDATE_CTRL_STATUS
