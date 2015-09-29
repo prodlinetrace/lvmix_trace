@@ -10,11 +10,11 @@ import sys
 from pygtail import Pygtail
 import traceback
 
-from plc import helpers
-from plc import __version__ as version
-from plc.db_models import __version__ as dbmodel_version
-from plc.prodline import ProdLine
-from plc.util import file_name_with_size
+from traceability import helpers
+from traceability import __version__ as version
+from traceability.models import __version__ as dbmodel_version
+from traceability.prodline import ProdLine
+from traceability.util import file_name_with_size
 
 logger = logging.getLogger(__name__.ljust(12)[:12])
 
@@ -131,13 +131,13 @@ class MainWindow(wx.App):
             self.valueMainUptime.SetLabelText(str(datetime.datetime.now() - self.starttime))
 
             # message statistics
-            self.valueMainControllerCount.SetLabelText(str(len(self.application.controllers)))
+            self.valueMainControllerCount.SetLabelText(str(len(self.application.plcs)))
             self.valueMainMsgRead.SetLabelText(str(self.application.get_counter_status_message_read()))
             self.valueMainMsgWrite.SetLabelText(str(self.application.get_counter_status_message_write()))
             self.valueMainOperWrite.SetLabelText(str(self.application.get_counter_saved_operations()))
             self.valueMainDetailsDisplay.SetLabelText(str(self.application.get_counter_product_details_display()))
 
-            # update db statistics
+            # update block statistics
             self.valueMainDBProdCount.SetLabelText(str(self.application.get_product_count()))
             self.valueMainDBStationCount.SetLabelText(str(self.application.get_station_count()))
             self.valueMainDBStatusCount.SetLabelText(str(self.application.get_status_count()))

@@ -1,12 +1,12 @@
 import snap7
 import logging
-from plc.datablock import DataBlock
-from plc.custom_exceptions import UnknownDb
+from block import DB
+from custom_exceptions import UnknownDB
 
-logger = logging.getLogger(__name__.ljust(12)[:12])
+logger = logging.getLogger(__name__)
 
 
-class DataBlocks(object):
+class DBs(object):
     """
     This class provides a container-like API which gives
     access to all db records defined on the PLC. It behaves
@@ -14,9 +14,9 @@ class DataBlocks(object):
     db objects.
     """
 
-    def __init__(self, controller):
+    def __init__(self, plc):
         self.blockType = snap7.snap7types.block_types['DB']
-        self.controller = controller
+        self.plc = plc
 
     def __len__(self):
         return len(self.keys)
@@ -31,21 +31,21 @@ class DataBlocks(object):
         """
         Get the numbers of all available blocks
         """
-        for block in self.controller.get_client().list_blocks_of_type(self.blockType):
+        for block in self.plc.get_client().list_blocks_of_type(self.blockType):
             yield block
 
     def iteritems(self):
         """
         Get the names & objects for all dbs
         """
-        for db in self.controller.get_client().list_blocks_of_type(self.blockType):
-            yield db, DataBlock(db, self.controller)
+        for db in self.plc.get_client().list_blocks_of_type(self.blockType):
+            yield db, DB(db, self.plc)
 
     def items(self):
         return [x for x in self.iteritems()]
 
     def __getitem__(self, db):
-            return DataBlock(db, self.controller)
+            return DB(db, self.plc)
 
     def __contains__(self, db):
         """

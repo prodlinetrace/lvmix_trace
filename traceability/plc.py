@@ -1,21 +1,20 @@
 # this is a class of PLC controller
 import snap7
 import logging
-from constants import PC_HEARTBEAT_FLAG, PLC_QUERY_FLAG, PLC_SAVE_FLAG, STATION_NUMBER, STATION_STATUS, PRODUCT_TYPE, SERIAL_NUMBER, STATION_STATUS_CODES, STATION_ID, TRC_TMPL_COUNT, TRC_TMPL_SAVE_FLAG, PC_OPEN_BROWSER_FLAG, DATE_TIME, WEEK_NUMBER, YEAR_NUMBER,\
-    PC_READY_FLAG
-from plc.util import get_product_id
-from plc.datablocks import DataBlocks
-from plc.custom_exceptions import UnknownDb
-from plc.database import Database
+from constants import PC_HEARTBEAT_FLAG, PLC_QUERY_FLAG, PLC_SAVE_FLAG, STATION_NUMBER, STATION_STATUS, PRODUCT_TYPE, SERIAL_NUMBER, STATION_STATUS_CODES, STATION_ID, TRC_TMPL_COUNT, TRC_TMPL_SAVE_FLAG, PC_OPEN_BROWSER_FLAG, DATE_TIME, WEEK_NUMBER, YEAR_NUMBER, PC_READY_FLAG
+from util import get_product_id
+from blocks import DBs
+from custom_exceptions import UnknownDB
+from database import Database
 from datetime import datetime
 from time import sleep
 import webbrowser
 import traceback
 
-logger = logging.getLogger(__name__.ljust(12)[:12])
+logger = logging.getLogger(__name__)
 
 
-class ControllerBase(object):
+class PLCBase(object):
 
     def __init__(self, ip='127.0.0.1', rack=0, slot=2, port=102, reconnect=3):
         self.__ip = ip
@@ -51,7 +50,7 @@ class ControllerBase(object):
 
     @property
     def dbs(self):
-        return DataBlocks(self)
+        return DBs(self)
 
     @property
     def active_dbs(self):
@@ -59,7 +58,7 @@ class ControllerBase(object):
         # WARNING: this function reads value online from PLC and causes some network traffic that may cause connection errors.
         # please consider to use get_active_datablock_list() instead that is offline equivalent.
         ret = {}
-        for k, v in DataBlocks(self).items():
+        for k, v in DBs(self).items():
             if k in self._active_data_blocks:
                 ret[k] = v
         return ret
@@ -77,7 +76,7 @@ class ControllerBase(object):
         :return: db obj
         """
         return self.dbs[dbid]
-        raise UnknownDb("PLC: {plc} DB: {db}. Failed to get db block.".format(plc=self.id, db=dbid))
+        raise UnknownDB("PLC: {plc} DB: {db}. Failed to get db block.".format(plc=self.id, db=dbid))
 
     def iteritems(self):
         """
@@ -113,7 +112,7 @@ class ControllerBase(object):
             yield block
 
     def __str__(self):
-        return "PLC Controller Id: {id} Name: {name} @ {ip}:{port}".format(id=self.__id, name=self.__name, ip=self.__ip, port=self.__port)
+        return "PLC Id: {id} Name: {name} @ {ip}:{port}".format(id=self.__id, name=self.__name, ip=self.__ip, port=self.__port)
 
     def connect(self, attempt=0):
         if attempt < self._reconnect:
@@ -153,28 +152,28 @@ class ControllerBase(object):
         return self.client
 
     def get_time(self):
-        logger.debug("PLC: {plc}. Reading time from controller.".format(plc=self.id))
+        logger.debug("PLC: {plc}. Reading time from PLC.".format(plc=self.id))
         self.time = self.client.get_plc_date_time()
         return self.time
 
     def set_time(self, dtime):
         """
-            Sets the time on controller. Please use datetime.datetime input value format
+            Sets the time on PLC. Please use datetime.datetime input value format
         """
-        logger.info("PLC: {plc}. Setting time on controller to: {date}.".format(plc=self.id, date=dtime))
+        logger.info("PLC: {plc}. Setting time on PLC to: {date}.".format(plc=self.id, date=dtime))
         self.client.set_plc_date_time(dtime)
         self.time = dtime
 
     def sync_time(self):
         """
-            Synchronizes time on the controller with PC.
+            Synchronizes time on the PLC with PC.
         """
-        logger.info("PLC: {plc}. Synchronizing controller time with PC".format(plc=self.id))
+        logger.info("PLC: {plc}. Synchronizing PLC time with PC".format(plc=self.id))
         self.client.set_plc_system_date_time()
 
     def sync_time_if_needed(self, diff=3):
         """
-            Synchronizes time on the controller with PC.
+            Synchronizes time on the PLC with PC.
             Time sync will be started if time differs more than `diff` value
             :param diff - time diff in seconds that triggers the sync (default 3 seconds)
         """
@@ -192,7 +191,7 @@ class ControllerBase(object):
             _block = self.get_db(dbid)
 
             if _block is None:
-                logger.warn("PLC: {plc} DB: {db} is missing on controller. Skipping".format(plc=self.get_id(), db=dbid))
+                logger.warn("PLC: {plc} DB: {db} is missing on PLC. Skipping".format(plc=self.get_id(), db=dbid))
                 return
 
             if PC_HEARTBEAT_FLAG in _block.export():
@@ -282,10 +281,10 @@ class ControllerBase(object):
         return self._pc_ready_flag_on_poll
 
 
-class Controller(ControllerBase):
+class PLC(PLCBase):
 
     def __init__(self, ip='127.0.0.1', rack=0, slot=2, port=102, reconnect=3):
-        ControllerBase.__init__(self, ip, rack, slot, port, reconnect)
+        PLCBase.__init__(self, ip, rack, slot, port, reconnect)
 
     def poll(self):
         for dbid in self.get_active_datablock_list():
@@ -310,7 +309,7 @@ class Controller(ControllerBase):
         # remove block from active list if not found.
         block = self.get_db(dbid)
         if block is None:
-            logger.warn("PLC: {plc} DB: {db} is missing on controller. Removing from active block list.".format(plc=self.get_id(), db=dbid))
+            logger.warn("PLC: {plc} DB: {db} is missing on PLC. Removing from active block list.".format(plc=self.get_id(), db=dbid))
             self._active_data_blocks.remove(dbid)
             logger.info("PLC: {plc} Remaining active block list {list}".format(plc=self.get_id(), list=self._active_data_blocks))
             return
@@ -333,7 +332,7 @@ class Controller(ControllerBase):
     def read_status(self, dbid):
         block = self.get_db(dbid)
         if block is None:
-            logger.warn("PLC: {plc} DB: {db} is missing on controller. Skipping".format(plc=self.get_id(), db=dbid))
+            logger.warn("PLC: {plc} DB: {db} is missing on PLC. Skipping".format(plc=self.get_id(), db=dbid))
             return
 
         if PLC_QUERY_FLAG in block.export():
@@ -415,13 +414,13 @@ class Controller(ControllerBase):
         # save the status to
         block = self.get_db(dbid)
         if block is None:
-            logger.warn("PLC: {plc} DB: {db} is missing on controller. Skipping".format(plc=self.get_id(), db=dbid))
+            logger.warn("PLC: {plc} DB: {db} is missing on PLC. Skipping".format(plc=self.get_id(), db=dbid))
             return
 
         if PLC_SAVE_FLAG in block.export():
             if block.__getitem__(PLC_SAVE_FLAG):  # get the station status from db
                 block.set_pc_ready_flag(False)  # set PC ready flag to False
-                # query controller for required fields...
+                # query PLC for required fields...
                 for field in [STATION_ID, STATION_STATUS, SERIAL_NUMBER, PRODUCT_TYPE]:
                     if field not in block.export():
                         logger.warning("PLC: {plc} DB: {db} is missing field {field} in block body: {body}. Message skipped. Switching off PLC_Save bit".format(plc=self.get_id(), db=block.get_db_number(), field=field, body=block.export()))
@@ -493,7 +492,7 @@ class Controller(ControllerBase):
         block = self.get_db(dbid)
 
         if block is None:
-            logger.warn("PLC: {plc} DB: {db} is missing on controller. Skipping".format(plc=self.get_id(), db=dbid))
+            logger.warn("PLC: {plc} DB: {db} is missing on PLC. Skipping".format(plc=self.get_id(), db=dbid))
             return
 
         if TRC_TMPL_COUNT in block.export():
@@ -585,7 +584,7 @@ class Controller(ControllerBase):
     def show_product_details(self, dbid):
         block = self.get_db(dbid)
         if block is None:
-            logger.warn("PLC: {plc} DB: {db} is missing on controller. Skipping.".format(plc=self.get_id(), db=dbid))
+            logger.warn("PLC: {plc} DB: {db} is missing on PLC. Skipping.".format(plc=self.get_id(), db=dbid))
             return
 
         if PC_OPEN_BROWSER_FLAG in block.export():

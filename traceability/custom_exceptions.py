@@ -12,7 +12,7 @@ class NotFound(PLCAPIException):
     pass
 
 
-class UnknownDb(KeyError, NotFound):
+class UnknownDB(KeyError, NotFound):
     """
     PLC Controller does not recognize the DB requested.
     """

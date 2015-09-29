@@ -248,8 +248,8 @@ def set_dword(_bytearray, byte_index, dword):
 
 def parse_specification(db_specification):
     """
-    create a db specification derived from a
-    dataview of a db in which the byte layout
+    create a block specification derived from a
+    dataview of a block in which the byte layout
     is specified
     """
     parsed_db_specification = OrderedDict()
@@ -268,15 +268,15 @@ class DB(object):
     specification
     """
     _bytearray = None      # data from plc
-    specification = None   # layout of db rows
-    row_size = None        # bytes size of a db row
+    specification = None   # layout of block rows
+    row_size = None        # bytes size of a block row
     layout_offset = None   # at which byte in row specification should we start reading the data
-    db_offset = None       # at which byte in db should we start reading?
+    db_offset = None       # at which byte in block should we start reading?
     """
                            # first fields could be be status data.
                            # and only the last part could be control data
                            # now you can be sure you will never overwrite
-                           # critical parts of db
+                           # critical parts of block
     """
 
     def __init__(self, db_number, _bytearray,
@@ -348,7 +348,7 @@ class DB_Row(object):
     def __init__(self, _bytearray, _specification, row_size=0,
                  db_offset=0, layout_offset=0, row_offset=0):
 
-        self.db_offset = db_offset          # start point of row data in db
+        self.db_offset = db_offset          # start point of row data in block
         self.layout_offset = layout_offset  # start point of row data in layout
         self.row_size = row_size
         self.row_offset = row_offset        # start of writable part of row
@@ -376,7 +376,7 @@ class DB_Row(object):
 
     def __getitem__(self, key):
         """
-        Get a specific db field
+        Get a specific block field
         """
         assert key in self._specification
         index, _type = self._specification[key]
@@ -394,7 +394,7 @@ class DB_Row(object):
 
     def getItem(self, key):
         """
-        Get a specific db field
+        Get a specific block field
         """
         for var_name, (index, _type) in self._specification.items():
             if var_name == key:
@@ -429,7 +429,7 @@ class DB_Row(object):
                             int(bool_index))
 
         # remove 4 from byte index since
-        # first 4 bytes are used by db
+        # first 4 bytes are used by block
         byte_index = self.get_offset(byte_index)
 
         if _type.startswith('STRING'):
@@ -484,7 +484,7 @@ class DB_Row(object):
 
     def write(self, client):
         """
-        Write current data to db in plc
+        Write current data to block in plc
         """
         assert(isinstance(self._bytearray, DB))
         assert(self.row_size >= 0)
@@ -503,7 +503,7 @@ class DB_Row(object):
 
     def read(self, client):
         """
-        read current data of db row from plc
+        read current data of block row from plc
         """
         assert(isinstance(self._bytearray, DB))
         assert(self.row_size >= 0)

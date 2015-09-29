@@ -1,16 +1,16 @@
 import sys
 import os
 from cx_Freeze import setup, Executable
-import plc
+import traceability
 
 PROJECT_ROOT, _ = os.path.split(__file__)
-VERSION = plc.__version__
-PROJECT_NAME = plc.NAME
-PROJECT_AUTHORS = plc.AUTHOR
+VERSION = traceability.__version__
+PROJECT_NAME = traceability.NAME
+PROJECT_AUTHORS = traceability.AUTHOR
 # Please see readme.rst for a complete list of contributors
-PROJECT_EMAILS = plc.EMAIL
+PROJECT_EMAILS = traceability.EMAIL
 PROJECT_URL = "https://bitbucket.org/wilkpio/prodlinetrace"
-SHORT_DESCRIPTION = 'Tracebility application for PLC based production line.'
+SHORT_DESCRIPTION = 'Traceability application for PLC based production line.'
 
 try:
     DESCRIPTION = open(os.path.join(PROJECT_ROOT, "README.rst")).read()
@@ -138,7 +138,7 @@ hidden_imports = [
 zip_includes = [
 ]
 
-include_files = [ 
+include_files = [
                 "prodLineTrace.conf",
                 "prodLineTrace.ico",
                 "dll/snap7.dll",
@@ -150,8 +150,8 @@ include_files = [
 # Dependencies are automatically detected, but it might need fine tuning.
 build_exe_options = {
                      "packages": hidden_imports,
-                     "excludes": ["tkinter", "werkzeug.http.sys", "werkzeug.http._sre", "werkzeug.http.array", "werkzeug.http._locale"], 
-                     "includes":["plc", "flask"], 
+                     "excludes": ["tkinter", "werkzeug.http.sys", "werkzeug.http._sre", "werkzeug.http.array", "werkzeug.http._locale"],
+                     "includes":["plc", "flask"],
                      "include_files": include_files,
                      'include_msvcr': True,
                      'zip_includes': zip_includes,

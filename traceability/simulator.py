@@ -1,24 +1,23 @@
 # this is a class of PLC controller Simulator
 import snap7
 import logging
-from plc.datablocks import DataBlocks
-from plc.controller import ControllerBase
-from plc.custom_exceptions import UnknownStation, UnknownDb, UnknownSN
+from blocks import DBs
+from plc import PLCBase
+from custom_exceptions import UnknownStation, UnknownDB, UnknownSN, PLCSendRcvTimeOut
+from constants import STATION_STATUS, SERIAL_NUMBER, STATION_NUMBER, STATION_STATUS_CODES
 import time
-from plc.custom_exceptions import PLCSendRcvTimeOut
-from plc.constants import STATION_STATUS, SERIAL_NUMBER, STATION_NUMBER, STATION_STATUS_CODES
 import random
 
-logger = logging.getLogger(__name__.ljust(12)[:12])
+logger = logging.getLogger(__name__)
 
 
-class Simulator(ControllerBase):
+class Simulator(PLCBase):
     """
     Simulator is two in one Server and CLient.
     """
 
     def __init__(self, ip='127.0.0.1', rack=0, slot=2, port=102, reconnect=3):
-        ControllerBase.__init__(self, ip, rack, slot, port, reconnect)
+        PLCBase.__init__(self, ip, rack, slot, port, reconnect)
         self.__ip = ip
         self.__rack = int(rack)
         self.__slot = int(slot)
@@ -34,7 +33,7 @@ class Simulator(ControllerBase):
     def connect(self, attempt=0):
         self.server.start_to(self.__ip, self.__port)
         # self.client.connect(self.__ip, self.__rack, self.__slot, self.__port)
-        ControllerBase.connect(self, attempt)
+        PLCBase.connect(self, attempt)
 
     def disconnect(self):
         if self.database_engine is not None:
@@ -61,7 +60,7 @@ class Simulator(ControllerBase):
             raise UnknownSN(station)
 
         if dbid is None:
-            raise UnknownDb(dbid)
+            raise UnknownDB(dbid)
 
         logger.info("PLC: {plc} DB: {db} SN: {sn} ST: {st} saving assembly information.".format(plc=self.get_id(), db=dbid, sn=serial_number, st=station))
         db = self.get_db(dbid)
@@ -113,7 +112,7 @@ class Simulator(ControllerBase):
     def get_station_status(self, dbid, serial_number, station=None):
         # raise NotImplementedError('Please implement this method on %s' % self.__class__.__name__)
         if dbid is None:
-            raise UnknownDb(dbid)
+            raise UnknownDB(dbid)
 
         if serial_number is None:
             raise UnknownSN(station)

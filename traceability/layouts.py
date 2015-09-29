@@ -1,5 +1,5 @@
 from constants import PC_READY_FLAG, PLC_QUERY_FLAG, PLC_SAVE_FLAG, DB_BUSY_FLAG, PC_OPEN_BROWSER_FLAG, STATION_ID, PRODUCT_TYPE, SERIAL_NUMBER, WEEK_NUMBER, YEAR_NUMBER, DATE_TIME, PLC_HEARTBEAT_FLAG, PC_HEARTBEAT_FLAG, TRC_TMPL_COUNT, STATION_NUMBER, STATION_STATUS, PLC_TRC_ON
-from plc.util import offset_spec_block
+from util import offset_spec_block
 
 """
 Define DB blocks used.
@@ -32,7 +32,7 @@ db300Body = """
 
 db300Ctrl = """
 52.0    {plc_live}                  BOOL        # blinks every 300[ms]. Indicates that PLC is alive.
-52.1    {plc_trc_on}                BOOL        # traceability flag. used by PLC to indicate if tracaebility should be switched on.
+52.1    {plc_trc_on}                BOOL        # py flag. used by PLC to indicate if tracaebility should be switched on.
 52.2    ctrl.PLC_data_ready         BOOL        # not used.
 52.3    ctrl.PLC_reserve            BOOL
 52.4    {pc_live}                   BOOL        # Watched by PLC. PC should blink this bit every 300[ms] to notify that application is connected.
@@ -48,7 +48,7 @@ db300 += db300Ctrl
 
 
 db3xxTrcHead = """
-0.0    {trc_template_count}         BYTE        # number of traceability template blocks in message body.
+0.0    {trc_template_count}         BYTE        # number of py template blocks in message body.
 1.0    body.res_1                   BYTE
 """.format(trc_template_count=TRC_TMPL_COUNT)
 
@@ -88,7 +88,7 @@ db3xxTrcTemplate = """
 50.0   body.trc.tmpl.{number}.3.result_status    INT         # operation #3 - status
 52.0   body.trc.tmpl.{number}.3.word_res         INT
 54.0   body.trc.tmpl.{number}.date_time          DATETIME    # date and time - size is 8 bytes
-# traceability template size is 62
+# py template size is 62
 """
 
 # create db map for given controller.
@@ -105,7 +105,7 @@ db_specs = {
 def generate_db_spec(trcTemplateNumber=1):
     tmp_db = db3xxHead
     tmp_db += offset_spec_block(db3xxTrcHead, 46)
-    for i in range(0, trcTemplateNumber):  # append traceability templates.
+    for i in range(0, trcTemplateNumber):  # append py templates.
         base_offset = 48
         block_size = 62
         offset = base_offset + block_size * i

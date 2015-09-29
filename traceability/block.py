@@ -1,22 +1,22 @@
 import snap7
 import logging
-from plc.db_layouts import db_specs
+from layouts import db_specs
 import re
 from constants import PC_READY_FLAG, PLC_QUERY_FLAG, PLC_SAVE_FLAG, TRC_TMPL_COUNT, PC_OPEN_BROWSER_FLAG
 
-logger = logging.getLogger(__name__.ljust(12)[:12])
+logger = logging.getLogger(__name__)
 
 
-class DataBlock(object):
+class DB(object):
     """
     Provide API for DB bytearray
     """
     _bytearray = None      # data of reference to parent DB
     _specification = None  # row specification
 
-    def __init__(self, db_number, controller=None, _bytearray=None, _specification=None):
+    def __init__(self, db_number, plc=None, _bytearray=None, _specification=None):
         self.db_number = db_number
-        self.controller = controller
+        self.plc = plc
         self.db_name = 'db' + str(self.db_number)
 
         self.db_offset = 0          # start point of row data in db
@@ -24,27 +24,27 @@ class DataBlock(object):
 
         # handle specification
         if _specification is None:
-            # db specification = db_number + controller * 10. DB 300 remains unchanged
+            # db specification = db_number + plc * 10. DB 300 remains unchanged
             # ugly hack caused by Diko lazyness to make db specifications unique across whole production line.
-            #logger.debug("Controller: %s reading db spec for: %s " % (self.controller.get_id(), self.db_name))
-            if self.db_name in db_specs[self.controller.get_id()]:
-                _block_spec = db_specs[self.controller.get_id()][self.db_name]
+            #logger.debug("PLC: %s reading db spec for: %s " % (self.plc.get_id(), self.db_name))
+            if self.db_name in db_specs[self.plc.get_id()]:
+                _block_spec = db_specs[self.plc.get_id()][self.db_name]
             else:
-                logger.error("PLC: {plc} Data Block DB: {db} not configured in controller block definition. Returning empty spec.".format(plc=self.controller.get_id(), db=self.db_name))
+                logger.error("PLC: {plc} Data Block DB: {db} not configured in plc block definition. Returning empty spec.".format(plc=self.plc.get_id(), db=self.db_name))
                 _block_spec = ""
         else:
             _block_spec = _specification
         self._specification = snap7.util.parse_specification(_block_spec)
-        #logger.debug("Controller: %s db:  %s spec: %s" % (self.controller.get_id(), self.db_name, self._specification))
+        #logger.debug("PLC: %s db:  %s spec: %s" % (self.plc.get_id(), self.db_name, self._specification))
 
         # handle bytearray
-        if _bytearray is None:  # read byte array from controller if not passed.
+        if _bytearray is None:  # read byte array from plc if not passed.
             self.read()
         else:
             self._bytearray = _bytearray
 
-    def get_controller(self):
-        return self.controller
+    def get_plc(self):
+        return self.plc
 
     def get_db_number(self):
         return self.db_number
@@ -68,18 +68,18 @@ class DataBlock(object):
         """
         Get a specific db field
         """
-        #logger.debug("Controller: %s db:  %s reading key: %s" % (self.controller.get_id(), self.db_name, key))
+        #logger.debug("PLC: %s db:  %s reading key: %s" % (self.plc.get_id(), self.db_name, key))
         try:
             assert key in self._specification
             index, _type = self._specification[key]
         except AssertionError, e:
-            logger.error("PLC: {plc} DB: {db} unable to read key: {key}".format(plc=self.controller.get_id(), db=self.db_name, key=key))
-            logger.warning("PLC: {plc} DB: {db} specification: {spec}".format(plc=self.controller.get_id(), db=self.db_name, spec=self._specification))
+            logger.error("PLC: {plc} DB: {db} unable to read key: {key}".format(plc=self.plc.get_id(), db=self.db_name, key=key))
+            logger.warning("PLC: {plc} DB: {db} specification: {spec}".format(plc=self.plc.get_id(), db=self.db_name, spec=self._specification))
             if TRC_TMPL_COUNT in self._specification:
                 template_count = self.__getitem__(TRC_TMPL_COUNT)
-                logger.warn("PLC: {plc} DB: {db} tracebility template count: {count}".format(plc=self.controller.get_id(), db=self.db_name, count=template_count))
+                logger.warn("PLC: {plc} DB: {db} traceability template count: {count}".format(plc=self.plc.get_id(), db=self.db_name, count=template_count))
             import traceback
-            logger.error("PLC: {plc} DB: {db} Raise exception: {exc}, TB: {tb}".format(plc=self.controller.get_id(), db=self.db_name, exc=e, tb=traceback.format_exc()))
+            logger.error("PLC: {plc} DB: {db} Raise exception: {exc}, TB: {tb}".format(plc=self.plc.get_id(), db=self.db_name, exc=e, tb=traceback.format_exc()))
             raise(e)
         return self.get_value(index, _type)
 
@@ -95,9 +95,9 @@ class DataBlock(object):
         return string
 
     def __str__(self):
-        string = """DataBlock: #{db}""".format(db=self.db_number)
-        if self.controller is not None:
-            string += " of PLC: {plc}".format(plc=self.controller.id)
+        string = """DB: #{db}""".format(db=self.db_number)
+        if self.plc is not None:
+            string += " of PLC: {plc}".format(plc=self.plc.id)
         return string
 
     def get_dict(self):
@@ -171,7 +171,7 @@ class DataBlock(object):
                 ret = snap7.util.set_string(_bytearray, byte_index, value, max_size)
             except ValueError, e:
                 import traceback
-                logger.warning("PLC: {plc} DB: {db} Unable to set string type. Exception: {exc}, TB: {tb}".format(plc=self.get_controller(), db=self.db_number, exc=e, tb=traceback.format_exc()))
+                logger.warning("PLC: {plc} DB: {db} Unable to set string type. Exception: {exc}, TB: {tb}".format(plc=self.get_plc(), db=self.db_number, exc=e, tb=traceback.format_exc()))
                 return False
             return ret
 
@@ -235,12 +235,12 @@ class DataBlock(object):
         self.set_item(key, value)
         self.write_item(key)
         v = self.__getitem__(key)
-        #print "controller:", self.controller
+        #print "plc:", self.plc
         #print "VALUE after store:", key, ":", v, "xxx"
 
     def set_item(self, key, value):
         """
-        sets key and value pair of datablock
+        sets key and value pair of db
         """
         self[key] = value
 
@@ -254,9 +254,9 @@ class DataBlock(object):
         offset = self.get_offset(byte_index)
         db_nr = self.db_number
         data = self.get_bytearray()[offset:offset + size]
-        if self.controller is not None:
+        if self.plc is not None:
             #print "Writing item", db_nr, offset, data
-            self.controller.get_client().db_write(db_nr, offset, data)
+            self.plc.get_client().db_write(db_nr, offset, data)
         return data
 
     def read_item(self, key):
@@ -268,8 +268,8 @@ class DataBlock(object):
         size = self.get_type_size(value, _type)
         offset = self.get_offset(byte_index)
         db_nr = self.db_number
-        if self.controller is not None:
-            data = self.controller.get_client().db_read(db_nr, offset, size)
+        if self.plc is not None:
+            data = self.plc.get_client().db_read(db_nr, offset, size)
         # overwrite bytearray with data from PLC
         self._bytearray[offset:size] = data
         return self[key]
@@ -280,19 +280,19 @@ class DataBlock(object):
         """
         db_nr = self.db_number
         data = self.get_bytearray()
-        if self.controller is not None:
-            self.controller.get_client().client.db_write(db_nr, self.db_offset, data)
+        if self.plc is not None:
+            self.plc.get_client().client.db_write(db_nr, self.db_offset, data)
 
     def read(self):
         """
         read current data from PLC # TEST if READY
         """
-        if self.controller is not None:
-            _ba = self.controller.get_client().db_get(self.db_number)
+        if self.plc is not None:
+            _ba = self.plc.get_client().db_get(self.db_number)
             self._bytearray = _ba
 
     def get_parsed_data(self):
-        # parsed = DataBlock(db, data, layout) # this was ok
+        # parsed = DB(db, data, layout) # this was ok
         return self
 
     def pc_ready_flag(self):
@@ -336,7 +336,7 @@ class DataBlock(object):
         return self.set_flag(flag, value, check)
 
     def set_flag(self, flag, value, check=True):
-        logger.debug("PLC: {plc} DB: {db} FLAG: {flag} set to: {value}.".format(plc=self.controller.get_id(), db=self.get_db_number(), flag=flag, value=value))
+        logger.debug("PLC: {plc} DB: {db} FLAG: {flag} set to: {value}.".format(plc=self.plc.get_id(), db=self.get_db_number(), flag=flag, value=value))
         # set block value in memory
         self[flag] = value
         # write flag to PLC
@@ -345,6 +345,6 @@ class DataBlock(object):
             #self.read_item(flag)  # this shit shifts db block by 1 !!!!! DO NOT DO IT!!
             block = self.get_parsed_data()
             checkedval = self.__getitem__(flag)
-            logger.info("PLC: {plc} DB: {db} FLAG: {flag} set/checked value: {value}/{checkedval}.".format(plc=self.controller.get_id(), db=self.get_db_number(), flag=flag, value=value, checkedval=checkedval))
-            if value != checkedval: 
-                logger.warning("PLC: {plc} DB: {db} FLAG: {flag} set/checked value does not match: {value}/{checkedval}.".format(plc=self.controller.get_id(), db=self.get_db_number(), flag=flag, value=value, checkedval=checkedval))
+            logger.info("PLC: {plc} DB: {db} FLAG: {flag} set/checked value: {value}/{checkedval}.".format(plc=self.plc.get_id(), db=self.get_db_number(), flag=flag, value=value, checkedval=checkedval))
+            if value != checkedval:
+                logger.warning("PLC: {plc} DB: {db} FLAG: {flag} set/checked value does not match: {value}/{checkedval}.".format(plc=self.plc.get_id(), db=self.get_db_number(), flag=flag, value=value, checkedval=checkedval))

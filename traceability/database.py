@@ -1,10 +1,9 @@
-#!/usr/bin/python
-from plc.db_models import *
-from plc.util import get_product_id
+from models import *
+from util import get_product_id
 from datetime import datetime
 import sqlalchemy
 
-logger = logging.getLogger(__name__.ljust(12)[:12])
+logger = logging.getLogger(__name__)
 
 
 class Database(object):
