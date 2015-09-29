@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 import logging
 import sys
-from prodline import ProdLine
-logger = logging.getLogger(__name__.ljust(12)[:12])
+from traceability.prodline import ProdLine
+logger = logging.getLogger(__name__)
 
 
 def main():

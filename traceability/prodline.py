@@ -29,8 +29,8 @@ class ProdLineBase(object):
         # parse config file
         logger.info("Using config file {cfg}.".format(cfg=self._opts.config))
         self._config = parse_config(self._opts.config)
-        #_fh = TimedRotatingFileHandler(self._config['main']['logfile'][0], when="M", interval=1, backupCount=5)
-        _fh = logging.FileHandler(self._config['main']['logfile'][0])
+        _fh = TimedRotatingFileHandler(self._config['main']['logfile'][0], when="MIDNIGHT", interval=1, backupCount=30)
+        #_fh = logging.FileHandler(self._config['main']['logfile'][0])
         _ch = logging.StreamHandler()
         self.__PLCClass = None
         self._baseurl = 'http://localhost:5000/'
