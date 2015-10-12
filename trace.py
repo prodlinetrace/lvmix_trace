@@ -24,7 +24,7 @@ class MainWindow(wx.App):
     ID_UPDATE_LOG = wx.NewId()
 
     def OnInit(self):
-        res = xrc.XmlResource("prodLineTrace.xrc")
+        res = xrc.XmlResource("trace.xrc")
         frame = res.LoadFrame(None, 'MainFrame')
         frame.Show()
 
@@ -41,7 +41,6 @@ class MainWindow(wx.App):
         self.valueMainBaseUrl = xrc.XRCCTRL(frame, "valueMainBaseUrl")
         self.valueMainPollSleep = xrc.XRCCTRL(frame, "valueMainPollSleep")
         self.valueMainPollDBSleep = xrc.XRCCTRL(frame, "valueMainPollDBSleep")
-        self.valueMainPCReadyResetOnPoll = xrc.XRCCTRL(frame, "valueMainPCReadyResetOnPoll")
 
         self.valueMainControllerCount = xrc.XRCCTRL(frame, "valueMainControllerCount")
         self.valueMainMsgRead = xrc.XRCCTRL(frame, "valueMainMsgRead")
@@ -120,7 +119,6 @@ class MainWindow(wx.App):
         self.valueMainBaseUrl.SetLabelText(str(self.baseUrl))
         self.valueMainPollSleep.SetLabelText(str(self.pollSleep))
         self.valueMainPollDBSleep.SetLabelText(str(self.pollDbSleep))
-        self.valueMainPCReadyResetOnPoll.SetLabelText(str(self.pcReadyFlagOnPoll))
 
         while True:
             self.valueMainLogFile.SetLabelText(file_name_with_size(self.logfile))

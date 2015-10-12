@@ -10,7 +10,7 @@ from flask.ext.login import UserMixin
 import logging
 logger = logging.getLogger(__name__)
 
-__version__ = '0.2.5'
+__version__ = '1.0.0'
 
 
 class User(UserMixin, db.Model):
