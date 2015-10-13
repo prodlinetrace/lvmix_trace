@@ -2,6 +2,8 @@ import sys
 import os
 from cx_Freeze import setup, Executable
 import traceability
+import sys
+sys.setrecursionlimit(10000) 
 
 PROJECT_ROOT, _ = os.path.split(__file__)
 VERSION = traceability.__version__
@@ -17,7 +19,6 @@ try:
     DESCRIPTION = open(os.path.join(PROJECT_ROOT, "README.rst")).read()
 except IOError:
     DESCRIPTION = SHORT_DESCRIPTION
-
 
 hidden_imports = [
                 "flask",
@@ -136,7 +137,21 @@ hidden_imports = [
                 "werkzeug.http",
 ]
 
-zip_includes = [
+excludes = [    "tkinter", 
+                "werkzeug.http.os",
+                "werkzeug.http.sys", 
+                "werkzeug.http._sre", 
+                "werkzeug.http.array", 
+                "werkzeug.http._locale",
+                "werkzeug.http._warnings",  
+                "werkzeug.http.errno", 
+                "werkzeug.http.nt",
+                "werkzeug.http.strop",
+]
+
+includes = [    "traceability", 
+                "flask", 
+                #"werkzeug.http",
 ]
 
 include_files = [
@@ -148,11 +163,14 @@ include_files = [
                 ("tool/clientdemo.exe", "clientdemo.exe"),
 ]
 
+zip_includes = [
+]
+
 # Dependencies are automatically detected, but it might need fine tuning.
 build_exe_options = {
                      "packages": hidden_imports,
-                     "excludes": ["tkinter", "werkzeug.http.sys", "werkzeug.http._sre", "werkzeug.http.array", "werkzeug.http._locale"],
-                     "includes":["traceability", "flask"],
+                     "excludes": excludes,
+                     "includes": includes,
                      "include_files": include_files,
                      'include_msvcr': True,
                      'zip_includes': zip_includes,
