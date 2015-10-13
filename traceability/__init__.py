@@ -1,7 +1,7 @@
 """
 The Traceability Python library.
 """
-__version__ = '1.0.0'
+__version__ = '1.0.1'
 AUTHOR = "Piotr Wilkosz"
 EMAIL = "Piotr.Wilkosz@gmail.com"
 NAME = "HLTrace"
@@ -13,6 +13,7 @@ from flask import Flask
 from flask.ext.sqlalchemy import SQLAlchemy
 import tempfile
 import os
+import sys
 
 logger = logging.getLogger(__package__.ljust(12)[:12])
 

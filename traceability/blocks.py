@@ -1,7 +1,7 @@
 import snap7
 import logging
-from block import DB
-from custom_exceptions import UnknownDB
+from .block import DB
+from .custom_exceptions import UnknownDB
 
 logger = logging.getLogger(__name__)
 

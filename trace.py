@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python -v -i
 import wx
 from wx import xrc
 from wx.lib.delayedresult import startWorker
@@ -10,9 +10,9 @@ import sys
 from pygtail import Pygtail
 import traceback
 
-from traceability import helpers
 from traceability import __version__ as version
 from traceability.models import __version__ as dbmodel_version
+from traceability.helpers import parse_args, parse_config
 from traceability.prodline import ProdLine
 from traceability.util import file_name_with_size
 
@@ -62,7 +62,7 @@ class MainWindow(wx.App):
 
         self.application = ProdLine(sys.argv)
         self._opts = self.application._opts
-        self._config = helpers.parse_config(self._opts.config)
+        self._config = parse_config(self._opts.config)
 #        self.webapp = webapp
         self.dbfile = self._config['main']['dbfile'][0]
         self.logfile = self._config['main']['logfile'][0]
@@ -188,7 +188,7 @@ class MainWindow(wx.App):
         self.Close(True)
 
 if __name__ == "__main__":
-    _opts, _args = helpers.parse_args()
+    _opts, _args = parse_args()
     app = MainWindow(redirect=True, filename=os.devnull)
 
     # update status bar
