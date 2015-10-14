@@ -107,9 +107,10 @@ def generate_db_spec(trcTemplateNumber=1):
 # St1x
 #############################################################################################
 db_specs['c1']['db301'] = generate_db_spec(1)
-db_specs['c1']['db302'] = generate_db_spec(2)
-db_specs['c1']['db303'] = generate_db_spec(1)
-db_specs['c1']['db304'] = generate_db_spec(10)
+db_specs['c1']['db302'] = generate_db_spec(1)
+db_specs['c1']['db303'] = generate_db_spec(4)
+db_specs['c1']['db304'] = generate_db_spec(2)
+db_specs['c1']['db305'] = generate_db_spec(15)
 
 #############################################################################################
 # St2x
