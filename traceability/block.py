@@ -1,8 +1,8 @@
 import snap7
 import logging
-from layouts import db_specs
+from .layouts import db_specs
 import re
-from .constants import PC_READY_FLAG, PLC_QUERY_FLAG, PLC_SAVE_FLAG, TRC_TMPL_COUNT, PC_OPEN_BROWSER_FLAG
+from .constants import PC_READY_FLAG, PLC_QUERY_FLAG, PLC_SAVE_FLAG, TRC_TMPL_COUNT, PC_OPEN_BROWSER_FLAG, OPERATOR_QUERY_FLAG, OPERATOR_SAVE_FLAG
 
 logger = logging.getLogger(__name__)
 
@@ -318,6 +318,20 @@ class DB(object):
         returns value of PLC_SAVE_FLAG
         """
         return self[PLC_SAVE_FLAG]
+
+    def operator_query_flag(self):
+        return self[OPERATOR_QUERY_FLAG]
+
+    def operator_save_flag(self):
+        return self[OPERATOR_SAVE_FLAG]
+
+    def set_operator_query_flag(self, value=True, check=True):
+        flag = OPERATOR_QUERY_FLAG
+        return self.set_flag(flag, value, check)
+
+    def set_operator_save_flag(self, value=True, check=True):
+        flag = OPERATOR_SAVE_FLAG
+        return self.set_flag(flag, value, check)
 
     def set_plc_save_flag(self, value=True, check=True):
         flag = PLC_SAVE_FLAG

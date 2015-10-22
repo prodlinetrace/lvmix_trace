@@ -1,12 +1,11 @@
 # this is a class of PLC controller Simulator
 import snap7
 import logging
-from blocks import DBs
-from plc import PLCBase
-from custom_exceptions import UnknownStation, UnknownDB, UnknownSN, PLCSendRcvTimeOut
-from constants import STATION_STATUS, SERIAL_NUMBER, STATION_NUMBER, STATION_STATUS_CODES
 import time
 import random
+from .plc import PLCBase
+from .custom_exceptions import UnknownStation, UnknownDB, UnknownSN
+from .constants import STATION_STATUS, SERIAL_NUMBER, STATION_NUMBER, STATION_STATUS_CODES
 
 logger = logging.getLogger(__name__)
 

@@ -1,5 +1,5 @@
-# HLTrace
-Trace - Traceability application for PLC based production line.
+# prodlinetrace
+ProdLineTrace - Traceability for PLC based production line.
 
 
 Pre-requisites
@@ -28,8 +28,8 @@ Below are step-by-step installation instructions:
 
 **Step 1**: Clone the git repository
 
-    $ git clone https://bitbucket.org/wilkpio/hltrace.git
-    $ cd hltrace
+    $ git clone https://bitbucket.org/wilkpio/prodlinetrace.git
+    $ cd prodlinetrace
 
 **Step 2**: Create a virtual environment.
 
@@ -47,7 +47,7 @@ For Windows users working on the standard command prompt:
 
 **Step 3**: Start the application:
 
-    (venv) $ python trace.py
+    (venv) $ python prodLineTrace.py
     
 **Step 4**: build windows installer (optional)
 
@@ -55,7 +55,7 @@ For Windows users working on the standard command prompt:
     
 Additional Info
 ---------------
-Starting with version 0.1.3 application can open URL with product details page.
+Starting with version 0.1.3 application can open URL witth product details page.
 
 In order to open product details in same tab please reconfigure your firefox:
 - type "about:config" in firefox address bar

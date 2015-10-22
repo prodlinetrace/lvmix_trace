@@ -1,31 +1,33 @@
-from . import db
-from datetime import datetime
 import hashlib
-from markdown import markdown
 import bleach
+import logging
+from markdown import markdown
+from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
 from flask import request, current_app
 from flask.ext.login import UserMixin
-import logging
+from . import db
 logger = logging.getLogger(__name__)
 
-__version__ = '1.0.1'
+__version__ = '0.3.0'
 
 
 class User(UserMixin, db.Model):
     __tablename__ = 'users'
     id = db.Column(db.Integer, primary_key=True)
     login = db.Column(db.String(64), nullable=False, unique=True, index=True)
-    is_admin = db.Column(db.Boolean)
-    password_hash = db.Column(db.String(128))
     name = db.Column(db.String(64))
+    is_admin = db.Column(db.Boolean)
+    is_operator = db.Column(db.Boolean)
+    password_hash = db.Column(db.String(128))
     location = db.Column(db.String(64))
     locale = db.Column(db.String(16))
     bio = db.Column(db.Text())
     member_since = db.Column(db.DateTime(), default=datetime.now)
     avatar_hash = db.Column(db.String(32))
     comments = db.relationship('Comment', lazy='dynamic', backref='author')
+    status = db.relationship('Status', lazy='dynamic', backref='user', foreign_keys='Status.user_id')
 
     def __init__(self, **kwargs):
         super(User, self).__init__(**kwargs)
@@ -100,52 +102,48 @@ db.event.listen(Comment.body, 'set', Comment.on_changed_body)
 
 class Product(db.Model):
     __tablename__ = 'product'
-    id = db.Column(db.String(30), nullable=False, unique=True, index=True, primary_key=True)
-    type = db.Column(db.String(10), nullable=False, unique=True, index=True, primary_key=True)
-    serial = db.Column(db.String(20), nullable=False, unique=True, index=True, primary_key=True)
-    program = db.Column(db.String(20), nullable=False, unique=False)
-    date_added = db.Column(db.String(40), index=True)
-    
+    id = db.Column(db.Integer, primary_key=True)  # this is serial number
+    type = db.Column(db.Integer, index=True, unique=False)
+    serial = db.Column(db.Integer, index=True, unique=False)
+    week = db.Column(db.Integer, unique=False)
+    year = db.Column(db.Integer, unique=False)
+    date_added = db.Column(db.DateTime(), index=True, default=datetime.now)
     comments = db.relationship('Comment', lazy='dynamic', backref='product')
     statuses = db.relationship('Status', lazy='dynamic', backref='product')
     operations = db.relationship('Operation', lazy='dynamic', backref='product')
 
-    def __init__(self, serial, prodtype='0000000000', program='', date=None):
+    def __init__(self, type, serial, week, year):
+        self.type = type
         self.serial = serial
-        self.type = prodtype
+        self.week = week
+        self.year = year
         self.id = self.get_product_id(self.type, self.serial)
-        self.program = program
-        if date is None:
-            date = datetime.now()
-        self.date_added = str(date)
 
     def __repr__(self):
         return '<Product {id}>'.format(id=self.id)
 
-    @staticmethod
-    def calculate_product_id(_type=None, _serial=None):
-        return str(_type).zfill(10) + str(_serial).zfill(20)
-    
-    def get_product_id(self, _type=None, _serial=None):
+    def get_product_id(self, type=None, serial=None):
         """
         returns product id based on product_type and serial_number.
         It is used within Product table.
         """
-        if _type is None:
-            _type = self.type
-        if _serial is None:
-            _serial = self.serial
+        if type is None:
+            type = self.type
 
-        return Product.calculate_product_id(_type, _serial)
+        if serial is None:
+            serial = self.serial
+
+        return pow(10, 8) * type + serial
 
     @property
     def serialize(self):
         """Return object data in easily serializeable format"""
         return {
             'id': self.id,
-            'serial': self.serial,
             'type': self.type,
-            'program': self.program,
+            'serial': self.serial,
+            'week': self.week,
+            'year': self.year,
         }
 
 
@@ -160,8 +158,8 @@ class Station(db.Model):
     statuses = db.relationship('Status', lazy='dynamic', backref='station')
     operations = db.relationship('Operation', lazy='dynamic', backref='station')
 
-    def __init__(self, ident, ip='localhost', name="name", port=102, rack=0, slot=2):
-        self.id = ident
+    def __init__(self, id, ip='localhost', name="name", port=102, rack=0, slot=2):
+        self.id = id
         self.ip = ip
         self.name = name
         self.port = port
@@ -189,13 +187,15 @@ class Status(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     status = db.Column(db.Integer, db.ForeignKey('operation_status.id'))
     date_time = db.Column(db.String(40))
-    product_id = db.Column(db.String(30), db.ForeignKey('product.id'))
+    product_id = db.Column(db.Integer, db.ForeignKey('product.id'))
     station_id = db.Column(db.Integer, db.ForeignKey('station.id'))
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
 
-    def __init__(self, status, product, station, date_time=None):
+    def __init__(self, status, product, station, user=None, date_time=None):
         self.status = status
         self.product_id = product
         self.station_id = station
+        self.user_id = user
         if date_time is None:
             date_time = datetime.now()
         self.date_time = str(date_time)
@@ -211,6 +211,7 @@ class Status(db.Model):
             'status': self.status,
             'product_id': self.product_id,
             'station_id': self.station_id,
+            'user_id': self.user_id,
             'date_time': self.date_time,
         }
 
@@ -218,11 +219,10 @@ class Status(db.Model):
 class Operation(db.Model):
     __tablename__ = 'operation'
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    product_id = db.Column(db.String(30), db.ForeignKey('product.id'))
+    product_id = db.Column(db.Integer, db.ForeignKey('product.id'))
     station_id = db.Column(db.Integer, db.ForeignKey('station.id'))
     operation_status_id = db.Column(db.Integer, db.ForeignKey('operation_status.id'))
     operation_type_id = db.Column(db.Integer, db.ForeignKey('operation_type.id'))
-    program_id = db.Column(db.String(20), db.ForeignKey('program.id'))
     date_time = db.Column(db.String(40))
     result_1 = db.Column(db.Float)
     result_1_max = db.Column(db.Float)
@@ -232,13 +232,16 @@ class Operation(db.Model):
     result_2_max = db.Column(db.Float)
     result_2_min = db.Column(db.Float)
     result_2_status_id = db.Column(db.Integer, db.ForeignKey('operation_status.id'))
+    result_3 = db.Column(db.Float)
+    result_3_max = db.Column(db.Float)
+    result_3_min = db.Column(db.Float)
+    result_3_status_id = db.Column(db.Integer, db.ForeignKey('operation_status.id'))
 
-    def __init__(self, product, station, operation_status_id, operation_type_id, program_id, date_time, r1=None, r1_max=None, r1_min=None, r1_stat=None, r2=None, r2_max=None, r2_min=None, r2_stat=None):
+    def __init__(self, product, station, operation_status_id, operation_type_id, date_time, r1=None, r1_max=None, r1_min=None, r1_stat=None, r2=None, r2_max=None, r2_min=None, r2_stat=None, r3=None, r3_max=None, r3_min=None, r3_stat=None):
         self.product_id = product
         self.station_id = station
         self.operation_status_id = operation_status_id
         self.operation_type_id = operation_type_id
-        self.program_id = str(program_id)
         if date_time is None:
             date_time = datetime.now()
         self.date_time = str(date_time)
@@ -253,6 +256,11 @@ class Operation(db.Model):
         self.result_2_min = r2_min
         self.result_2_status_id = r2_stat
 
+        self.result_3 = r3
+        self.result_3_max = r3_max
+        self.result_3_min = r3_min
+        self.result_3_status_id = r3_stat
+
     def __repr__(self):
         return '<Assembly Operation Id: {id} for: Product: {product} Station: {station} Operation_type: {operation_type}>'.format(id=self.id, product=self.product_id, station=self.station_id, operation_type=self.operation_type_id)
 
@@ -266,7 +274,6 @@ class Operation(db.Model):
             'station_id': self.station_id,
             'operation_type_id': self.operation_type_id,
             'operation_status_id': self.operation_status_id,
-            'program_id': self.program_id,
             'date_time': self.date_time,
 
             'result_1': self.result_1,
@@ -278,6 +285,11 @@ class Operation(db.Model):
             'result_2_max': self.result_2_max,
             'result_2_min': self.result_2_min,
             'result_2_status_id': self.result_2_status_id,
+
+            'result_3': self.result_3,
+            'result_3_max': self.result_3_max,
+            'result_3_min': self.result_3_min,
+            'result_3_status_id': self.result_3_status_id,
         }
 
 
@@ -291,11 +303,12 @@ class Operation_Status(db.Model):
 
     result_1_status = db.relationship('Operation', lazy='dynamic', backref='result_1_status', foreign_keys='Operation.result_1_status_id')
     result_2_status = db.relationship('Operation', lazy='dynamic', backref='result_2_status', foreign_keys='Operation.result_2_status_id')
+    result_3_status = db.relationship('Operation', lazy='dynamic', backref='result_3_status', foreign_keys='Operation.result_3_status_id')
 
     status = db.relationship('Status', lazy='dynamic', backref='status_name', foreign_keys='Status.status')
 
-    def __init__(self, ident, name="Default Operation Status", description="Default Operation Status Description", unit_id=0):
-        self.id = ident
+    def __init__(self, id, name="Default Operation Status", description="Default Operation Status Description", unit_id=0):
+        self.id = id
         self.name = name
         self.description = description
         self.unit_id = unit_id
@@ -321,8 +334,8 @@ class Operation_Type(db.Model):
     description = db.Column(db.String(255))
     operations = db.relationship('Operation', lazy='dynamic', backref='operation_type')
 
-    def __init__(self, ident, name="Default Operation Name", description="Default Operation Description"):
-        self.id = ident
+    def __init__(self, id, name="Default Operation Name", description="Default Operation Description"):
+        self.id = id
         self.name = name
         self.description = description
 
@@ -338,29 +351,6 @@ class Operation_Type(db.Model):
             'description': self.description,
         }
 
-class Program(db.Model):
-    __tablename__ = 'program'
-    id = db.Column(db.String(20), primary_key=True)
-    name = db.Column(db.String(64))
-    description = db.Column(db.String(255))
-    operations = db.relationship('Operation', lazy='dynamic', backref='program')
-
-    def __init__(self, ident, name="Default Program Name", description="Default Program Description"):
-        self.id = ident
-        self.name = name
-        self.description = description
-
-    def __repr__(self):
-        return '<Operation_Type Id: {id} Name: {name} Description: {desc}>'.format(id=self.id, name=self.name, desc=self.description)
-
-    @property
-    def serialize(self):
-        """Return object data in easily serializeable format"""
-        return {
-            'id': self.id,
-            'name': self.name,
-            'description': self.description,
-        }
 
 class Unit(db.Model):
     __tablename__ = 'unit'
@@ -370,8 +360,8 @@ class Unit(db.Model):
     description = db.Column(db.String(255))
     unit = db.relationship('Operation_Status', lazy='dynamic', backref='unit', foreign_keys='Operation_Status.unit_id')
 
-    def __init__(self, ident, name="Default Unit Name", symbol="Default Unit Symbol", description="Default Unit Description"):
-        self.id = ident
+    def __init__(self, id, name="Default Unit Name", symbol="Default Unit Symbol", description="Default Unit Description"):
+        self.id = id
         self.name = name
         self.symbol = symbol
         self.description = description

@@ -1,13 +1,13 @@
-import logging
-from logging.handlers import TimedRotatingFileHandler
-from helpers import parse_config, parse_args
 import snap7
-from database import Database
 import threading
 import concurrent.futures
 import traceback
+import logging
+from logging.handlers import TimedRotatingFileHandler
 from datetime import datetime
 from time import sleep
+from .helpers import parse_config, parse_args
+from .database import Database
 
 logger = logging.getLogger(__name__)
 
@@ -206,6 +206,9 @@ class ProdLine(ProdLineBase):
     def get_counter_product_details_display(self):
         return sum([ctrl.counter_show_product_details for ctrl in self.plcs])
 
+    def get_counter_operator_status_read(self):
+        return sum([ctrl.counter_operator_status_read for ctrl in self.plcs])
+
     def get_product_count(self):
         return self.database.get_product_count()
 
@@ -258,13 +261,30 @@ class ProdLine(ProdLineBase):
         self.test_time_get()
 
     def poll(self):
+        self.pollStatus()
+        self.pollOperations()
+
+    def pollStatus(self):
         for plc in self.plcs:
             for dbid in plc.get_active_datablock_list():
+                if dbid != 300:
+                    continue
                 try:
                     plc.poll_db(dbid)
                 except snap7.snap7exceptions.Snap7Exception:
                     logging.critical("Connection to {plc} lost. Trying to re-establish connection.".format(plc=plc))
                     plc.connect()
+
+    def pollOperations(self):
+        for ctrl in self.plcs:
+            for dbid in ctrl.get_active_datablock_list():
+                if dbid == 300:
+                    continue
+                try:
+                    ctrl.poll_db(dbid)
+                except snap7.snap7exceptions.Snap7Exception:
+                    logging.critical("Connection to {plc} lost. Trying to re-establish connection.".format(plc=ctrl))
+                    ctrl.connect()
 
     def run(self, times=10):
         """"
@@ -296,6 +316,24 @@ class ProdLine(ProdLineBase):
                 self.sync_plcs_time_if_needed()
             # change the value of PC heartbeat flag (every 100ms by default)
             self.pc_heartbeat()
+
+        return True
+
+    def runStatusProcessor(self):
+        """
+            Process db300 statuses in infinite loop.
+        """
+        while True:
+            self.pollStatus()
+
+        return True
+
+    def runOperationProcessor(self):
+        """
+            Process assembly operations in infinite loop.
+        """
+        while True:
+            self.pollOperations()
 
         return True
 
