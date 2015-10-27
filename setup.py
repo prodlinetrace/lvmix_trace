@@ -9,7 +9,7 @@ PROJECT_NAME = traceability.NAME
 PROJECT_AUTHORS = traceability.AUTHOR
 # Please see readme.rst for a complete list of contributors
 PROJECT_EMAILS = traceability.EMAIL
-PROJECT_URL = "https://bitbucket.org/wilkpio/prodlinetrace"
+PROJECT_URL = "https://bitbucket.org/wilkpio/trace"
 SHORT_DESCRIPTION = 'Traceability application for PLC based production line.'
 
 try:
