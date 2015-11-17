@@ -10,7 +10,7 @@ from flask.ext.login import UserMixin
 from . import db
 logger = logging.getLogger(__name__)
 
-__version__ = '0.3.0'
+__version__ = '0.4.0'
 
 
 class User(UserMixin, db.Model):
@@ -82,7 +82,7 @@ class Comment(db.Model):
     body_html = db.Column(db.Text)
     timestamp = db.Column(db.DateTime, index=True, default=datetime.utcnow)
     author_id = db.Column(db.Integer, db.ForeignKey('users.id'))
-    product_id = db.Column(db.Integer, db.ForeignKey('product.id'))
+    product_id = db.Column(db.String(20), db.ForeignKey('product.id'))
 
     @staticmethod
     def on_changed_body(target, value, oldvalue, initiator):
@@ -102,38 +102,48 @@ db.event.listen(Comment.body, 'set', Comment.on_changed_body)
 
 class Product(db.Model):
     __tablename__ = 'product'
-    id = db.Column(db.Integer, primary_key=True)  # this is serial number
-    type = db.Column(db.Integer, index=True, unique=False)
-    serial = db.Column(db.Integer, index=True, unique=False)
-    week = db.Column(db.Integer, unique=False)
-    year = db.Column(db.Integer, unique=False)
+    id = db.Column(db.String(20), nullable=False, unique=True, index=True, primary_key=True)
+    type = db.Column(db.String(10), nullable=False, index=True, unique=False)
+    serial = db.Column(db.String(6), nullable=False, index=True, unique=False)
+    week = db.Column(db.String(2), nullable=False, index=True, unique=False)
+    year = db.Column(db.String(2), nullable=False, index=True, unique=False)
     date_added = db.Column(db.DateTime(), index=True, default=datetime.now)
     comments = db.relationship('Comment', lazy='dynamic', backref='product')
     statuses = db.relationship('Status', lazy='dynamic', backref='product')
     operations = db.relationship('Operation', lazy='dynamic', backref='product')
 
-    def __init__(self, type, serial, week, year):
-        self.type = type
+    def __init__(self, prodtype, serial, week, year):
+        self.type = prodtype
         self.serial = serial
         self.week = week
         self.year = year
-        self.id = self.get_product_id(self.type, self.serial)
+        self.id = self.get_product_id(self.type, self.serial, self.week, self.year)
 
     def __repr__(self):
         return '<Product {id}>'.format(id=self.id)
 
-    def get_product_id(self, type=None, serial=None):
+    def get_product_id(self, prodtype=None, serial=None , week=None, year=None):
         """
-        returns product id based on product_type and serial_number.
+        returns product id based on product_type, serial_number week and year.
         It is used within Product table.
         """
-        if type is None:
-            type = self.type
+        if prodtype is None:
+            prodtype = self.type
 
         if serial is None:
             serial = self.serial
 
-        return pow(10, 8) * type + serial
+        if week is None:
+            week = self.week
+
+        if year is None:
+            year = self.year
+
+        return Product.calculate_product_id(prodtype, serial, week, year)
+
+    @staticmethod
+    def calculate_product_id(_type=None, _serial=None, _week="", _year=""):
+        return str(_type).zfill(10) + str(_serial).zfill(6) + str(_week).zfill(2) + str(_year).zfill(2)
 
     @property
     def serialize(self):
@@ -187,7 +197,7 @@ class Status(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     status = db.Column(db.Integer, db.ForeignKey('operation_status.id'))
     date_time = db.Column(db.String(40))
-    product_id = db.Column(db.Integer, db.ForeignKey('product.id'))
+    product_id = db.Column(db.String(20), db.ForeignKey('product.id'))
     station_id = db.Column(db.Integer, db.ForeignKey('station.id'))
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
 
@@ -219,7 +229,7 @@ class Status(db.Model):
 class Operation(db.Model):
     __tablename__ = 'operation'
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    product_id = db.Column(db.Integer, db.ForeignKey('product.id'))
+    product_id = db.Column(db.String(20), db.ForeignKey('product.id'))
     station_id = db.Column(db.Integer, db.ForeignKey('station.id'))
     operation_status_id = db.Column(db.Integer, db.ForeignKey('operation_status.id'))
     operation_type_id = db.Column(db.Integer, db.ForeignKey('operation_type.id'))

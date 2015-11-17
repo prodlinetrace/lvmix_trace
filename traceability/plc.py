@@ -6,7 +6,7 @@ import snap7
 from datetime import datetime
 from time import sleep
 from .constants import PC_HEARTBEAT_FLAG, PLC_QUERY_FLAG, PLC_SAVE_FLAG, STATION_NUMBER, STATION_STATUS, PRODUCT_TYPE, SERIAL_NUMBER, STATION_STATUS_CODES, STATION_ID, TRC_TMPL_COUNT, TRC_TMPL_SAVE_FLAG, PC_OPEN_BROWSER_FLAG, DATE_TIME, WEEK_NUMBER, YEAR_NUMBER, PC_READY_FLAG, OPERATOR_NUMBER, OPERATOR_STATUS, OPERATOR_QUERY_FLAG
-from .util import get_product_id
+from .models import Product 
 from .blocks import DBs
 from .custom_exceptions import UnknownDB
 from .database import Database
@@ -343,7 +343,7 @@ class PLC(PLCBase):
                 block.set_pc_ready_flag(False)  # set PC ready flag to False
                 # body
 
-                for field in [STATION_ID, STATION_NUMBER, STATION_STATUS, SERIAL_NUMBER, PRODUCT_TYPE]:
+                for field in [STATION_ID, STATION_NUMBER, STATION_STATUS, SERIAL_NUMBER, PRODUCT_TYPE, WEEK_NUMBER, YEAR_NUMBER]:
                     if field not in block.export():
                         logger.warning("PLC: {plc} DB: {db} is missing field {field} in block body: {body}. Message skipped. Switching off PLC_Query bit.".format(plc=self.get_id(), db=block.get_db_number(), field=field, body=block.export()))
                         block.set_plc_query_flag(False)  # switch off PLC_Query bit
@@ -352,16 +352,28 @@ class PLC(PLCBase):
 
                 try:
                     data = block[PRODUCT_TYPE]
-                    product_type = int(data)
+                    product_type = str(data)
                 except ValueError, e:
                     logger.error("PLC: {plc} DB: {db} Data read error. Input: {data} Exception: {e}, TB: {tb}".format(plc=self.id, db=dbid, data=data, e=e, tb=traceback.format_exc()))
-                    product_type = 0
+                    product_type = "0"
                 try:
                     data = block[SERIAL_NUMBER]
-                    serial_number = int(data)
+                    serial_number = str(data)
                 except ValueError, e:
                     logger.error("PLC: {plc} DB: {db} Data read error. Input: {data} Exception: {e}, TB: {tb}".format(plc=self.id, db=dbid, data=data, e=e, tb=traceback.format_exc()))
-                    serial_number = 0
+                    serial_number = "0"
+                try:
+                    data = block[WEEK_NUMBER]
+                    week_number = str(data)
+                except ValueError, e:
+                    logger.warning("PLC: {plc} DB: {db} wrong value for week, returning 0. Exception: {e}, TB: {tb}".format(plc=self.id, db=block.get_db_number(), e=e, tb=traceback.format_exc()))
+                    week_number = '0'
+                try:
+                    data = block[YEAR_NUMBER]
+                    year_number = int(data)
+                except ValueError, e:
+                    logger.warning("PLC: {plc} DB: {db} wrong value for year, returning 0. Exception: {e}, TB: {tb}".format(plc=self.id, db=block.get_db_number(), e=e, tb=traceback.format_exc()))
+                    year_number = '0'
                 try:
                     data = block[STATION_ID]
                     station_id = int(data)
@@ -381,8 +393,9 @@ class PLC(PLCBase):
                     logger.error("PLC: {plc} DB: {db} Data read error. Input: {data} Exception: {e}, TB: {tb}".format(plc=self.id, db=dbid, data=data, e=e, tb=traceback.format_exc()))
                     station_status_initial = 0
 
-                logger.debug("PLC: {plc} DB: {db} PT: {type} SN: {serial} trying to read status from database for station: {station}".format(plc=self.get_id(), db=block.get_db_number(), type=product_type, serial=serial_number, station=station_number))
-                station_status = self.database_engine.read_status(int(product_type), int(serial_number), int(station_number))
+                product_id = str(Product.calculate_product_id(product_type, serial_number, week_number, year_number))
+                logger.debug("PLC: {plc} DB: {db} PID: {product_id} trying to read status from database for station: {station}".format(plc=self.get_id(), db=block.get_db_number(), product_id=product_id, station=station_number))
+                station_status = self.database_engine.read_status(str(product_id), int(station_number))
 
                 try:
                     status = STATION_STATUS_CODES[station_status]['result']
@@ -424,7 +437,7 @@ class PLC(PLCBase):
             if block.__getitem__(PLC_SAVE_FLAG):  # get the station status from db
                 block.set_pc_ready_flag(False)  # set PC ready flag to False
                 # query PLC for required fields...
-                for field in [STATION_ID, STATION_STATUS, SERIAL_NUMBER, PRODUCT_TYPE, OPERATOR_NUMBER]:
+                for field in [STATION_ID, STATION_STATUS, SERIAL_NUMBER, PRODUCT_TYPE, WEEK_NUMBER, YEAR_NUMBER, OPERATOR_NUMBER]:
                     if field not in block.export():
                         logger.warning("PLC: {plc} DB: {db} is missing field {field} in block body: {body}. Message skipped. Switching off PLC_Save bit".format(plc=self.get_id(), db=block.get_db_number(), field=field, body=block.export()))
                         block.set_plc_save_flag(False)
@@ -432,16 +445,16 @@ class PLC(PLCBase):
                         return
                 try:
                     data = block[PRODUCT_TYPE]
-                    product_type = int(data)
+                    product_type = str(data)
                 except ValueError, e:
                     logger.error("PLC: {plc} DB: {db} Data read error. Input: {data} Exception: {e}, TB: {tb}".format(plc=self.id, db=dbid, data=data, e=e, tb=traceback.format_exc()))
-                    product_type = 0
+                    product_type = "0"
                 try:
                     data = block[SERIAL_NUMBER]
-                    serial_number = int(data)
+                    serial_number = str(data)
                 except ValueError, e:
                     logger.error("PLC: {plc} DB: {db} Data read error. Input: {data} Exception: {e}, TB: {tb}".format(plc=self.id, db=dbid, data=data, e=e, tb=traceback.format_exc()))
-                    serial_number = 0
+                    serial_number = "0"
                 try:
                     data = block[STATION_ID]
                     station_id = int(data)
@@ -465,16 +478,16 @@ class PLC(PLCBase):
                 # get additional data from PLC:
                 try:
                     data = block[WEEK_NUMBER]
-                    week_number = int(data)
+                    week_number = str(data)
                 except ValueError, e:
                     logger.warning("PLC: {plc} DB: {db} wrong value for week, returning 0. Exception: {e}".format(plc=self.id, db=block.get_db_number(), e=e))
-                    week_number = 0
+                    week_number = "0"
                 try:
                     data = block[YEAR_NUMBER]
-                    year_number = int(data)
+                    year_number = str(data)
                 except ValueError, e:
                     logger.warning("PLC: {plc} DB: {db} wrong value for year, returning 0. Exception: {e}".format(plc=self.id, db=block.get_db_number(), e=e))
-                    year_number = 0
+                    year_number = "0"
                 try:
                     data = block[DATE_TIME]
                     date_time = str(data)
@@ -491,7 +504,7 @@ class PLC(PLCBase):
                     logger.error("PLC: {plc} DB: {db} Data read error. Input: {data} Exception: {e}, TB: {tb}".format(plc=self.id, db=dbid, data=data, e=e, tb=traceback.format_exc()))
                     operator_number = 0
 
-                self.database_engine.write_status(product_type, serial_number, station_id, station_status, week_number, year_number, operator_number, date_time)
+                self.database_engine.write_status(product_type, serial_number, week_number, year_number, station_id, station_status, operator_number, date_time)
                 self.counter_status_message_write += 1
                 block.set_plc_save_flag(False)
                 block.set_pc_ready_flag(True)  # set PC ready flag back to true
@@ -533,41 +546,41 @@ class PLC(PLCBase):
                 if block.__getitem__(pc_save_flag_name):  # process only if PLC_Save flag is set for given template
                     # read basic data
                     # make sure that basic data is set on PLC (skip otherwise)
-                    for field in [STATION_ID, SERIAL_NUMBER, PRODUCT_TYPE]:
+                    for field in [STATION_ID, SERIAL_NUMBER, PRODUCT_TYPE, WEEK_NUMBER, YEAR_NUMBER]:
                         if field not in block.export():
                             logger.warning("PLC: {plc} DB: {db} is missing field {field} in block body: {body}. Message skipped.".format(plc=self.get_id(), db=block.get_db_number(), field=field, body=block.export()))
                             return
                     # get some basic data from data block
                     try:
                         data = block[PRODUCT_TYPE]
-                        product_type = int(data)
+                        product_type = str(data)
                     except ValueError, e:
                         logger.error("PLC: {plc} DB: {db} Data read error. Input: {data} Exception: {e}, TB: {tb}".format(plc=self.id, db=dbid, data=data, e=e, tb=traceback.format_exc()))
-                        product_type = 0
+                        product_type = "0"
                     try:
                         data = block[SERIAL_NUMBER]
-                        serial_number = int(data)
+                        serial_number = str(data)
                     except ValueError, e:
                         logger.error("PLC: {plc} DB: {db} Data read error. Input: {data} Exception: {e}, TB: {tb}".format(plc=self.id, db=dbid, data=data, e=e, tb=traceback.format_exc()))
-                        serial_number = 0
+                        serial_number = "0"
                     try:
                         data = block[STATION_ID]
                         station_id = int(data)
                     except ValueError, e:
                         logger.error("PLC: {plc} DB: {db} Data read error. Input: {data} Exception: {e}, TB: {tb}".format(plc=self.id, db=dbid, data=data, e=e, tb=traceback.format_exc()))
-                        station_id = 0
+                        station_id = '0'
                     try:
                         data = block[WEEK_NUMBER]
-                        week_number = int(data)
+                        week_number = str(data)
                     except ValueError, e:
-                        logger.warning("PLC: {plc} DB: {db} wrong value for week, returning 0. Exception: {e}".format(plc=self.id, db=block.get_db_number(), e=e))
-                        week_number = 0
+                        logger.warning("PLC: {plc} DB: {db} wrong value for week, returning 0. Exception: {e}, TB: {tb}".format(plc=self.id, db=block.get_db_number(), e=e, tb=traceback.format_exc()))
+                        week_number = '0'
                     try:
                         data = block[YEAR_NUMBER]
-                        year_number = int(data)
+                        year_number = str(data)
                     except ValueError, e:
-                        logger.warning("PLC: {plc} DB: {db} wrong value for year, returning 0. Exception: {e}".format(plc=self.id, db=block.get_db_number(), e=e))
-                        year_number = 0
+                        logger.warning("PLC: {plc} DB: {db} wrong value for year, returning 0. Exception: {e}, TB: {tb}".format(plc=self.id, db=block.get_db_number(), e=e, tb=traceback.format_exc()))
+                        year_number = '0'
 
                     # read specific data
                     operation_status = block.__getitem__(operation_status_name)
@@ -588,7 +601,6 @@ class PLC(PLCBase):
                     result_3_status = block.__getitem__(result_3_status_name)
 
                     logger.info("PLC: {plc} DB: {db} PT: {type} SN: {serial} ST: {station} TN: {template_number} FN: {flag}".format(plc=self.id, db=block.get_db_number(), type=product_type, serial=serial_number, station=station_id, template_number=template_number, flag=pc_save_flag_name))
-
                     self.database_engine.write_operation(product_type, serial_number, week_number, year_number, station_id, operation_status, operation_type, date_time, result_1, result_1_max, result_1_min, result_1_status, result_2, result_2_max, result_2_min, result_2_status, result_3, result_3_max, result_3_min, result_3_status)
                     self.counter_saved_operations += 1
                     block.set_flag(pc_save_flag_name, False)  # cancel save flag:
@@ -605,16 +617,28 @@ class PLC(PLCBase):
 
                 try:
                     data = block[PRODUCT_TYPE]
-                    product_type = int(data)
+                    product_type = str(data)
                 except ValueError, e:
                     logger.error("PLC: {plc} DB: {db} Data read error. Input: {data} Exception: {e}, TB: {tb}".format(plc=self.id, db=dbid, data=data, e=e, tb=traceback.format_exc()))
-                    product_type = 0
+                    product_type = '0'
                 try:
                     data = block[SERIAL_NUMBER]
-                    serial_number = int(data)
+                    serial_number = str(data)
                 except ValueError, e:
                     logger.error("PLC: {plc} DB: {db} Data read error. Input: {data} Exception: {e}, TB: {tb}".format(plc=self.id, db=dbid, data=data, e=e, tb=traceback.format_exc()))
-                    serial_number = 0
+                    serial_number = '0'
+                try:
+                    data = block[WEEK_NUMBER]
+                    week_number = str(data)
+                except ValueError, e:
+                    logger.warning("PLC: {plc} DB: {db} wrong value for week, returning 0. Exception: {e}, TB: {tb}".format(plc=self.id, db=block.get_db_number(), e=e, tb=traceback.format_exc()))
+                    week_number = '0'
+                try:
+                    data = block[YEAR_NUMBER]
+                    year_number = int(data)
+                except ValueError, e:
+                    logger.warning("PLC: {plc} DB: {db} wrong value for year, returning 0. Exception: {e}, TB: {tb}".format(plc=self.id, db=block.get_db_number(), e=e, tb=traceback.format_exc()))
+                    year_number = '0'
                 try:
                     data = block[STATION_ID]
                     station_id = int(data)
@@ -623,7 +647,7 @@ class PLC(PLCBase):
                     station_id = 0
                 logger.info("PLC: {plc} ST: {station} PT: {type} SN: {serial} browser opening request - show product details.".format(plc=self.get_id(), station=station_id, type=product_type, serial=serial_number))
 
-                url = "/".join([self.get_baseurl(), 'product', str(get_product_id(product_type, serial_number))])
+                url = "/".join([self.get_baseurl(), 'product', str(Product.calculate_product_id(product_type, serial_number, week_number, year_number))])
                 if self.get_popups():
                     """
                     In order to open product details in same tab please reconfigure your firefox:

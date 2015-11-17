@@ -1,7 +1,6 @@
 import sqlalchemy
 from datetime import datetime
 from .models import *
-from .util import get_product_id
 
 logger = logging.getLogger(__name__)
 
@@ -18,17 +17,15 @@ class Database(object):
             cursor.close()
         db.create_all()  # initialize empty database if required.
 
-    def read_status(self, product_type, serial_number, station):
-        product_type = int(product_type)
-        serial_number = int(serial_number)
-        product_id = get_product_id(product_type, serial_number)
+    def read_status(self, product_id, station):
+        product_id = str(product_id)
         station = int(station)
         res = Status.query.filter_by(product_id=product_id).filter_by(station_id=station).all()
         if len(res) == 0:
-            logger.warn("CON: {dbcon} PT: {product_type} SN: {serial_number} ST: {station} record not found in database - returning undefined".format(dbcon=self.name, product_type=product_type, serial_number=serial_number, station=station))
+            logger.warn("CON: {dbcon} PID: {product_id} ST: {station} record not found in database - returning undefined".format(dbcon=self.name, product_id=product_id, station=station))
             return 0  # Wabco statuses are not used anymore. Current statuses: (0 undefined, 1 OK, 2 NOK)
         ret = res[-1].status
-        logger.info("CON: {dbcon} PT: {product_type} SN: {serial_number} ST: {station} record has status: {status}".format(dbcon=self.name, product_type=product_type, serial_number=serial_number, station=station, status=ret))
+        logger.info("CON: {dbcon} PID: {product_id} ST: {station} record has status: {status}".format(dbcon=self.name, product_id=product_id, station=station, status=ret))
         return ret
 
     def read_operator_status(self, operator):
@@ -45,14 +42,14 @@ class Database(object):
         logger.error("CON: {dbcon} I should never get here...".format(dbcon=self.name))
         return 0
 
-    def write_status(self, product_type, serial_number, station, status, week_number=48, year_number=15, operator=0, date_time=datetime.now()):
-        product_type = int(product_type)
-        serial_number = int(serial_number)
-        product_id = get_product_id(product_type, serial_number)
+    def write_status(self, product_type, serial_number, week_number, year_number, station, status, operator=0, date_time=datetime.now()):
+        product_type = str(product_type)
+        serial_number = str(serial_number)
+        week_number = str(week_number)
+        year_number = str(year_number)
+        product_id = str(Product.calculate_product_id(product_type, serial_number, week_number, year_number))
         station = int(station)
         status = int(status)
-        week_number = int(week_number)
-        year_number = int(year_number)
         operator = int(operator)
         date_time = str(date_time)
         logger.info("CON: {dbcon} PT: {product_type} SN: {serial_number} ST: {station} STATUS: {status} WEEK: {week} YEAR: {year} OP: {operator} DT: {date_time}. Saving status record.".format(dbcon=self.name, product_type=product_type, serial_number=serial_number, station=station, status=status, week=week_number, year=year_number, operator=operator, date_time=date_time))
@@ -63,9 +60,11 @@ class Database(object):
         self.add_status(status, product_id, station, operator, date_time)
 
     def write_operation(self, product_type, serial_number, week_number, year_number, station_id, operation_status, operation_type, date_time, result_1, result_1_max, result_1_min, result_1_status, result_2, result_2_max, result_2_min, result_2_status, result_3, result_3_max, result_3_min, result_3_status):
-        product_type = int(product_type)
-        serial_number = int(serial_number)
-        product_id = get_product_id(product_type, serial_number)
+        product_type = str(product_type)
+        serial_number = str(serial_number)
+        week_number = str(week_number)
+        year_number = str(year_number)
+        product_id = str(Product.calculate_product_id(product_type, serial_number, week_number, year_number))
         station_id = int(station_id)
 
         self.add_product_if_required(product_type, serial_number, week_number, year_number)
@@ -113,7 +112,7 @@ class Database(object):
 
     def add_status(self, status, product, station, operator, date_time=None):
         status = int(status)
-        product = int(product)
+        product = str(product)
         station = int(station)
         operator = int(operator)
         if date_time is None:
@@ -133,14 +132,14 @@ class Database(object):
             return False
         return True
 
-    def add_product_if_required(self, product_type, serial_number, week_number=48, year_number=15):
-        product_type = int(product_type)
-        serial_number = int(serial_number)
-        week_number = int(week_number)
-        year_number = int(year_number)
+    def add_product_if_required(self, product_type, serial_number, week_number="48", year_number="15"):
+        product_type = str(product_type)
+        serial_number = str(serial_number)
+        week_number = str(week_number)
+        year_number = str(year_number)
 
         try:
-            _product = Product.query.filter_by(type=int(product_type)).filter_by(serial=int(serial_number)).first()
+            _product = Product.query.filter_by(type=str(product_type)).filter_by(serial=str(serial_number)).first()
             if _product is None:  # add item if not exists yet.
                 new_prod = Product(product_type, serial_number, week_number, year_number)
                 db.session.add(new_prod)
@@ -244,11 +243,11 @@ class Database(object):
     def initialize_example_data(self):
         db.drop_all()
         db.create_all()
-        product_type = 1234567899
-        i1 = Product(product_type, 16666, 42, 15)
-        i2 = Product(product_type, 26666, 42, 15)
-        i3 = Product(product_type, 1234, 42, 15)
-        # i4 = Product(16303, "666", "11", "16")
+        product_type = str(1234567899)
+        i1 = Product(product_type, "16666", "42", "15")
+        i2 = Product(product_type, "26666", "42", "15")
+        i3 = Product(product_type, "1234", "42", "15")
+        # i4 = Product("16303", "666", "11", "16")
         s10 = Station(10, "192.168.0.10", 102, 0, 2)
         s20 = Station(20, "192.168.0.20", 102, 0, 2)
         s21 = Station(21, "192.168.0.20", 102, 0, 2)
@@ -256,12 +255,12 @@ class Database(object):
         s23 = Station(23, "192.168.0.20", 102, 0, 2)
         # s24 = Station(11, "192.168.0.10", 102, 0, 2)
 
-        t1 = Status(0, get_product_id(product_type, 16666), 10, None)
-        t2 = Status(1, get_product_id(product_type, 26666), 20, None)
-        t3 = Status(0, get_product_id(product_type, 1234), 10, None)
-        t4 = Status(1, get_product_id(product_type, 1234), 20, None)
-        t5 = Status(1, get_product_id(product_type, 1234), 21, None)
-        t6 = Status(0, get_product_id(product_type, 1234), 21, None)
+        t1 = Status(0, Product.calculate_product_id(product_type, "16666"), 10, None)
+        t2 = Status(1, Product.calculate_product_id(product_type, "26666"), 20, None)
+        t3 = Status(0, Product.calculate_product_id(product_type, "1234"), 10, None)
+        t4 = Status(1, Product.calculate_product_id(product_type, "1234"), 20, None)
+        t5 = Status(1, Product.calculate_product_id(product_type, "1234"), 21, None)
+        t6 = Status(0, Product.calculate_product_id(product_type, "1234"), 21, None)
 
         db.session.add(i1)
         db.session.add(i2)
