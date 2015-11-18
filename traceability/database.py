@@ -52,7 +52,7 @@ class Database(object):
         status = int(status)
         operator = int(operator)
         date_time = str(date_time)
-        logger.info("CON: {dbcon} PT: {product_type} SN: {serial_number} ST: {station} STATUS: {status} WEEK: {week} YEAR: {year} OP: {operator} DT: {date_time}. Saving status record.".format(dbcon=self.name, product_type=product_type, serial_number=serial_number, station=station, status=status, week=week_number, year=year_number, operator=operator, date_time=date_time))
+        logger.info("CON: {dbcon} PID: {product_id} PT: {product_type} SN: {serial_number} ST: {station} STATUS: {status} WEEK: {week} YEAR: {year} OP: {operator} DT: {date_time}. Saving status record.".format(dbcon=self.name, product_type=product_type, serial_number=serial_number, station=station, status=status, week=week_number, year=year_number, operator=operator, date_time=date_time, product_id=product_id))
 
         self.add_product_if_required(product_type, serial_number, week_number, year_number)
         self.add_station_if_required(station)
