@@ -137,11 +137,11 @@ class Database(object):
         serial_number = str(serial_number)
         week_number = str(week_number)
         year_number = str(year_number)
-
+        product_id = str(Product.calculate_product_id(product_type, serial_number, week_number, year_number))
         try:
-            _product = Product.query.filter_by(type=str(product_type)).filter_by(serial=str(serial_number)).first()
+            _product = Product.query.filter_by(id=product_id).first()
             if _product is None:  # add item if not exists yet.
-                new_prod = Product(product_type, serial_number, week_number, year_number)
+                new_prod = Product(prodtype=product_type, serial=serial_number, week=week_number, year=year_number)
                 db.session.add(new_prod)
                 try:
                     db.session.commit()
