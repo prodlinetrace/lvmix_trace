@@ -97,7 +97,7 @@ class Database(object):
             date_time = str(date_time)
 
         try:
-            new_operation = Operation(product_id, station_id, operation_status, operation_type, date_time, result_1, result_1_max, result_1_min, result_1_status, result_2, result_2_max, result_2_min, result_2_status, result_3, result_3_max, result_3_min, result_3_status)
+            new_operation = Operation(product=product_id, station=station_id, operation_status_id=operation_status, operation_type_id=operation_type, date_time=date_time, r1=result_1, r1_max=result_1_max, r1_min=result_1_min, r1_stat=result_1_status, r2=result_2, r2_max=result_2_max, r2_min=result_2_min, r2_stat=result_2_status, r3=result_3, r3_max=result_3_max, r3_min=result_3_min, r3_stat=result_3_status)
             db.session.add(new_operation)
             try:
                 db.session.commit()
