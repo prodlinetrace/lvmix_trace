@@ -119,7 +119,7 @@ class Database(object):
             date_time = str(date_time)
 
         try:
-            new_status = Status(status, product, station, operator, date_time)
+            new_status = Status(status=status, product=product, station=station, user=operator, date_time=date_time)
             db.session.add(new_status)
             try:
                 db.session.commit()
