@@ -107,8 +107,8 @@ class Product(db.Model):
     serial = db.Column(db.String(6), nullable=False, index=True, unique=False)
     week = db.Column(db.String(2), nullable=False, index=True, unique=False)
     year = db.Column(db.String(2), nullable=False, index=True, unique=False)
-    variant_id = db.Column(db.Integer, nullable=False, index=True, unique=False, db.ForeignKey('variant.id'))
-    prodasync = db.Column(db.Integer, index=True, unique=False, default=0)
+    variant_id = db.Column(db.Integer, db.ForeignKey('variant.id'), nullable=False, index=True, unique=False)
+    prodasync = db.Column(db.Integer, nullable=False, index=True, unique=False, default=0)
     date_added = db.Column(db.DateTime(), index=True, default=datetime.now)
     comments = db.relationship('Comment', lazy='dynamic', backref='product')
     statuses = db.relationship('Status', lazy='dynamic', backref='product')
@@ -318,13 +318,13 @@ class Operation_Status(db.Model):
     name = db.Column(db.String(64))
     description = db.Column(db.String(255))
     unit_id = db.Column(db.Integer, db.ForeignKey('unit.id'))
-    operations = db.relationship('Operation', lazy='dynamic', backref='operation_status',  foreign_keys='operation.operation_status_id')
+    operations = db.relationship('Operation', lazy='dynamic', backref='operation_status',  foreign_keys='Operation.operation_status_id')
 
-    result_1_status = db.relationship('Operation', lazy='dynamic', backref='result_1_status', foreign_keys='operation.result_1_status_id')
-    result_2_status = db.relationship('Operation', lazy='dynamic', backref='result_2_status', foreign_keys='operation.result_2_status_id')
-    result_3_status = db.relationship('Operation', lazy='dynamic', backref='result_3_status', foreign_keys='operation.result_3_status_id')
+    result_1_status = db.relationship('Operation', lazy='dynamic', backref='result_1_status', foreign_keys='Operation.result_1_status_id')
+    result_2_status = db.relationship('Operation', lazy='dynamic', backref='result_2_status', foreign_keys='Operation.result_2_status_id')
+    result_3_status = db.relationship('Operation', lazy='dynamic', backref='result_3_status', foreign_keys='Operation.result_3_status_id')
 
-    status = db.relationship('Status', lazy='dynamic', backref='status_name', foreign_keys='status.status')
+    status = db.relationship('Status', lazy='dynamic', backref='status_name', foreign_keys='Status.status')
 
     def __init__(self, id, name="Default Operation Status", description="Default Operation Status Description", unit_id=0):
         self.id = id
@@ -377,7 +377,7 @@ class Unit(db.Model):
     name = db.Column(db.String(64))
     symbol = db.Column(db.String(16))
     description = db.Column(db.String(255))
-    unit = db.relationship('Operation_Status', lazy='dynamic', backref='unit', foreign_keys='operation_status.unit_id')
+    unit = db.relationship('Operation_Status', lazy='dynamic', backref='unit', foreign_keys='Operation_Status.unit_id')
 
     def __init__(self, id, name="Default Unit Name", symbol="Default Unit Symbol", description="Default Unit Description"):
         self.id = id
@@ -404,7 +404,7 @@ class Variant(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(64))
     description = db.Column(db.String(255))
-    variant = db.relationship('Product', lazy='dynamic', backref='variant', foreign_keys='product.variant_id')
+    variant = db.relationship('Product', lazy='dynamic', backref='variant', foreign_keys='Product.variant_id')
 
     def __init__(self, id, name="Default Variant Name", description="Default Variant Description"):
         self.id = id
