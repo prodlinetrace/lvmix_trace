@@ -5,8 +5,8 @@ import traceback
 import snap7
 from datetime import datetime
 from time import sleep
-from .constants import PC_HEARTBEAT_FLAG, PLC_QUERY_FLAG, PLC_SAVE_FLAG, STATION_NUMBER, STATION_STATUS, PRODUCT_TYPE, SERIAL_NUMBER, STATION_STATUS_CODES, STATION_ID, TRC_TMPL_COUNT, TRC_TMPL_SAVE_FLAG, PC_OPEN_BROWSER_FLAG, DATE_TIME, WEEK_NUMBER, YEAR_NUMBER, PC_READY_FLAG, OPERATOR_NUMBER, OPERATOR_STATUS, OPERATOR_QUERY_FLAG
-from .models import Product 
+from .constants import PC_HEARTBEAT_FLAG, PLC_QUERY_FLAG, PLC_SAVE_FLAG, STATION_NUMBER, STATION_STATUS, PRODUCT_TYPE, SERIAL_NUMBER, STATION_STATUS_CODES, STATION_ID, TRC_TMPL_COUNT, TRC_TMPL_SAVE_FLAG, PC_OPEN_BROWSER_FLAG, DATE_TIME, WEEK_NUMBER, YEAR_NUMBER, PC_READY_FLAG, OPERATOR_NUMBER, OPERATOR_STATUS, OPERATOR_QUERY_FLAG, VARIANT_ID
+from .models import Product
 from .blocks import DBs
 from .custom_exceptions import UnknownDB
 from .database import Database
@@ -498,6 +498,12 @@ class PLC(PLCBase):
                 except ValueError, e:
                     logger.warning("PLC: {plc} DB: {db} wrong value for data, returning now(). Exception: {e}".format(plc=self.id, db=block.get_db_number(), e=e))
                     date_time = str(datetime.datetime.now())
+                try:
+                    data = block[VARIANT_ID]
+                    variant_id = int(data)
+                except ValueError, e:
+                    logger.error("PLC: {plc} DB: {db} wrong value for variant_id, returning 0. Exception: {e}, TB: {tb}".format(plc=self.id, db=block.get_db_number(), e=e, tb=traceback.format_exc()))
+                    variant_id = 0
 
                 # Operator Save flag is set special handling for electronic stamp.
                 operator_number = 0
@@ -508,7 +514,7 @@ class PLC(PLCBase):
                     logger.error("PLC: {plc} DB: {db} Data read error. Input: {data} Exception: {e}, TB: {tb}".format(plc=self.id, db=dbid, data=data, e=e, tb=traceback.format_exc()))
                     operator_number = 0
 
-                self.database_engine.write_status(product_type, serial_number, week_number, year_number, station_id, station_status, operator_number, date_time)
+                self.database_engine.write_status(product_type, serial_number, week_number, year_number, variant_id, station_id, station_status, operator_number, date_time)
                 self.counter_status_message_write += 1
                 block.set_plc_save_flag(False)
                 block.set_pc_ready_flag(True)  # set PC ready flag back to true
@@ -585,6 +591,12 @@ class PLC(PLCBase):
                     except ValueError, e:
                         logger.warning("PLC: {plc} DB: {db} wrong value for year, returning 0. Exception: {e}, TB: {tb}".format(plc=self.id, db=block.get_db_number(), e=e, tb=traceback.format_exc()))
                         year_number = '0'
+                    try:
+                        data = block[VARIANT_ID]
+                        variant_id = int(data)
+                    except ValueError, e:
+                        logger.error("PLC: {plc} DB: {db} wrong value for variant_id, returning 0. Exception: {e}, TB: {tb}".format(plc=self.id, db=block.get_db_number(), e=e, tb=traceback.format_exc()))
+                        variant_id = 0
 
                     # read specific data
                     operation_status = block.__getitem__(operation_status_name)
@@ -605,7 +617,7 @@ class PLC(PLCBase):
                     result_3_status = block.__getitem__(result_3_status_name)
 
                     logger.info("PLC: {plc} DB: {db} PT: {type} SN: {serial} ST: {station} TN: {template_number} FN: {flag}".format(plc=self.id, db=block.get_db_number(), type=product_type, serial=serial_number, station=station_id, template_number=template_number, flag=pc_save_flag_name))
-                    self.database_engine.write_operation(product_type, serial_number, week_number, year_number, station_id, operation_status, operation_type, date_time, result_1, result_1_max, result_1_min, result_1_status, result_2, result_2_max, result_2_min, result_2_status, result_3, result_3_max, result_3_min, result_3_status)
+                    self.database_engine.write_operation(product_type, serial_number, week_number, year_number, variant_id, station_id, operation_status, operation_type, date_time, result_1, result_1_max, result_1_min, result_1_status, result_2, result_2_max, result_2_min, result_2_status, result_3, result_3_max, result_3_min, result_3_status)
                     self.counter_saved_operations += 1
                     block.set_flag(pc_save_flag_name, False)  # cancel save flag:
 

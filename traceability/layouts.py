@@ -1,4 +1,4 @@
-from .constants import PC_READY_FLAG, PLC_QUERY_FLAG, PLC_SAVE_FLAG, DB_BUSY_FLAG, PC_OPEN_BROWSER_FLAG, STATION_ID, PRODUCT_TYPE, SERIAL_NUMBER, WEEK_NUMBER, YEAR_NUMBER, DATE_TIME, PLC_HEARTBEAT_FLAG, PC_HEARTBEAT_FLAG, TRC_TMPL_COUNT, STATION_NUMBER, STATION_STATUS, PLC_TRC_ON, OPERATOR_NUMBER, OPERATOR_STATUS, OPERATOR_QUERY_FLAG, OPERATOR_SAVE_FLAG
+from .constants import PC_READY_FLAG, PLC_QUERY_FLAG, PLC_SAVE_FLAG, DB_BUSY_FLAG, PC_OPEN_BROWSER_FLAG, STATION_ID, PRODUCT_TYPE, SERIAL_NUMBER, WEEK_NUMBER, YEAR_NUMBER, DATE_TIME, PLC_HEARTBEAT_FLAG, PC_HEARTBEAT_FLAG, TRC_TMPL_COUNT, STATION_NUMBER, STATION_STATUS, PLC_TRC_ON, OPERATOR_NUMBER, OPERATOR_STATUS, OPERATOR_QUERY_FLAG, OPERATOR_SAVE_FLAG, VARIANT_ID
 from .util import offset_spec_block
 
 """
@@ -7,12 +7,13 @@ Define DB blocks used.
 
 db3xxHead = """
 0.0    {station_id}                 BYTE             # station_id of given PLC. (0-255 typically: 10, 11, 20, 21, 22, 23, 30, 31)
+1.0    {variant_id}                 BYTE             # variant of product (0 - standard, 1 - Volvo)
 2.0    {product_type}               STRING[12]       # product_type from nameplate (10 digits)
 16.0   {serial_number}              STRING[8]        # serial_number from nameplate (6 digits)
 26.0   {week_number}                STRING[4]        # month number from nameplate (2 digits)
 32.0   {year_number}                STRING[4]        # year number from nameplate  (2 digits)
 38.0   {date_time}                  DATETIME         # size is 8 bytes
-""".format(station_id=STATION_ID, product_type=PRODUCT_TYPE, serial_number=SERIAL_NUMBER, week_number=WEEK_NUMBER, year_number=YEAR_NUMBER, date_time=DATE_TIME)
+""".format(station_id=STATION_ID, product_type=PRODUCT_TYPE, serial_number=SERIAL_NUMBER, week_number=WEEK_NUMBER, year_number=YEAR_NUMBER, date_time=DATE_TIME, variant_id=VARIANT_ID)
 
 db300Body = """
 46.0   {flag_pc_ready}              BOOL        # PC_Ready bit. Monitored by PLC. PCL waits for True. PC sets to False when it starts processing. PC sets back to True once processing is finished.

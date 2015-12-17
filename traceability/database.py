@@ -38,36 +38,38 @@ class Database(object):
             return 1  # this means user is found in DB and has correct operator status
         else:
             logger.warning("CON: {dbcon} OP: {operator} User found in DataBase but is not set as an operator".format(dbcon=self.name, operator=operator))
-            return 2  # this means user is found in DB but does not have operator status 
+            return 2  # this means user is found in DB but does not have operator status
         logger.error("CON: {dbcon} I should never get here...".format(dbcon=self.name))
         return 0
 
-    def write_status(self, product_type, serial_number, week_number, year_number, station, status, operator=0, date_time=datetime.now()):
+    def write_status(self, product_type, serial_number, week_number, year_number, variant_id, station, status, operator=0, date_time=datetime.now()):
         product_type = str(product_type)
         serial_number = str(serial_number)
         week_number = str(week_number)
         year_number = str(year_number)
         product_id = str(Product.calculate_product_id(product_type, serial_number, week_number, year_number))
+        variant_id = int(variant_id)
         station = int(station)
         status = int(status)
         operator = int(operator)
         date_time = str(date_time)
         logger.info("CON: {dbcon} PID: {product_id} PT: {product_type} SN: {serial_number} ST: {station} STATUS: {status} WEEK: {week} YEAR: {year} OP: {operator} DT: {date_time}. Saving status record.".format(dbcon=self.name, product_type=product_type, serial_number=serial_number, station=station, status=status, week=week_number, year=year_number, operator=operator, date_time=date_time, product_id=product_id))
 
-        self.add_product_if_required(product_type, serial_number, week_number, year_number)
+        self.add_product_if_required(product_type, serial_number, week_number, year_number, variant_id)
         self.add_station_if_required(station)
         self.add_operation_status_if_required(status)  # status and operation status names are kept in one and same table
         self.add_status(status, product_id, station, operator, date_time)
 
-    def write_operation(self, product_type, serial_number, week_number, year_number, station_id, operation_status, operation_type, date_time, result_1, result_1_max, result_1_min, result_1_status, result_2, result_2_max, result_2_min, result_2_status, result_3, result_3_max, result_3_min, result_3_status):
+    def write_operation(self, product_type, serial_number, week_number, year_number, variant_id, station_id, operation_status, operation_type, date_time, result_1, result_1_max, result_1_min, result_1_status, result_2, result_2_max, result_2_min, result_2_status, result_3, result_3_max, result_3_min, result_3_status):
         product_type = str(product_type)
         serial_number = str(serial_number)
         week_number = str(week_number)
         year_number = str(year_number)
         product_id = str(Product.calculate_product_id(product_type, serial_number, week_number, year_number))
+        variant_id = int(variant_id)
         station_id = int(station_id)
 
-        self.add_product_if_required(product_type, serial_number, week_number, year_number)
+        self.add_product_if_required(product_type, serial_number, week_number, year_number, variant_id)
         self.add_station_if_required(station_id)
         self.add_operation_status_if_required(operation_status)
         self.add_operation_status_if_required(result_1_status)
@@ -132,22 +134,42 @@ class Database(object):
             return False
         return True
 
-    def add_product_if_required(self, product_type, serial_number, week_number="48", year_number="15"):
+    def add_product_if_required(self, product_type, serial_number, week_number="48", year_number="15", variant_id=0):
         product_type = str(product_type)
         serial_number = str(serial_number)
         week_number = str(week_number)
         year_number = str(year_number)
+        variant_id = int(variant_id)
+        self.add_variant_if_required(variant_id)
         product_id = str(Product.calculate_product_id(product_type, serial_number, week_number, year_number))
         try:
             _product = Product.query.filter_by(id=product_id).first()
             if _product is None:  # add item if not exists yet.
-                new_prod = Product(prodtype=product_type, serial=serial_number, week=week_number, year=year_number)
+                new_prod = Product(prodtype=product_type, serial=serial_number, week=week_number, year=year_number, variant_id=variant_id, prodasync=0)
                 db.session.add(new_prod)
                 try:
                     db.session.commit()
                 except sqlalchemy.exc.IntegrityError, e:
                     logger.error("CON: {dbcon} {rep} : {err}".format(dbcon=self.name, rep=repr(e), err=e.__str__()))
                 logger.info("CON: {dbcon} Adding new Product to database: {prod}".format(dbcon=self.name, prod=new_prod))
+
+        except sqlalchemy.exc.OperationalError, e:
+            logger.error("CON: {dbcon} Database: {dbfile} is locked. Error: {err}".format(dbcon=self.name, dbfile=db.get_app().config['SQLALCHEMY_DATABASE_URI'], err=e.__str__()))
+            return False
+        return True
+
+    def add_variant_if_required(self, variant):
+        variant = int(variant)
+        try:
+            _variant = Variant.query.filter_by(id=int(variant)).first()
+            if _variant is None:  # add new Variant if required (should not happen often)
+                new_variant = Variant(id=variant, name=variant)
+                db.session.add(new_variant)
+                try:
+                    db.session.commit()
+                except sqlalchemy.exc.IntegrityError, e:
+                    logger.error("CON: {dbcon} {rep} : {err}".format(dbcon=self.name, rep=repr(e), err=e.__str__()))
+                logger.info("CON: {dbcon} Adding new Station to database: {station}".format(dbcon=self.name, station=str(new_variant)))
 
         except sqlalchemy.exc.OperationalError, e:
             logger.error("CON: {dbcon} Database: {dbfile} is locked. Error: {err}".format(dbcon=self.name, dbfile=db.get_app().config['SQLALCHEMY_DATABASE_URI'], err=e.__str__()))

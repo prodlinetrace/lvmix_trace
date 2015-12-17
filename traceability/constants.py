@@ -12,6 +12,7 @@ STATION_NUMBER          = 'body.station_number'  # byte
 STATION_STATUS          = 'body.station_status'  # byte
 
 STATION_ID              = 'head.station_id'      # byte
+VARIANT_ID              = 'head.variant_id'      # byte
 SERIAL_NUMBER           = 'head.serial_number'   # string(8) - 6 digits
 PRODUCT_TYPE            = 'head.product_type'    # string(12) - 10 digits
 DATE_TIME               = 'head.date_time'       # 8 bytes
