@@ -147,11 +147,19 @@ class Database(object):
             if _product is None:  # add item if not exists yet.
                 new_prod = Product(prodtype=product_type, serial=serial_number, week=week_number, year=year_number, variant_id=variant_id, prodasync=0)
                 db.session.add(new_prod)
+                logger.info("CON: {dbcon} Adding new Product to database: {prod}".format(dbcon=self.name, prod=new_prod))
                 try:
                     db.session.commit()
                 except sqlalchemy.exc.IntegrityError, e:
                     logger.error("CON: {dbcon} {rep} : {err}".format(dbcon=self.name, rep=repr(e), err=e.__str__()))
-                logger.info("CON: {dbcon} Adding new Product to database: {prod}".format(dbcon=self.name, prod=new_prod))
+            else:
+                if _product.prodasync != 0:
+                    _product.prodasync = 0
+                    logger.info("CON: {dbcon} Prodasync flag reset for product: {prod}".format(dbcon=self.name, prod=new_prod))
+                    try:
+                        db.session.commit()
+                    except sqlalchemy.exc.IntegrityError, e:
+                        logger.error("CON: {dbcon} {rep} : {err}".format(dbcon=self.name, rep=repr(e), err=e.__str__()))
 
         except sqlalchemy.exc.OperationalError, e:
             logger.error("CON: {dbcon} Database: {dbfile} is locked. Error: {err}".format(dbcon=self.name, dbfile=db.get_app().config['SQLALCHEMY_DATABASE_URI'], err=e.__str__()))
