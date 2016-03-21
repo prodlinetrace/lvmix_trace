@@ -147,6 +147,7 @@ include_files = [
                 "tool/prodllng.dll",
                 "tool/psark.exe",
                 "proda_sync.conf",
+                "logrotate.cmd",
                 ("tool/sqlitebrowser.exe", "sqlitebrowser.exe"),
                 ("tool/clientdemo.exe", "clientdemo.exe"),
 ]
