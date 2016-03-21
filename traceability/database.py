@@ -155,7 +155,7 @@ class Database(object):
             else:
                 if _product.prodasync != 0:
                     _product.prodasync = 0
-                    logger.info("CON: {dbcon} Prodasync flag reset for product: {prod}".format(dbcon=self.name, prod=new_prod))
+                    logger.info("CON: {dbcon} Prodasync flag reset for product: {prod}".format(dbcon=self.name, prod=_product))
                     try:
                         db.session.commit()
                     except sqlalchemy.exc.IntegrityError, e:
