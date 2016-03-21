@@ -139,13 +139,17 @@ zip_includes = [
 ]
 
 include_files = [
+                 "log",
                 "prodLineTrace.conf",
                 "prodLineTrace.ico",
                 "dll/snap7.dll",
                 "prodLineTrace.xrc",
+                "tool/prodllng.dll",
+                "tool/psark.exe",
+                "proda_sync.conf",
                 ("tool/sqlitebrowser.exe", "sqlitebrowser.exe"),
                 ("tool/clientdemo.exe", "clientdemo.exe"),
- ]
+]
 
 # Dependencies are automatically detected, but it might need fine tuning.
 build_exe_options = {
@@ -180,7 +184,7 @@ shortcut_table = [(
 msi_data = {"Shortcut": shortcut_table}
 bdist_msi_options = {
     'data': msi_data,
-    'initial_target_dir': r'c:\\%s' % PROJECT_NAME,
+    'initial_target_dir': r'D:\\%s' % PROJECT_NAME,
     'add_to_path': True,
 }
 # GUI applications require a different base on Windows (the default is for a
@@ -208,8 +212,11 @@ setup(
         ),
         Executable(
             "prodLineTraceCLI.py",
-            base=base,
             icon='prodLineTrace.ico',
-        )
+        ),
+        Executable(
+            "proda_sync.py",
+            icon='prodLineTrace.ico',
+        ),
     ]
 )
