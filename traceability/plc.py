@@ -399,7 +399,31 @@ class PLC(PLCBase):
 
                 product_id = str(Product.calculate_product_id(product_type, serial_number, week_number, year_number))
                 logger.debug("PLC: {plc} DB: {db} PID: {product_id} trying to read status from database for station: {station}".format(plc=self.get_id(), db=block.get_db_number(), product_id=product_id, station=station_number))
-                station_status = self.database_engine.read_status(str(product_id), int(station_number))
+ 
+                # special handling for virtual tester (station_number: 100)
+                if int(station_number) == 100:
+                    station_status = 200  # set some initial value - it always have to be overwritten by code below.
+                    tester1 = self.database_engine.read_station_status_record(str(product_id), 101)
+                    tester2 = self.database_engine.read_station_status_record(str(product_id), 102)
+
+                    if tester1 is None and tester2 is None:  # if both testers are missing record
+                        station_status = 0
+                        
+                    if tester1 is not None and tester2 is not None:  # if both testers are a valid records
+                        if tester1.date_time > tester2.date_time:
+                            station_status = tester1.status
+                        else:
+                            station_status = tester2.status
+                    
+                    if tester1 is not None and tester2 is None:
+                        station_status = tester1.status
+
+                    if tester1 is None and tester2 is not None:
+                        station_status = tester2.status
+                    
+                # read station status normally
+                else:
+                    station_status = self.database_engine.read_status(str(product_id), int(station_number))
 
                 try:
                     status = STATION_STATUS_CODES[station_status]['result']

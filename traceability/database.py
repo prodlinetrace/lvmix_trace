@@ -28,6 +28,18 @@ class Database(object):
         logger.info("CON: {dbcon} PID: {product_id} ST: {station} record has status: {status}".format(dbcon=self.name, product_id=product_id, station=station, status=ret))
         return ret
 
+    def read_station_status_record(self, product_id, station):
+        product_id = str(product_id)
+        station = int(station)
+        res = Status.query.filter_by(product_id=product_id).filter_by(station_id=station).all()
+        if len(res) == 0:
+            logger.warn("CON: {dbcon} PID: {product_id} ST: {station} record not found in database - returning undefined".format(dbcon=self.name, product_id=product_id, station=station))
+            return None
+        status = res[-1].status
+        record = res[-1]
+        logger.info("CON: {dbcon} PID: {product_id} ST: {station} record has status: {status}".format(dbcon=self.name, product_id=product_id, station=station, status=status))
+        return record
+
     def read_operator_status(self, operator):
         result = User.query.filter_by(id=operator).all()
         if len(result) == 0:
