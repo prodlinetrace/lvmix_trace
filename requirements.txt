@@ -7,11 +7,13 @@ Flask-Autodoc==0.1.1
 
 SQLAlchemy==0.9.9
 Markdown==2.6.1
-bleach==1.4.1
+bleach==2.0.0
 pygtail==0.5.3
 cx_Freeze==4.3.4
 futures==3.0.3
+html5lib==1.0b10
 
 
-ipython
+#ipython
 pyreadline
+
