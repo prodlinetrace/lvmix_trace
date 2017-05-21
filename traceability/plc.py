@@ -370,14 +370,14 @@ class PLC(PLCBase):
                     data = block[WEEK_NUMBER]
                     week_number = str(data)
                 except ValueError, e:
-                    logger.warning("PLC: {plc} DB: {db} wrong value for week, returning 0. Exception: {e}, TB: {tb}".format(plc=self.id, db=block.get_db_number(), e=e, tb=traceback.format_exc()))
-                    week_number = '0'
+                    logger.warning("PLC: {plc} DB: {db} wrong value for week, returning current PC week. Exception: {e}, TB: {tb}".format(plc=self.id, db=block.get_db_number(), e=e, tb=traceback.format_exc()))
+                    week_number = datetime.now().isocalendar()[1]
                 try:
                     data = block[YEAR_NUMBER]
                     year_number = int(data)
                 except ValueError, e:
-                    logger.warning("PLC: {plc} DB: {db} wrong value for year, returning 0. Exception: {e}, TB: {tb}".format(plc=self.id, db=block.get_db_number(), e=e, tb=traceback.format_exc()))
-                    year_number = '0'
+                    logger.warning("PLC: {plc} DB: {db} wrong value for year, returning current PC year. Exception: {e}, TB: {tb}".format(plc=self.id, db=block.get_db_number(), e=e, tb=traceback.format_exc()))
+                    year_number = int(datetime.now().strftime("%y"))
                 try:
                     data = block[STATION_ID]
                     station_id = int(data)
@@ -508,20 +508,20 @@ class PLC(PLCBase):
                     data = block[WEEK_NUMBER]
                     week_number = str(data)
                 except ValueError, e:
-                    logger.warning("PLC: {plc} DB: {db} wrong value for week, returning 0. Exception: {e}".format(plc=self.id, db=block.get_db_number(), e=e))
-                    week_number = "0"
+                    logger.warning("PLC: {plc} DB: {db} wrong value for week, returning current PC week number. Exception: {e}".format(plc=self.id, db=block.get_db_number(), e=e))
+                    week_number = datetime.now().isocalendar()[1]
                 try:
                     data = block[YEAR_NUMBER]
                     year_number = str(data)
                 except ValueError, e:
-                    logger.warning("PLC: {plc} DB: {db} wrong value for year, returning 0. Exception: {e}".format(plc=self.id, db=block.get_db_number(), e=e))
-                    year_number = "0"
+                    logger.warning("PLC: {plc} DB: {db} wrong value for year, returning current PC year. Exception: {e}".format(plc=self.id, db=block.get_db_number(), e=e))
+                    year_number = datetime.now().year
                 try:
                     data = block[DATE_TIME]
                     date_time = str(data)
                 except ValueError, e:
                     logger.warning("PLC: {plc} DB: {db} wrong value for data, returning now(). Exception: {e}".format(plc=self.id, db=block.get_db_number(), e=e))
-                    date_time = str(datetime.datetime.now())
+                    date_time = str(datetime.now())
                 try:
                     data = block[VARIANT_ID]
                     variant_id = int(data)

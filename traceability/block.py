@@ -34,6 +34,7 @@ class DB(object):
                 _block_spec = ""
         else:
             _block_spec = _specification
+        #logger.info("PLC: %s db:  %s spec: %s" % (self.plc.get_id(), self.db_name, _block_spec))
         self._specification = snap7.util.parse_specification(_block_spec)
         #logger.debug("PLC: %s db:  %s spec: %s" % (self.plc.get_id(), self.db_name, self._specification))
 
