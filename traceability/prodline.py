@@ -2,6 +2,7 @@ import snap7
 import threading
 import concurrent.futures
 import traceback
+import os
 import logging
 from logging.handlers import TimedRotatingFileHandler
 from datetime import datetime
@@ -29,6 +30,9 @@ class ProdLineBase(object):
         # parse config file
         logger.info("Using config file {cfg}.".format(cfg=self._opts.config))
         self._config = parse_config(self._opts.config)
+        logging.debug("using log file: {log}".format(log=self._config['main']['logfile'][0]))
+        if not os.path.exists(os.path.dirname(self._config['main']['logfile'][0])):
+            os.makedirs(os.path.dirname(self._config['main']['logfile'][0]))
         _fh = TimedRotatingFileHandler(self._config['main']['logfile'][0], when="MIDNIGHT", interval=1, backupCount=30)
         #_fh = logging.FileHandler(self._config['main']['logfile'][0])
         _ch = logging.StreamHandler()

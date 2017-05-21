@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 import wx
-from wx import xrc
+import wx.xrc
 from wx.lib.delayedresult import startWorker
 import os
 import time
@@ -18,50 +18,48 @@ from traceability.util import file_name_with_size
 
 logger = logging.getLogger(__name__.ljust(12)[:12])
 
-
 class MainWindow(wx.App):
     ID_UPDATE_CTRL_STATUS = wx.NewId()
     ID_UPDATE_LOG = wx.NewId()
 
     def OnInit(self):
-        res = xrc.XmlResource("prodLineTrace.xrc")
+        res = wx.xrc.XmlResource("prodLineTrace.xrc")
         frame = res.LoadFrame(None, 'MainFrame')
         frame.Show()
 
-        self.valueMainStatus = xrc.XRCCTRL(frame, "valueMainStatus")
-        self.valueMainConfigFile = xrc.XRCCTRL(frame, "valueMainConfigFile")
-        self.valueMainLogFile = xrc.XRCCTRL(frame, "valueMainLogFile")
-        self.valueMainVerbosity = xrc.XRCCTRL(frame, "valueMainVerbosity")
-        self.valueMainPopups = xrc.XRCCTRL(frame, "valueMainPopups")
-        self.valueMainVersion = xrc.XRCCTRL(frame, "valueMainVersion")
-        self.valueMainDBModelVersion = xrc.XRCCTRL(frame, "valueMainDBModelVersion")
-        self.valueMainDBFile = xrc.XRCCTRL(frame, "valueMainDBFile")
-        self.valueMainUptime = xrc.XRCCTRL(frame, "valueMainUptime")
-        self.valueMainDBSize = xrc.XRCCTRL(frame, "valueMainDBSize")
-        self.valueMainBaseUrl = xrc.XRCCTRL(frame, "valueMainBaseUrl")
-        self.valueMainPollSleep = xrc.XRCCTRL(frame, "valueMainPollSleep")
-        self.valueMainPollDBSleep = xrc.XRCCTRL(frame, "valueMainPollDBSleep")
-        self.valueMainPCReadyResetOnPoll = xrc.XRCCTRL(frame, "valueMainPCReadyResetOnPoll")
+        self.valueMainStatus = wx.xrc.XRCCTRL(frame, "valueMainStatus")
+        self.valueMainConfigFile = wx.xrc.XRCCTRL(frame, "valueMainConfigFile")
+        self.valueMainLogFile = wx.xrc.XRCCTRL(frame, "valueMainLogFile")
+        self.valueMainVerbosity = wx.xrc.XRCCTRL(frame, "valueMainVerbosity")
+        self.valueMainPopups = wx.xrc.XRCCTRL(frame, "valueMainPopups")
+        self.valueMainVersion = wx.xrc.XRCCTRL(frame, "valueMainVersion")
+        self.valueMainDBModelVersion = wx.xrc.XRCCTRL(frame, "valueMainDBModelVersion")
+        self.valueMainDBFile = wx.xrc.XRCCTRL(frame, "valueMainDBFile")
+        self.valueMainUptime = wx.xrc.XRCCTRL(frame, "valueMainUptime")
+        self.valueMainDBSize = wx.xrc.XRCCTRL(frame, "valueMainDBSize")
+        self.valueMainBaseUrl = wx.xrc.XRCCTRL(frame, "valueMainBaseUrl")
+        self.valueMainPollSleep = wx.xrc.XRCCTRL(frame, "valueMainPollSleep")
+        self.valueMainPollDBSleep = wx.xrc.XRCCTRL(frame, "valueMainPollDBSleep")
+        self.valueMainPCReadyResetOnPoll = wx.xrc.XRCCTRL(frame, "valueMainPCReadyResetOnPoll")
 
-        self.valueMainControllerCount = xrc.XRCCTRL(frame, "valueMainControllerCount")
-        self.valueMainMsgRead = xrc.XRCCTRL(frame, "valueMainMsgRead")
-        self.valueMainMsgWrite = xrc.XRCCTRL(frame, "valueMainMsgWrite")
-        self.valueMainOperWrite = xrc.XRCCTRL(frame, "valueMainOperWrite")
-        self.valueMainDetailsDisplay = xrc.XRCCTRL(frame, "valueMainDetailsDisplay")
-        self.valueMainUserRead = xrc.XRCCTRL(frame, "valueMainUserRead")
+        self.valueMainControllerCount = wx.xrc.XRCCTRL(frame, "valueMainControllerCount")
+        self.valueMainMsgRead = wx.xrc.XRCCTRL(frame, "valueMainMsgRead")
+        self.valueMainMsgWrite = wx.xrc.XRCCTRL(frame, "valueMainMsgWrite")
+        self.valueMainOperWrite = wx.xrc.XRCCTRL(frame, "valueMainOperWrite")
+        self.valueMainDetailsDisplay = wx.xrc.XRCCTRL(frame, "valueMainDetailsDisplay")
+        self.valueMainUserRead = wx.xrc.XRCCTRL(frame, "valueMainUserRead")
 
-        self.valueMainDBProdCount = xrc.XRCCTRL(frame, "valueMainDBProdCount")
-        self.valueMainDBStationCount = xrc.XRCCTRL(frame, "valueMainDBStationCount")
-        self.valueMainDBStatusCount = xrc.XRCCTRL(frame, "valueMainDBStatusCount")
-        self.valueMainDBOperationCount = xrc.XRCCTRL(frame, "valueMainDBOperationCount")
-        self.valueMainDBOperationTypeCount = xrc.XRCCTRL(frame, "valueMainDBOperationTypeCount")
-        self.valueMainDBStatusTypeCount = xrc.XRCCTRL(frame, "valueMainDBStatusTypeCount")
-        self.valueMainDBCommentCount = xrc.XRCCTRL(frame, "valueMainDBCommentCount")
+        self.valueMainDBProdCount = wx.xrc.XRCCTRL(frame, "valueMainDBProdCount")
+        self.valueMainDBStationCount = wx.xrc.XRCCTRL(frame, "valueMainDBStationCount")
+        self.valueMainDBStatusCount = wx.xrc.XRCCTRL(frame, "valueMainDBStatusCount")
+        self.valueMainDBOperationCount = wx.xrc.XRCCTRL(frame, "valueMainDBOperationCount")
+        self.valueMainDBOperationTypeCount = wx.xrc.XRCCTRL(frame, "valueMainDBOperationTypeCount")
+        self.valueMainDBStatusTypeCount = wx.xrc.XRCCTRL(frame, "valueMainDBStatusTypeCount")
+        self.valueMainDBCommentCount = wx.xrc.XRCCTRL(frame, "valueMainDBCommentCount")
 
-        self.valueLogTextArea = xrc.XRCCTRL(frame, "valueLogTextArea")
+        self.valueLogTextArea = wx.xrc.XRCCTRL(frame, "valueLogTextArea")
         textAreaFont = wx.Font(10, wx.MODERN, wx.NORMAL, wx.NORMAL, False, u'Consolas')
         self.valueLogTextArea .SetFont(textAreaFont)
-
         self.application = ProdLine(sys.argv)
         self._opts = self.application._opts
         self._config = helpers.parse_config(self._opts.config)
@@ -176,8 +174,8 @@ class MainWindow(wx.App):
         try:
             self.application.main()
         except Exception, e:
-            logger.critical("Exception: {exc}".format(exc=e))
-            logger.critical("Traceback: {tb}".format(tb=traceback.format_exc()))
+            logging.critical("Exception: {exc}".format(exc=e))
+            logging.critical("Traceback: {tb}".format(tb=traceback.format_exc()))
 
     def makeControllerBox(self, name, adress):
         pnl = wx.Panel(self)
