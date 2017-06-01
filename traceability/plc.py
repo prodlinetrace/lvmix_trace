@@ -285,6 +285,69 @@ class PLCBase(object):
     def get_pc_ready_flag_on_poll(self):
         return self._pc_ready_flag_on_poll
 
+    def get_stamp(self):
+        if '300' in self.get_active_datablock_list():
+            dbblock = self.get_db(300)
+            return dbblock.get_stamp_flag()
+        else:
+            logger.error("PLC: {plc} DB: {db} Unable to read stamp_flag}".format(plc=self.id, db=300))
+            return False
+
+    def set_stamp(self, value=True):
+        if '300' in self.get_active_datablock_list():
+            dbblock = self.get_db(300)
+            return dbblock.set_stamp_flag(value)
+        else:
+            logger.error("PLC: {plc} DB: {db} Unable to set stamp_flag}".format(plc=self.id, db=300))
+            return False
+
+    def get_stamp_login(self):
+        if '300' in self.get_active_datablock_list():
+            dbblock = self.get_db(300)
+            return dbblock.get_stamp_login_flag()
+        else:
+            logger.error("PLC: {plc} DB: {db} Unable to read stamp_login_flag}".format(plc=self.id, db=300))
+            return False
+
+    def set_stamp_login(self, value=True):
+        if '300' in self.get_active_datablock_list():
+            dbblock = self.get_db(300)
+            return dbblock.set_stamp_login_flag(value)
+        else:
+            logger.error("PLC: {plc} DB: {db} Unable to set stamp_login_flag}".format(plc=self.id, db=300))
+            return False
+
+    def get_stamp_logout(self):
+        if '300' in self.get_active_datablock_list():
+            dbblock = self.get_db(300)
+            return dbblock.get_stamp_login_flag()
+        else:
+            logger.error("PLC: {plc} DB: {db} Unable to read stamp_logout_flag}".format(plc=self.id, db=300))
+            return False
+
+    def set_stamp_logout(self, value=True):
+        if '300' in self.get_active_datablock_list():
+            dbblock = self.get_db(300)
+            return dbblock.set_stamp_logout_flag(value)
+        else:
+            logger.error("PLC: {plc} DB: {db} Unable to set stamp_logout_flag}".format(plc=self.id, db=300))
+            return False
+
+    def get_stamp_login_name(self):
+        if '300' in self.get_active_datablock_list():
+            dbblock = self.get_db(300)
+            return dbblock.get_stamp_login_name()
+        else:
+            logger.error("PLC: {plc} DB: {db} Unable to read get_stamp_login_name}".format(plc=self.id, db=300))
+            return False
+
+    def set_stamp_login_name(self, value=True):
+        if '300' in self.get_active_datablock_list():
+            dbblock = self.get_db(300)
+            return dbblock.set_stamp_login_name(value)
+        else:
+            logger.error("PLC: {plc} DB: {db} Unable to set get_stamp_login_name}".format(plc=self.id, db=300))
+            return False
 
 class PLC(PLCBase):
 

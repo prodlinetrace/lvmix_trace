@@ -1,4 +1,4 @@
-from .constants import PC_READY_FLAG, PLC_QUERY_FLAG, PLC_SAVE_FLAG, DB_BUSY_FLAG, PC_OPEN_BROWSER_FLAG, STATION_ID, PRODUCT_TYPE, SERIAL_NUMBER, WEEK_NUMBER, YEAR_NUMBER, DATE_TIME, PLC_HEARTBEAT_FLAG, PC_HEARTBEAT_FLAG, TRC_TMPL_COUNT, STATION_NUMBER, STATION_STATUS, PLC_TRC_ON, OPERATOR_NUMBER, OPERATOR_STATUS, OPERATOR_QUERY_FLAG, OPERATOR_SAVE_FLAG, VARIANT_ID
+from .constants import PC_READY_FLAG, PLC_QUERY_FLAG, PLC_SAVE_FLAG, DB_BUSY_FLAG, PC_OPEN_BROWSER_FLAG, STATION_ID, PRODUCT_TYPE, SERIAL_NUMBER, WEEK_NUMBER, YEAR_NUMBER, DATE_TIME, PLC_HEARTBEAT_FLAG, PC_HEARTBEAT_FLAG, TRC_TMPL_COUNT, STATION_NUMBER, STATION_STATUS, PLC_TRC_ON, OPERATOR_NUMBER, OPERATOR_STATUS, OPERATOR_QUERY_FLAG, OPERATOR_SAVE_FLAG, VARIANT_ID, STAMP_FLAG, STAMP_LOGOUT_FLAG, STAMP_LOGIN_FLAG, STAMP_LOGIN_NAME
 from .util import offset_spec_block
 
 """
@@ -42,9 +42,34 @@ db300Ctrl = """
 53.0    ctrl.reserve                BYTE
 """.format(plc_live=PLC_HEARTBEAT_FLAG, pc_live=PC_HEARTBEAT_FLAG, plc_trc_on=PLC_TRC_ON)
 
+db300ElectronicStamp = """
+54.0    stamp.extra_res1            BYTE        # extra reserve
+55.0    stamp.extra_res2            BYTE        # extra reserve
+56.0    stamp.extra_res3            BYTE        # extra reserve
+57.0    stamp.extra_res4            BYTE        # extra reserve
+58.0    stamp.extra_res5            BYTE        # extra reserve
+59.0    stamp.extra_res6            BYTE        # extra reserve
+60.0    stamp.extra_res7            BYTE        # extra reserve
+61.0    stamp.extra_res8            BYTE        # extra reserve
+62.0    stamp.extra_res9            BYTE        # extra reserve
+63.0    stamp.extra_res10           BYTE        # extra reserve
+64.0    {stamp_flag}                BOOL        # electronic stamp login flag. If set electronic stamp handling gets enabled 
+64.1    {logout_flag}               BOOL        # force logout flag. Can be set by PLC. Once set PC app will make operator logout and turn off flag afterwards.
+64.2    {login_flag}                BOOL        # login flag. Indicates if operator is logged in or not. AKA login status bit. PLC switches off bit every 200ms whereas PC switches it on as long as operator is logged in.
+52.3    stamp.res3                  BOOL
+52.4    stamp.res4                  BOOL
+52.5    stamp.res5                  BOOL
+52.6    stamp.res6                  BOOL
+52.7    stamp.res7                  BOOL 
+66.0    stamp.extra_res11           BYTE        # extra reserve
+66.0    {operator_login}            STRING[10]  # login name of operator
+""".format(stamp_flag=STAMP_FLAG, logout_flag=STAMP_LOGOUT_FLAG, login_flag=STAMP_LOGIN_FLAG, operator_login=STAMP_LOGIN_NAME)
+
+
 db300 = db3xxHead
 db300 += db300Body
 db300 += db300Ctrl
+db300 += db300ElectronicStamp
 
 
 db3xxTrcHead = """

@@ -8,6 +8,12 @@ OPERATOR_SAVE_FLAG      = 'body.Operator_Save'
 
 OPERATOR_NUMBER         = 'body.Operator_number'  # int
 OPERATOR_STATUS         = 'body.Operator_status'  # byte
+
+STAMP_FLAG              = 'stamp.stamp_flag'
+STAMP_LOGOUT_FLAG       = 'stamp.logout_flag'
+STAMP_LOGIN_FLAG        = 'stamp.login_flag'
+STAMP_LOGIN_NAME        = 'stamp.login_name'     # 8 bytes
+
 STATION_NUMBER          = 'body.station_number'  # byte
 STATION_STATUS          = 'body.station_status'  # byte
 

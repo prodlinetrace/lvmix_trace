@@ -233,6 +233,43 @@ class ProdLine(ProdLineBase):
 
     def get_comment_count(self):
         return self.database.get_comment_count()
+    
+    def stamp_login(self, username, password):
+        """
+            Try to make operator login. 
+            Reurns login result (True or False and message) 
+        """
+        #TODO: Implement me
+        return True, "login ok"
+
+    def stamp_logout_check(self):
+        """
+            Test remote logout bit 64.1 
+        """
+        for plc in self.plcs:
+            if plc.get_stamp_logout() is True:
+                # TODO: log event
+                return True
+
+        return False
+
+    def stamp_logout_finished(self):
+        """
+            Delete remote logout bit:  64.1 on all PLC's 
+        """
+        for plc in self.plcs:
+            plc.set_stamp_logout(False)
+
+        return True
+    
+    def stamp_login_flag_set(self, value=True):
+        """
+            Sets stamp_login_flag bit (should be set periodically as long as operator is logged in.)
+        """ 
+        for plc in self.plcs:
+            plc.set_stamp_login(True)
+
+        return True            
 
     def test_messages(self):
         for plc in self.plcs:

@@ -2,7 +2,7 @@ import snap7
 import logging
 from .layouts import db_specs
 import re
-from .constants import PC_READY_FLAG, PLC_QUERY_FLAG, PLC_SAVE_FLAG, TRC_TMPL_COUNT, PC_OPEN_BROWSER_FLAG, OPERATOR_QUERY_FLAG, OPERATOR_SAVE_FLAG
+from .constants import PC_READY_FLAG, PLC_QUERY_FLAG, PLC_SAVE_FLAG, TRC_TMPL_COUNT, PC_OPEN_BROWSER_FLAG, OPERATOR_QUERY_FLAG, OPERATOR_SAVE_FLAG, STAMP_LOGIN_FLAG, STAMP_LOGOUT_FLAG, STAMP_FLAG, STAMP_LOGIN_NAME
 
 logger = logging.getLogger(__name__)
 
@@ -319,17 +319,44 @@ class DB(object):
         returns value of PLC_SAVE_FLAG
         """
         return self[PLC_SAVE_FLAG]
+    
+    def get_stamp_flag(self):
+        return self[STAMP_FLAG]    
 
+    def set_stamp_flag(self, value=True, check=True):
+        flag = STAMP_FLAG
+        return self.set_flag(flag, value, check)
+    
+    def get_stamp_logout_flag(self):
+        return self[STAMP_LOGOUT_FLAG]    
+
+    def set_stamp_logout_flag(self, value=True, check=True):
+        flag = STAMP_LOGOUT_FLAG
+        return self.set_flag(flag, value, check)
+
+    def get_stamp_login_flag(self):
+        return self[STAMP_LOGIN_FLAG]    
+
+    def set_stamp_login_flag(self, value=True, check=True):
+        flag = STAMP_LOGIN_FLAG
+        return self.set_flag(flag, value, check)
+
+    def get_stamp_login_name(self):
+        return self[STAMP_LOGIN_NAME]    
+
+    def set_stamp_login_name(self, value):
+        return self.store_item(STAMP_LOGIN_NAME, value)
+    
     def operator_query_flag(self):
         return self[OPERATOR_QUERY_FLAG]
-
-    def operator_save_flag(self):
-        return self[OPERATOR_SAVE_FLAG]
 
     def set_operator_query_flag(self, value=True, check=True):
         flag = OPERATOR_QUERY_FLAG
         return self.set_flag(flag, value, check)
 
+    def operator_save_flag(self):
+        return self[OPERATOR_SAVE_FLAG]
+    
     def set_operator_save_flag(self, value=True, check=True):
         flag = OPERATOR_SAVE_FLAG
         return self.set_flag(flag, value, check)

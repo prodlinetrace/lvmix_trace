@@ -57,6 +57,10 @@ class MainWindow(wx.App):
         self.valueMainDBStatusTypeCount = wx.xrc.XRCCTRL(frame, "valueMainDBStatusTypeCount")
         self.valueMainDBCommentCount = wx.xrc.XRCCTRL(frame, "valueMainDBCommentCount")
 
+        self.operatorActionButton = wx.xrc.XRCCTRL(frame, "actionButton")
+        self.valueOperatorUsername = wx.xrc.XRCCTRL(frame, "valueUsername")
+        self.valueOperatorPassword = wx.xrc.XRCCTRL(frame, "valuePassword")
+
         self.valueLogTextArea = wx.xrc.XRCCTRL(frame, "valueLogTextArea")
         textAreaFont = wx.Font(10, wx.MODERN, wx.NORMAL, wx.NORMAL, False, u'Consolas')
         self.valueLogTextArea .SetFont(textAreaFont)
@@ -88,6 +92,9 @@ class MainWindow(wx.App):
         self.application.set_pollsleep(self.pollSleep)
         self.application.set_polldbsleep(self.pollDbSleep)
         self.application.set_pc_ready_flag_on_poll(self.pcReadyFlagOnPoll)
+        
+        self.logged_operator = None  # enforce operator logout on startup 
+        
         return True
 
     def OnVerbositySelect(self, event):
@@ -130,6 +137,53 @@ class MainWindow(wx.App):
                     else:
                         logger.fatal("Failed to remove offset file: {offset_file}.".format(offset_file=offset_file))
 
+    def updateOperatorWindow(self):
+        self.Bind(wx.EVT_BUTTON, self.OperatorActionButton_Handler, self.operatorActionButton)
+        tw.PushStatusText(str("Logged operator: {0}".format(self.logged_operator)))
+
+        while True:
+            time.sleep(0.334)
+            
+            if self.application.stamp_logout_check():
+                self.logged_operator = None
+                tw.PushStatusText(str("Operator logged out successfuly on remote request.")) 
+                self.operatorActionButton.SetLabel("Login")
+                self.application.stamp_logout_finished()
+
+            # set logged in operator flag to true only if operator is logged on.
+            if self.logged_operator is not None:
+                self.application.stamp_login_flag_set(True)
+            
+    def OperatorActionButton_Handler(self, event) :
+        btn = event.GetEventObject()
+        logger.info("OperatorActionButton_Handler() for: {btn}".format(btn=btn.GetLabelText()))
+        
+        username = self.valueOperatorUsername.GetValue()
+        password = self.valueOperatorPassword.GetValue()
+        
+        if self.logged_operator is None:
+            """
+                try to make operator login
+            """
+            result, message = self.application.stamp_login(username, password)
+    
+            if result == True:
+                self.logged_operator = username    
+                tw.PushStatusText(str("Operator {0} logged successfuly.".format(self.logged_operator)))
+                self.operatorActionButton.SetLabel("Logout")
+            else:
+                tw.PushStatusText(str("Operator login failed for: {0} with message: {1}".format(username, message)))
+                
+        else:
+            """
+                try to make operator logout
+            """
+            self.logged_operator = None
+            tw.PushStatusText(str("Operator logged out successfuly.")) 
+            self.operatorActionButton.SetLabel("Login")
+            
+        #event.Skip()    # Search for handler upwards in the child-parent hierarchy tree.
+
     def updateControllersStatus(self):
         self._mode = self.ID_UPDATE_CTRL_STATUS
         # push some initial data
@@ -144,7 +198,6 @@ class MainWindow(wx.App):
             self.valueMainLogFile.SetLabelText(file_name_with_size(self.logfile))
             self.valueMainConfigFile.SetLabelText(file_name_with_size(self._opts.config))
             self.valueMainDBFile.SetLabelText(file_name_with_size(self.dbfile))
-
             self.valueMainStatus.SetLabelText(str(self.application.get_status()))
             self.valueMainUptime.SetLabelText(str(datetime.datetime.now() - self.starttime))
 
@@ -220,6 +273,7 @@ if __name__ == "__main__":
     startWorker(app._ResultNotifier, app.updateLogWindow)
     startWorker(app._ResultNotifier, app.updateControllersStatus)
     startWorker(app._ResultNotifier, app.mainThread)
+    startWorker(app._ResultNotifier, app.updateOperatorWindow)
 
     # start main loop
     app.MainLoop()

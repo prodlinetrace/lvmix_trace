@@ -334,7 +334,7 @@
                       <object class="sizeritem">
                         <flag>wxALL</flag>
                         <border>5</border>
-                        <object class="wxButton" name="valueActionButton">
+                        <object class="wxButton" name="actionButton">
                           <label>Login</label>
                           <style/>
                           <bitmapposition>wxLEFT</bitmapposition>
