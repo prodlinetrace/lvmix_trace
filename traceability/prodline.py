@@ -234,21 +234,41 @@ class ProdLine(ProdLineBase):
     def get_comment_count(self):
         return self.database.get_comment_count()
     
-    def stamp_login(self, username, password):
+    def stamp_login(self, login, password):
         """
             Try to make operator login. 
             Reurns login result (True or False and message) 
         """
-        #TODO: Implement me
-        return True, "login ok"
-
+        if not self.database.validate_login(login, password):
+            return False, "Invalid username or password"
+        else:
+            user = self.database.get_user_object(login) 
+            if not user.is_operator:
+                return False, "User: {login} is not valid operator".format(login=login)
+            else:
+                # set data on DB blocks on all PLC's
+                for plc in self.plcs:  
+                    if plc.get_stamp():
+                        plc.set_stamp_login_name(login)  # set DB 300 block containing login name (byte 66)
+                        plc.set_operator_id(self.get_user_id(login))  # set DB 300 block containing operator number (byte 48)
+                
+                # retrun operation status
+                return True, "Operator login for user: {login} ok".format(login=login)
+            
+    def get_user_id(self, login):
+        user = self.database.get_user_object(login)
+        if user is None:
+            return None
+        else:
+            return user.id
+        
     def stamp_logout_check(self):
         """
             Test remote logout bit 64.1 
         """
         for plc in self.plcs:
             if plc.get_stamp_logout() is True:
-                # TODO: log event
+                logger.info("PLC: {plc} remote logout request recieved.".format(plc=plc.id))
                 return True
 
         return False
@@ -258,7 +278,10 @@ class ProdLine(ProdLineBase):
             Delete remote logout bit:  64.1 on all PLC's 
         """
         for plc in self.plcs:
-            plc.set_stamp_logout(False)
+            if plc.get_stamp():  # only in case electronic time stamp feture is enabled on given PLC.
+                plc.set_stamp_login_name("")  # set login name to empty string
+                plc.set_operator_id(0)  # set operator number to zero
+                logger.info("PLC: {plc} remote logout request completed.".format(plc=plc.id))
 
         return True
     
@@ -267,7 +290,8 @@ class ProdLine(ProdLineBase):
             Sets stamp_login_flag bit (should be set periodically as long as operator is logged in.)
         """ 
         for plc in self.plcs:
-            plc.set_stamp_login(True)
+            if plc.get_stamp():  # only in case electronic time stamp feture is enabled on given PLC.
+                plc.set_stamp_login(True)
 
         return True            
 

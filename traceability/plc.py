@@ -286,6 +286,9 @@ class PLCBase(object):
         return self._pc_ready_flag_on_poll
 
     def get_stamp(self):
+        """
+            checks if electronic stamp functionality is enabled on given PLC.
+        """
         if '300' in self.get_active_datablock_list():
             dbblock = self.get_db(300)
             return dbblock.get_stamp_flag()
@@ -294,11 +297,14 @@ class PLCBase(object):
             return False
 
     def set_stamp(self, value=True):
+        """
+            enable or disable electronic stamp functionality for given PLC.
+        """
         if '300' in self.get_active_datablock_list():
             dbblock = self.get_db(300)
             return dbblock.set_stamp_flag(value)
         else:
-            logger.error("PLC: {plc} DB: {db} Unable to set stamp_flag}".format(plc=self.id, db=300))
+            logger.error("PLC: {plc} DB: {db} Unable to set stamp_flag".format(plc=self.id, db=300))
             return False
 
     def get_stamp_login(self):
@@ -306,7 +312,7 @@ class PLCBase(object):
             dbblock = self.get_db(300)
             return dbblock.get_stamp_login_flag()
         else:
-            logger.error("PLC: {plc} DB: {db} Unable to read stamp_login_flag}".format(plc=self.id, db=300))
+            logger.error("PLC: {plc} DB: {db} Unable to read stamp_login_flag".format(plc=self.id, db=300))
             return False
 
     def set_stamp_login(self, value=True):
@@ -314,15 +320,15 @@ class PLCBase(object):
             dbblock = self.get_db(300)
             return dbblock.set_stamp_login_flag(value)
         else:
-            logger.error("PLC: {plc} DB: {db} Unable to set stamp_login_flag}".format(plc=self.id, db=300))
+            logger.error("PLC: {plc} DB: {db} Unable to set stamp_login_flag".format(plc=self.id, db=300))
             return False
 
     def get_stamp_logout(self):
         if '300' in self.get_active_datablock_list():
             dbblock = self.get_db(300)
-            return dbblock.get_stamp_login_flag()
+            return dbblock.get_stamp_logout_flag()
         else:
-            logger.error("PLC: {plc} DB: {db} Unable to read stamp_logout_flag}".format(plc=self.id, db=300))
+            logger.error("PLC: {plc} DB: {db} Unable to read stamp_logout_flag".format(plc=self.id, db=300))
             return False
 
     def set_stamp_logout(self, value=True):
@@ -330,7 +336,7 @@ class PLCBase(object):
             dbblock = self.get_db(300)
             return dbblock.set_stamp_logout_flag(value)
         else:
-            logger.error("PLC: {plc} DB: {db} Unable to set stamp_logout_flag}".format(plc=self.id, db=300))
+            logger.error("PLC: {plc} DB: {db} Unable to set stamp_logout_flag".format(plc=self.id, db=300))
             return False
 
     def get_stamp_login_name(self):
@@ -338,16 +344,26 @@ class PLCBase(object):
             dbblock = self.get_db(300)
             return dbblock.get_stamp_login_name()
         else:
-            logger.error("PLC: {plc} DB: {db} Unable to read get_stamp_login_name}".format(plc=self.id, db=300))
+            logger.error("PLC: {plc} DB: {db} Unable to read get_stamp_login_name".format(plc=self.id, db=300))
             return False
 
-    def set_stamp_login_name(self, value=True):
+    def set_stamp_login_name(self, value=""):
         if '300' in self.get_active_datablock_list():
             dbblock = self.get_db(300)
             return dbblock.set_stamp_login_name(value)
         else:
-            logger.error("PLC: {plc} DB: {db} Unable to set get_stamp_login_name}".format(plc=self.id, db=300))
+            logger.error("PLC: {plc} DB: {db} Unable to set get_stamp_login_name".format(plc=self.id, db=300))
             return False
+
+    def get_operator_id(self):
+        if '300' in self.get_active_datablock_list():
+            dbblock = self.get_db(300)
+            return dbblock[OPERATOR_NUMBER]
+
+    def set_operator_id(self, operator_id):
+        if '300' in self.get_active_datablock_list():
+            dbblock = self.get_db(300)
+            return dbblock.store_item(OPERATOR_NUMBER, operator_id)
 
 class PLC(PLCBase):
 

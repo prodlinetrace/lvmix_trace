@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-import wx
 import wx.xrc
 from wx.lib.delayedresult import startWorker
 import os
@@ -102,6 +101,7 @@ class MainWindow(wx.App):
         logger.info("Changing log level to: {level}".format(level=level))
         logger.root.setLevel(level)
         logging.root.setLevel(level)
+        tw.PushStatusText(tw.PushStatusText(str("Changing log level to: {level}".format(level=level))))
 
     def OnPopupSelect(self, event):
         _popup = self.valueMainPopups.GetStringSelection()
@@ -110,6 +110,8 @@ class MainWindow(wx.App):
             popup = True
         logger.info("Changing Product Details Popup to: {popup}".format(popup=popup))
         self.application.set_popups(popup)
+        tw.PushStatusText(str("Popups set to: {popup}".format(popup=popup)))
+        
 
     def updateLogWindow(self):
         self._mode = self.ID_UPDATE_LOG
@@ -146,7 +148,7 @@ class MainWindow(wx.App):
             
             if self.application.stamp_logout_check():
                 self.logged_operator = None
-                tw.PushStatusText(str("Operator logged out successfuly on remote request.")) 
+                tw.PushStatusText(str("Operator logout on remote request successful.")) 
                 self.operatorActionButton.SetLabel("Login")
                 self.application.stamp_logout_finished()
 
@@ -169,21 +171,27 @@ class MainWindow(wx.App):
     
             if result == True:
                 self.logged_operator = username    
-                tw.PushStatusText(str("Operator {0} logged successfuly.".format(self.logged_operator)))
+                tw.PushStatusText(str("{0} - operator login successful.".format(self.logged_operator)))
+                logger.info("{0} - operator login successful.".format(self.logged_operator))
                 self.operatorActionButton.SetLabel("Logout")
+                self.valueOperatorUsername.SetEditable(False)
+                self.valueOperatorPassword.SetEditable(False)
+                self.valueOperatorPassword.SetValue("")  # reset password field
             else:
-                tw.PushStatusText(str("Operator login failed for: {0} with message: {1}".format(username, message)))
-                
+                tw.PushStatusText(str("{0} - operator login failed. Error: {1}".format(username, message)))
+                logger.info("{0} - operator login failed. Error: {1}".format(username, message))
+                self.valueOperatorPassword.SetValue("")  # reset password field
         else:
             """
-                try to make operator logout
+                make operator logout
             """
             self.logged_operator = None
-            tw.PushStatusText(str("Operator logged out successfuly.")) 
+            tw.PushStatusText(str("Operator logout successful.")) 
             self.operatorActionButton.SetLabel("Login")
+            self.valueOperatorUsername.SetEditable(True)
+            self.valueOperatorPassword.SetEditable(True)
+            logger.info("Operator logout successful.")
             
-        #event.Skip()    # Search for handler upwards in the child-parent hierarchy tree.
-
     def updateControllersStatus(self):
         self._mode = self.ID_UPDATE_CTRL_STATUS
         # push some initial data
@@ -267,7 +275,7 @@ if __name__ == "__main__":
 
     # update status bar
     tw = app.GetTopWindow()
-    tw.PushStatusText('starting')
+    tw.PushStatusText('Starting...')
 
     # start the threads
     startWorker(app._ResultNotifier, app.updateLogWindow)

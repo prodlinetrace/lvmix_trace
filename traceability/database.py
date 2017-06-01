@@ -281,6 +281,16 @@ class Database(object):
 
     def get_status(self):
         return True
+    
+    def validate_login(self, login, password):
+        user = User.query.filter_by(login=login).first()
+        if user is None or not user.verify_password(password):
+            return False
+        else:
+            return True
+
+    def get_user_object(self, login):
+        return User.query.filter_by(login=login).first()
 
     def initialize_example_data(self):
         db.drop_all()
