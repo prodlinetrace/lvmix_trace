@@ -152,9 +152,11 @@ class MainWindow(wx.App):
                 self.operatorActionButton.SetLabel("Login")
                 self.application.stamp_logout_finished()
 
-            # set logged in operator flag to true only if operator is logged on.
+            # set operator_login_flag to true if operator is logged in. Otherwise set it to false.
             if self.logged_operator is not None:
-                self.application.stamp_login_flag_set(True)
+                self.application.set_stamp_login_flag(True)
+            else:
+                self.application.set_stamp_login_flag(False)
             
     def OperatorActionButton_Handler(self, event) :
         btn = event.GetEventObject()

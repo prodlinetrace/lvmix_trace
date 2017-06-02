@@ -250,6 +250,7 @@ class ProdLine(ProdLineBase):
                 for plc in self.plcs:  
                     if plc.get_stamp():
                         plc.set_stamp_login_name(login)  # set DB 300 block containing login name (byte 66)
+                        plc.set_stamp_login(True)  # change login flag to True
                         plc.set_operator_id(self.get_user_id(login))  # set DB 300 block containing operator number (byte 48)
                 
                 # retrun operation status
@@ -280,18 +281,19 @@ class ProdLine(ProdLineBase):
         for plc in self.plcs:
             if plc.get_stamp():  # only in case electronic time stamp feture is enabled on given PLC.
                 plc.set_stamp_login_name("")  # set login name to empty string
+                plc.set_stamp_login(False)  # change login flag to True
                 plc.set_operator_id(0)  # set operator number to zero
                 logger.info("PLC: {plc} remote logout request completed.".format(plc=plc.id))
 
         return True
     
-    def stamp_login_flag_set(self, value=True):
+    def set_stamp_login_flag(self, value=True):
         """
             Sets stamp_login_flag bit (should be set periodically as long as operator is logged in.)
         """ 
         for plc in self.plcs:
             if plc.get_stamp():  # only in case electronic time stamp feture is enabled on given PLC.
-                plc.set_stamp_login(True)
+                plc.set_stamp_login(value)
 
         return True            
 
