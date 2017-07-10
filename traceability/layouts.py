@@ -56,13 +56,13 @@ db300ElectronicStamp = """
 64.0    {stamp_flag}                BOOL        # electronic stamp login flag. If set electronic stamp handling gets enabled 
 64.1    {logout_flag}               BOOL        # force logout flag. Can be set by PLC. Once set PC app will make operator logout and turn off flag afterwards.
 64.2    {login_flag}                BOOL        # login flag. Indicates if operator is logged in or not. AKA login status bit. PLC switches off bit every 200ms whereas PC switches it on as long as operator is logged in.
-52.3    stamp.res3                  BOOL
-52.4    stamp.res4                  BOOL
-52.5    stamp.res5                  BOOL
-52.6    stamp.res6                  BOOL
-52.7    stamp.res7                  BOOL 
-66.0    stamp.extra_res11           BYTE        # extra reserve
-66.0    {operator_login}            STRING[10]  # login name of operator
+64.3    stamp.res3                  BOOL
+64.4    stamp.res4                  BOOL
+64.5    stamp.res5                  BOOL
+64.6    stamp.res6                  BOOL
+64.7    stamp.res7                  BOOL 
+65.0    stamp.extra_res11           BYTE        # extra reserve
+66.0    {operator_login}            STRING[8]   # login name of operator
 """.format(stamp_flag=STAMP_FLAG, logout_flag=STAMP_LOGOUT_FLAG, login_flag=STAMP_LOGIN_FLAG, operator_login=STAMP_LOGIN_NAME)
 
 

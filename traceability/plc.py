@@ -41,6 +41,10 @@ class PLCBase(object):
         self._pc_ready_flag_on_poll = False
         self._pollsleep = 0.1
         self._polldbsleep = 0.01
+        self.stamp_login_name = 'none'
+        self.stamp_login_id = 0
+        self.stamp_password = 'empty'
+        self.stamp_login_status = False
 
     def _init_database(self, dbfile='data/prodline.db'):
         self.database_engine = Database("{plc}".format(plc=self.get_id()))
@@ -284,23 +288,45 @@ class PLCBase(object):
 
     def get_pc_ready_flag_on_poll(self):
         return self._pc_ready_flag_on_poll
+    
+    def stamp_login_logout(self):
+        sleep(0.3)
+        if self.get_stamp() is True:
+            if self.stamp_login_status is True:
+                #if self.get_stamp():
+                self.set_stamp_login_name(self.stamp_login_name)  # set DB 300 block containing login name (byte 66)
+                if self.get_stamp_login() is False:
+                    self.set_stamp_login(True)  # change login flag to True
+                logger.debug("PLC: {plc} DB: {db} stamp_login_id is {stamp_login_id}".format(plc=self.id, db=300, stamp_login_id=(int(self.stamp_login_id) % 255)))
+                self.set_operator_id(int(int(self.stamp_login_id) % 255))  # set DB 300 block containing operator number (byte 48)
+            else:
+                # do logout
+                logger.debug("PLC: {plc} DB: {db} Login Status: {status} Login Id: {stamp_login_id} Login: {login}".format(plc=self.id, db=300, status=self.stamp_login_status, login=self.stamp_login_name, stamp_login_id=self.stamp_login_id))        
+                self.set_stamp_login_name('empty')  # set DB 300 block containing login name (byte 66)
+                if self.get_stamp_login() is True:
+                    self.set_stamp_login(False)  # change login flag to False
+                self.set_operator_id(0)  # set DB 300 block containing operator number (byte 48)
+            
+    def get_user_id(self, login):
+        self.database_engine.get_user_id(login)
 
     def get_stamp(self):
         """
             checks if electronic stamp functionality is enabled on given PLC.
         """
-        if '300' in self.get_active_datablock_list():
+        if 300 in self.get_active_datablock_list():
             dbblock = self.get_db(300)
             return dbblock.get_stamp_flag()
+
         else:
-            logger.error("PLC: {plc} DB: {db} Unable to read stamp_flag}".format(plc=self.id, db=300))
+            logger.error("PLC: {plc} DB: {db} Unable to read stamp_flag".format(plc=self.id, db=300))
             return False
 
     def set_stamp(self, value=True):
         """
             enable or disable electronic stamp functionality for given PLC.
         """
-        if '300' in self.get_active_datablock_list():
+        if 300 in self.get_active_datablock_list():
             dbblock = self.get_db(300)
             return dbblock.set_stamp_flag(value)
         else:
@@ -308,7 +334,7 @@ class PLCBase(object):
             return False
 
     def get_stamp_login(self):
-        if '300' in self.get_active_datablock_list():
+        if 300 in self.get_active_datablock_list():
             dbblock = self.get_db(300)
             return dbblock.get_stamp_login_flag()
         else:
@@ -316,7 +342,7 @@ class PLCBase(object):
             return False
 
     def set_stamp_login(self, value=True):
-        if '300' in self.get_active_datablock_list():
+        if 300 in self.get_active_datablock_list():
             dbblock = self.get_db(300)
             return dbblock.set_stamp_login_flag(value)
         else:
@@ -324,15 +350,16 @@ class PLCBase(object):
             return False
 
     def get_stamp_logout(self):
-        if '300' in self.get_active_datablock_list():
+        #logger.info("PLC: {plc} DB: {db} active_block_list {abl}".format(plc=self.id, db=300, abl=self.get_active_datablock_list()))
+        if 300 in self.get_active_datablock_list():
             dbblock = self.get_db(300)
             return dbblock.get_stamp_logout_flag()
         else:
-            logger.error("PLC: {plc} DB: {db} Unable to read stamp_logout_flag".format(plc=self.id, db=300))
+            logger.error("PLC: {plc} DB: {db} Unable to read stamp_logout_flag.".format(plc=self.id, db=300))
             return False
 
     def set_stamp_logout(self, value=True):
-        if '300' in self.get_active_datablock_list():
+        if 300 in self.get_active_datablock_list():
             dbblock = self.get_db(300)
             return dbblock.set_stamp_logout_flag(value)
         else:
@@ -340,15 +367,15 @@ class PLCBase(object):
             return False
 
     def get_stamp_login_name(self):
-        if '300' in self.get_active_datablock_list():
+        if 300 in self.get_active_datablock_list():
             dbblock = self.get_db(300)
             return dbblock.get_stamp_login_name()
         else:
             logger.error("PLC: {plc} DB: {db} Unable to read get_stamp_login_name".format(plc=self.id, db=300))
             return False
 
-    def set_stamp_login_name(self, value=""):
-        if '300' in self.get_active_datablock_list():
+    def set_stamp_login_name(self, value='null'):
+        if 300 in self.get_active_datablock_list():
             dbblock = self.get_db(300)
             return dbblock.set_stamp_login_name(value)
         else:
@@ -356,12 +383,12 @@ class PLCBase(object):
             return False
 
     def get_operator_id(self):
-        if '300' in self.get_active_datablock_list():
+        if 300 in self.get_active_datablock_list():
             dbblock = self.get_db(300)
             return dbblock[OPERATOR_NUMBER]
 
     def set_operator_id(self, operator_id):
-        if '300' in self.get_active_datablock_list():
+        if 300 in self.get_active_datablock_list():
             dbblock = self.get_db(300)
             return dbblock.store_item(OPERATOR_NUMBER, operator_id)
 

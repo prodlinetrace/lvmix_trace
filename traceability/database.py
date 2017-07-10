@@ -291,6 +291,13 @@ class Database(object):
 
     def get_user_object(self, login):
         return User.query.filter_by(login=login).first()
+    
+    def get_user_id(self, login):
+        obj = self.get_user_object(login)
+        if obj is not None:
+            return obj.id
+        else:
+            return 0
 
     def initialize_example_data(self):
         db.drop_all()

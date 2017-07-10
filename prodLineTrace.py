@@ -145,18 +145,25 @@ class MainWindow(wx.App):
 
         while True:
             time.sleep(0.334)
+            pass
+            """
+            #disable remote logout check - not implemented on PLC side
             
             if self.application.stamp_logout_check():
                 self.logged_operator = None
                 tw.PushStatusText(str("Operator logout on remote request successful.")) 
                 self.operatorActionButton.SetLabel("Login")
                 self.application.stamp_logout_finished()
-
+            """
+            """
             # set operator_login_flag to true if operator is logged in. Otherwise set it to false.
             if self.logged_operator is not None:
                 self.application.set_stamp_login_flag(True)
+                #self.application.stamp_login(self.logged_operator)
             else:
                 self.application.set_stamp_login_flag(False)
+                #self.application.set_stamp_login_name("")
+            """
             
     def OperatorActionButton_Handler(self, event) :
         btn = event.GetEventObject()
@@ -169,9 +176,9 @@ class MainWindow(wx.App):
             """
                 try to make operator login
             """
-            result, message = self.application.stamp_login(username, password)
-    
-            if result == True:
+            result, message = self.application.stamp_login_attempt(username, password)
+            logger.info("{0} - operator login successful. {1}".format(result, message))
+            if result is True:
                 self.logged_operator = username    
                 tw.PushStatusText(str("{0} - operator login successful.".format(self.logged_operator)))
                 logger.info("{0} - operator login successful.".format(self.logged_operator))
@@ -192,6 +199,7 @@ class MainWindow(wx.App):
             self.operatorActionButton.SetLabel("Login")
             self.valueOperatorUsername.SetEditable(True)
             self.valueOperatorPassword.SetEditable(True)
+            self.application.stamp_logout_finished()
             logger.info("Operator logout successful.")
             
     def updateControllersStatus(self):
@@ -266,6 +274,7 @@ class MainWindow(wx.App):
         except Exception, e:
             logger.critical("GUI Thread failed with following exception: {exc}".format(exc=e))
             logger.critical("Traceback: {tb}".format(tb=traceback.format_exc()))
+            #logger.critical("Traceback (stack): {tb}".format(tb=traceback.print_stack()))
 
     def OnClose(self):
         self.Destroy()

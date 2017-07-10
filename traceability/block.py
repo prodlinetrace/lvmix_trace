@@ -345,7 +345,7 @@ class DB(object):
         return self[STAMP_LOGIN_NAME]    
 
     def set_stamp_login_name(self, value):
-        return self.store_item(STAMP_LOGIN_NAME, value)
+        return self.store_item(STAMP_LOGIN_NAME, str(value))
     
     def operator_query_flag(self):
         return self[OPERATOR_QUERY_FLAG]

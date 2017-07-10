@@ -157,6 +157,9 @@ class ProdLineBase(object):
         self.__plc_list = []
 
         for plc in self._config['main']['plcs']:
+            if plc not in self._config:
+                logger.error("PLC: {plc} is missing definition in configuration file.".format(plc=plc))
+                continue
             ip = self._config[plc]['ip'][0]
             rack = self._config[plc]['rack'][0]
             slot = self._config[plc]['slot'][0]
@@ -234,32 +237,52 @@ class ProdLine(ProdLineBase):
     def get_comment_count(self):
         return self.database.get_comment_count()
     
-    def stamp_login(self, login, password):
+    def stamp_login_attempt(self, login, password):
         """
             Try to make operator login. 
             Reurns login result (True or False and message) 
         """
+        
+        logger.info("Prodline stamp login attempt.".format())
         if not self.database.validate_login(login, password):
+            for plc in self.plcs: 
+                #if plc.get_stamp():
+                plc.stamp_login_name = 'none'
+                plc.stamp_password = 'empty'
+                plc.stamp_login_id = 0
+                plc.stamp_login_status = False
+            logger.info("Prodline stamp login attempt. Invalid username ({login}) or password".format(login=login))
             return False, "Invalid username or password"
+            
         else:
             user = self.database.get_user_object(login) 
             if not user.is_operator:
+                for plc in self.plcs:
+                    #if plc.get_stamp():
+                    plc.stamp_login_name = 'none'
+                    plc.stamp_password = 'empty'
+                    plc.stamp_login_id = 0
+                    plc.stamp_login_status = False
+                
                 return False, "User: {login} is not valid operator".format(login=login)
             else:
-                # set data on DB blocks on all PLC's
-                for plc in self.plcs:  
-                    if plc.get_stamp():
-                        plc.set_stamp_login_name(login)  # set DB 300 block containing login name (byte 66)
-                        plc.set_stamp_login(True)  # change login flag to True
-                        plc.set_operator_id(self.get_user_id(login))  # set DB 300 block containing operator number (byte 48)
+                logger.info("Prodline stamp login attempt. Username ({login}) login OK".format(login=login))
+
+                # successful login procedure - set credentials on all PLC
+                for plc in self.plcs:
+                    #if plc.get_stamp():
+                    plc.stamp_login_name = login
+                    plc.stamp_password = password
+                    plc.stamp_login_id = int(user.id)
+                    plc.stamp_login_status = True
                 
                 # retrun operation status
                 return True, "Operator login for user: {login} ok".format(login=login)
-            
+
     def get_user_id(self, login):
         user = self.database.get_user_object(login)
         if user is None:
-            return None
+            return 0
         else:
             return user.id
         
@@ -279,17 +302,17 @@ class ProdLine(ProdLineBase):
             Delete remote logout bit:  64.1 on all PLC's 
         """
         for plc in self.plcs:
-            if plc.get_stamp():  # only in case electronic time stamp feture is enabled on given PLC.
-                plc.set_stamp_login_name("")  # set login name to empty string
-                plc.set_stamp_login(False)  # change login flag to True
-                plc.set_operator_id(0)  # set operator number to zero
-                logger.info("PLC: {plc} remote logout request completed.".format(plc=plc.id))
+            plc.stamp_login_name = 'none'
+            plc.stamp_password = 'empty'
+            plc.stamp_login_id = 0
+            plc.stamp_login_status = False
+            logger.info("PLC: {plc} remote logout request completed.".format(plc=plc.id))
 
         return True
     
     def set_stamp_login_flag(self, value=True):
         """
-            Sets stamp_login_flag bit (should be set periodically as long as operator is logged in.)
+            Sets stamp_login_flag bit (should be set periodically as long as operator is logged in).
         """ 
         for plc in self.plcs:
             if plc.get_stamp():  # only in case electronic time stamp feture is enabled on given PLC.
@@ -443,6 +466,13 @@ class ProdLine(ProdLineBase):
                 logger.critical("Connection to {plc} lost. Trying to re-establish connection.".format(plc=plc))
                 plc.connect()
 
+            # monitor login event
+            try:
+                plc.stamp_login_logout()
+            except snap7.snap7exceptions.Snap7Exception:
+                logger.critical("Connection to {plc} lost in stamp_login_logout function. Trying to re-establish connection.".format(plc=plc))
+                plc.connect()
+
         return True
 
     def main(self):
@@ -459,8 +489,14 @@ class ProdLine(ProdLineBase):
                     data = future.result()
                 except Exception as exc:
                     tb = traceback.format_exc()
+                    #tr = traceback.format_tb(tb)
+                    #logger.error('Thread {thread} generated an exception: {exc}, {tb}, {tr}'.format(thread=future, exc=exc, tb=tb, tr=tr))
                     logger.error('Thread {thread} generated an exception: {exc}, {tb}'.format(thread=future, exc=exc, tb=tb))
                 else:
+                    tb = traceback.format_exc()
+                    #tr = traceback.format_tb(tb)
+                    #logger.error('Thread {thread} generated an exception: {exc}, {tb}, {tr}'.format(thread=future, exc=exc, tb=tb, tr=tr))
+
                     logger.error("{err}".format(err=data))
 
         self.disconnect_plcs()
