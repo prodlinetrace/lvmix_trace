@@ -140,6 +140,7 @@ zip_includes = [
 
 include_files = [
                  "log",
+                 "locale",
                 "prodLineTrace.conf",
                 "prodLineTrace.ico",
                 "dll/snap7.dll",

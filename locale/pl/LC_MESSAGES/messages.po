@@ -1,0 +1,94 @@
+# Polish translations for PROJECT.
+# Copyright (C) 2017 ORGANIZATION
+# This file is distributed under the same license as the PROJECT project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2017.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2017-07-12 01:33+0200\n"
+"PO-Revision-Date: 2017-07-12 01:57+0100\n"
+"Last-Translator: \n"
+"Language: pl\n"
+"Language-Team: \n"
+"Plural-Forms: nplurals=3; plural=(n==1 ? 0 : n%10>=2 && n%10<=4 && (n"
+"%100<10 || n%100>=20) ? 1 : 2);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.3.4\n"
+"X-Generator: Poedit 1.7.5\n"
+
+#: prodLineTrace.py:120
+msgid "Action"
+msgstr "Akcja"
+
+#: prodLineTrace.py:121
+msgid "Username"
+msgstr "Operator"
+
+#: prodLineTrace.py:122
+msgid "Password"
+msgstr "Haslo"
+
+#: prodLineTrace.py:126 prodLineTrace.py:150 prodLineTrace.py:159
+msgid "Language changed to"
+msgstr "Jezyk zmieniony na"
+
+#: prodLineTrace.py:134 prodLineTrace.py:137
+msgid "Changing log level to"
+msgstr "Zmiana poziomu logowania"
+
+#: prodLineTrace.py:144
+msgid "Changing Product Details Popup to"
+msgstr "Zmiana wyskakujacych okienek"
+
+#: prodLineTrace.py:146
+msgid "Popups set to"
+msgstr "Wyskakujace okienka"
+
+#: prodLineTrace.py:189
+msgid "Logged operator"
+msgstr "Zalogowany operator"
+
+#: prodLineTrace.py:206
+msgid "Button pressed"
+msgstr "Nacisnieto przycisk"
+
+#: prodLineTrace.py:216
+msgid "Operator login"
+msgstr "Zalogowany Operator"
+
+#: prodLineTrace.py:219 prodLineTrace.py:220
+msgid "Operator login successful"
+msgstr "Udane logowanie operatora"
+
+#: prodLineTrace.py:221
+msgid "Logout"
+msgstr "Wylogowanie"
+
+#: prodLineTrace.py:226 prodLineTrace.py:227
+msgid "Error: Operator login failed for"
+msgstr "Blad: Logowanie operatora nieudane dla"
+
+#: prodLineTrace.py:234 prodLineTrace.py:239
+msgid "Operator logout successful."
+msgstr "Pomyslne wylogowanie operatora"
+
+#: prodLineTrace.py:235
+msgid "Login"
+msgstr "Zaloguj"
+
+#: traceability/prodline.py:259
+msgid "Invalid username or password"
+msgstr "Nieprawidlowy uzytkownik lub haslo"
+
+#: traceability/prodline.py:271
+msgid "Not valid operator"
+msgstr ""
+"Uzytkownik nie jest prawidlowym operatorem - sprawdz flagi uzytkownika"
+
+#: traceability/prodline.py:284
+msgid "Operator login for user: {login} ok"
+msgstr "Operator zalogowany prawidlowo"

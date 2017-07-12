@@ -102,6 +102,28 @@
                       <selection>0</selection>
                     </object>
                   </object>
+                  
+                  <object class="sizeritem">
+                    <flag>wxALL|wxALIGN_LEFT|wxALIGN_TOP</flag>
+                    <border>5</border>
+                    <object class="wxStaticText" name="labelMainLang">
+                      <label>Language</label>
+                      <style/>
+                    </object>
+                  </object>
+                  <object class="sizeritem">
+                    <flag>wxALL|wxALIGN_LEFT|wxALIGN_TOP</flag>
+                    <border>5</border>
+                    <object class="wxChoice" name="valueMainLang">
+                      <style/>
+                      <content>
+                        <item>pl</item>
+                        <item>en</item>
+                      </content>
+                      <selection>0</selection>
+                    </object>
+                  </object>
+                  
                   <object class="sizeritem">
                     <flag>wxALL|wxALIGN_LEFT|wxALIGN_TOP</flag>
                     <border>5</border>
