@@ -34,7 +34,6 @@ hidden_imports = [
                 "sqlalchemy.ext.declarative",
                 "sqlalchemy.engine.url",
                 "sqlalchemy.connectors.mxodbc",
-                "sqlalchemy.connectors.mysqldb",
                 "sqlalchemy.connectors.zxJDBC",
                 "sqlalchemy.dialects.sqlite.base",
                 "sqlalchemy.dialects.sybase.base",
@@ -134,6 +133,8 @@ hidden_imports = [
                 "itsdangerous",
                 "werkzeug.http",
                 "pymysql",
+                "os",
+                "sys",
 ]
 
 zip_includes = [
@@ -157,7 +158,7 @@ include_files = [
 # Dependencies are automatically detected, but it might need fine tuning.
 build_exe_options = {
                      "packages": hidden_imports,
-                     "excludes": ["tkinter", "werkzeug.http.os", "werkzeug.http.sys", "werkzeug.http._sre", "werkzeug.http.array", "werkzeug.http._locale", "werkzeug.http._warnings"],
+                     "excludes": ["tkinter", "werkzeug.http.os", "werkzeug.http.sys", "werkzeug.http._sre", "werkzeug.http.array", "werkzeug.http._locale", "werkzeug.http._warnings", "'collections.abc"],
                      "includes":["plc", "flask"],
                      "include_files": include_files,
                      'include_msvcr': True,
