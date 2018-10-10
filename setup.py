@@ -133,6 +133,7 @@ hidden_imports = [
                 "bleach",
                 "itsdangerous",
                 "werkzeug.http",
+                "pymysql",
 ]
 
 zip_includes = [

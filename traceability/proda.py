@@ -87,7 +87,7 @@ class Sync(object):
         _ch.setFormatter(logging.Formatter('%(name)s - %(levelname)8s - %(message)s'))
         self.logger.addHandler(_fh)
         self.logger.addHandler(_ch)
-        self.logger.info("Using DB file: {db}".format(db=self._config['main']['dbfile'][0]))
+        self.logger.info("Using DB: {db}".format(db=self._config['main']['dburi'][0]))
 
         # cleanup (tmp csv handling)
         cleanup = self._config['main']['cleanup'][0]

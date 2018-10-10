@@ -1,7 +1,7 @@
 """
 The PLC Python library.
 """
-__version__ = '0.8.0'
+__version__ = '0.8.1'
 AUTHOR = "Piotr Wilkosz"
 EMAIL = "Piotr.Wilkosz@gmail.com"
 NAME = "ProdLineTrace"
@@ -10,7 +10,7 @@ import logging
 import tempfile
 import os
 from flask import Flask
-from flask.ext.sqlalchemy import SQLAlchemy
+from flask_sqlalchemy import SQLAlchemy
 from .helpers import parse_config, parse_args
 
 logger = logging.getLogger(__package__.ljust(12)[:12])
