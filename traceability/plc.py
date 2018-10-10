@@ -303,7 +303,7 @@ class PLCBase(object):
                 self.set_operator_id(int(int(self.stamp_login_id) % 255))  # set DB 300 block containing operator number (byte 48)
             else:
                 # do logout
-                logger.debug("PLC: {plc} DB: {db} Login Status: {status} Login Id: {stamp_login_id} Login: {login} Pass: {password}".format(plc=self.id, db=300, status=self.stamp_login_status, login=self.stamp_login_name, password=self.stamp_password, stamp_login_id=self.stamp_login_id))        
+                logger.info("PLC: {plc} DB: {db} Login Status: {status} Login Id: {stamp_login_id} Login: {login} Pass: {password}".format(plc=self.id, db=300, status=self.stamp_login_status, login=self.stamp_login_name, password=self.stamp_password, stamp_login_id=self.stamp_login_id))        
                 self.set_stamp_login_name('empty')  # set DB 300 block containing login name (byte 66)
                 if self.get_stamp_login() is True:
                     self.set_stamp_login(False)  # change login flag to False
