@@ -9,7 +9,6 @@ from datetime import datetime
 from time import sleep
 from .helpers import parse_config, parse_args
 from .database import Database
-import gettext
 
 logger = logging.getLogger(__name__)
 
@@ -24,9 +23,6 @@ class ProdLineBase(object):
         logging.root.setLevel(logging.INFO)
         logger = logging.getLogger(__name__.ljust(24)[:24])
         logger.setLevel(loglevel)
-        
-        #initialize gettext
-        gettext.install('messages', 'locale', unicode=True)
 
         # init datetime.strptime so it is available in threads (http://www.mail-archive.com/python-list@python.org/msg248846.html)
         year = datetime.strptime("01","%y")
@@ -110,6 +106,9 @@ class ProdLineBase(object):
     def get_db_file(self):
         return self._config['main']['dbfile'][0]
 
+    def get_dburi(self):
+        return self._config['main']['dburi'][0]
+
     def set_plc_class(self, plcClass):
         self.__PLCClass = plcClass
 
@@ -185,7 +184,7 @@ class ProdLineBase(object):
             c.set_name(name)
             c.set_id(iden)
             logger.debug("PLC: {plc} configuring database engine connectivity".format(plc=plc))
-            c._init_database(dbfile=self.get_db_file())
+            c._init_database(dburi=self.get_dburi())
             logger.debug("PLC: {plc} set active data blocks to: {dbs}".format(plc=plc, dbs=str(datablocks)))
             c.set_active_datablock_list(datablocks)
             logger.debug("PLC: {plc} is configured now.".format(plc=plc))
@@ -256,7 +255,7 @@ class ProdLine(ProdLineBase):
                 plc.stamp_login_id = 0
                 plc.stamp_login_status = False
             logger.info("Prodline stamp login attempt. Invalid username ({login}) or password".format(login=login))
-            return False, _("Invalid username or password")
+            return False, "Invalid username or password"
             
         else:
             user = self.database.get_user_object(login) 
@@ -267,8 +266,8 @@ class ProdLine(ProdLineBase):
                     plc.stamp_password = 'empty'
                     plc.stamp_login_id = 0
                     plc.stamp_login_status = False
-                
-                return False, _("Not valid operator".format(login=login))
+                return False, "User: {login} is not valid operator".format(login=login)
+
             else:
                 logger.info("Prodline stamp login attempt. Username ({login}) login OK".format(login=login))
 
@@ -281,7 +280,7 @@ class ProdLine(ProdLineBase):
                     plc.stamp_login_status = True
                 
                 # retrun operation status
-                return True, _("Operator login for user: {login} ok".format(login=login))
+                return True, "Operator login for user: {login} ok".format(login=login)
 
     def get_user_id(self, login):
         user = self.database.get_user_object(login)

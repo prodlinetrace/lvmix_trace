@@ -8,7 +8,6 @@ import logging
 import sys
 from pygtail import Pygtail
 import traceback
-import gettext
 
 from traceability import helpers
 from traceability import __version__ as version
@@ -23,7 +22,6 @@ class MainWindow(wx.App):
     ID_UPDATE_LOG = wx.NewId()
 
     def OnInit(self):
-        gettext.install('messages', 'locale', unicode=True)
         res = wx.xrc.XmlResource("prodLineTrace.xrc")
         frame = res.LoadFrame(None, 'MainFrame')
         frame.Show()
@@ -33,10 +31,9 @@ class MainWindow(wx.App):
         self.valueMainLogFile = wx.xrc.XRCCTRL(frame, "valueMainLogFile")
         self.valueMainVerbosity = wx.xrc.XRCCTRL(frame, "valueMainVerbosity")
         self.valueMainPopups = wx.xrc.XRCCTRL(frame, "valueMainPopups")
-        self.valueMainLang = wx.xrc.XRCCTRL(frame, "valueMainLang")
         self.valueMainVersion = wx.xrc.XRCCTRL(frame, "valueMainVersion")
         self.valueMainDBModelVersion = wx.xrc.XRCCTRL(frame, "valueMainDBModelVersion")
-        self.valueMainDBFile = wx.xrc.XRCCTRL(frame, "valueMainDBFile")
+        self.valueMainDBURI = wx.xrc.XRCCTRL(frame, "valueMainDBURI")
         self.valueMainUptime = wx.xrc.XRCCTRL(frame, "valueMainUptime")
         self.valueMainDBSize = wx.xrc.XRCCTRL(frame, "valueMainDBSize")
         self.valueMainBaseUrl = wx.xrc.XRCCTRL(frame, "valueMainBaseUrl")
@@ -62,15 +59,6 @@ class MainWindow(wx.App):
         self.operatorActionButton = wx.xrc.XRCCTRL(frame, "actionButton")
         self.valueOperatorUsername = wx.xrc.XRCCTRL(frame, "valueUsername")
         self.valueOperatorPassword = wx.xrc.XRCCTRL(frame, "valuePassword")
-        self.labelActionButton = wx.xrc.XRCCTRL(frame, "labelAction")
-        self.labelOperatorUsername = wx.xrc.XRCCTRL(frame, "labelUsername")
-        self.labelOperatorPassword = wx.xrc.XRCCTRL(frame, "labelPassword")
-
-
-        
-        # bind enter character to login button.
-        self.valueOperatorUsername.Bind(wx.EVT_KEY_UP, self.DoKeyPress)
-        self.valueOperatorPassword.Bind(wx.EVT_KEY_UP, self.DoKeyPress)
 
         self.valueLogTextArea = wx.xrc.XRCCTRL(frame, "valueLogTextArea")
         textAreaFont = wx.Font(10, wx.MODERN, wx.NORMAL, wx.NORMAL, False, u'Consolas')
@@ -79,7 +67,7 @@ class MainWindow(wx.App):
         self._opts = self.application._opts
         self._config = helpers.parse_config(self._opts.config)
 #        self.webapp = webapp
-        self.dbfile = self._config['main']['dbfile'][0]
+        self.dburi = self._config['main']['dburi'][0]
         self.logfile = self._config['main']['logfile'][0]
         self.starttime = datetime.datetime.now()
         self.baseUrl = 'http://localhost:5000/'
@@ -98,11 +86,6 @@ class MainWindow(wx.App):
 
         # bind popups selectbox with selector function
         self.Bind(wx.EVT_CHOICE, self.OnPopupSelect, self.valueMainPopups)
-
-        # bind popups selectbox with selector function
-        self.Bind(wx.EVT_CHOICE, self.OnLangSelect, self.valueMainLang)
-        
-        # set some defaults        
         self.application.set_popups(True)
         self.application.set_baseurl(self.baseUrl)
         self.application.set_pollsleep(self.pollSleep)
@@ -111,50 +94,24 @@ class MainWindow(wx.App):
         
         self.logged_operator = None  # enforce operator logout on startup 
         
-        # install supported languages
-        self.lang_en = gettext.translation("messages", "locale", languages=['en'])
-        self.lang_pl = gettext.translation("messages", "locale", languages=['pl'])
-
-        # and set default lang
-        lang = self.valueMainLang.GetStringSelection()
-        logger.info("{msg}: {lang}".format(msg=_("Language changed to"), lang=lang))
-        translation = getattr(self, "lang_" + lang)
-        translation.install()
-
-        # set label values
-        self.labelActionButton.SetLabel(_('Action'))
-        self.labelOperatorUsername.SetLabel(_('Username'))
-        self.labelOperatorPassword.SetLabel(_('Password'))
-
         return True
 
     def OnVerbositySelect(self, event):
         level = self.valueMainVerbosity.GetStringSelection()
-        logger.info("{msg}: {level}".format(msg=_("Changing log level to"), level=level))
+        logger.info("Changing log level to: {level}".format(level=level))
         logger.root.setLevel(level)
         logging.root.setLevel(level)
-        tw.PushStatusText(tw.PushStatusText(str("{msg}: {level}".format(msg=_("Changing log level to"), level=level))))
+        tw.PushStatusText(tw.PushStatusText(str("Changing log level to: {level}".format(level=level))))
 
     def OnPopupSelect(self, event):
         _popup = self.valueMainPopups.GetStringSelection()
         popup = False
         if _popup == "Yes":
             popup = True
-        logger.info("{msg}: {popup}".format(msg=_("Changing Product Details Popup to"), popup=popup))
+        logger.info("Changing Product Details Popup to: {popup}".format(popup=popup))
         self.application.set_popups(popup)
-        tw.PushStatusText(str("{msg}: {popup}".format(msg=_("Popups set to"), popup=popup)))
-   
-    def OnLangSelect(self, event):
-        lang = self.valueMainLang.GetStringSelection()
-        logger.info("{msg}: {lang}".format(msg=_("Language changed to"), lang=lang))
-        translation = getattr(self, "lang_" + lang)
-        translation.install()
-        self.labelActionButton.SetLabel(_('Action'))
-        self.labelOperatorUsername.SetLabel(_('Username'))
-        self.labelOperatorPassword.SetLabel(_('Password'))
-
-
-        tw.PushStatusText(str("{msg}: {lang}".format(msg=_("Language changed to"), lang=lang)))
+        tw.PushStatusText(str("Popups set to: {popup}".format(popup=popup)))
+        
 
     def updateLogWindow(self):
         self._mode = self.ID_UPDATE_LOG
@@ -184,24 +141,33 @@ class MainWindow(wx.App):
 
     def updateOperatorWindow(self):
         self.Bind(wx.EVT_BUTTON, self.OperatorActionButton_Handler, self.operatorActionButton)
-        tw.PushStatusText(str("{msg}: {operator}".format(msg=_("Logged operator"), operator=self.logged_operator)))
+        tw.PushStatusText(str("Logged operator: {0}".format(self.logged_operator)))
 
         while True:
             time.sleep(0.334)
             pass
-
-    def DoKeyPress(self, event):
-        """
-            Run OperatorActionButton_Handler (button press) on enter/return character.
-        """        
-        if event.GetKeyCode() == wx.WXK_RETURN:
-            self.OperatorActionButton_Handler(event)
-        else:
-            event.Skip()
+            """
+            #disable remote logout check - not implemented on PLC side
+            
+            if self.application.stamp_logout_check():
+                self.logged_operator = None
+                tw.PushStatusText(str("Operator logout on remote request successful.")) 
+                self.operatorActionButton.SetLabel("Login")
+                self.application.stamp_logout_finished()
+            """
+            """
+            # set operator_login_flag to true if operator is logged in. Otherwise set it to false.
+            if self.logged_operator is not None:
+                self.application.set_stamp_login_flag(True)
+                #self.application.stamp_login(self.logged_operator)
+            else:
+                self.application.set_stamp_login_flag(False)
+                #self.application.set_stamp_login_name("")
+            """
             
     def OperatorActionButton_Handler(self, event) :
         btn = event.GetEventObject()
-        logger.info("{msg}: {btn}".format(msg=_("Button pressed"), btn=btn.GetLabelText()))
+        logger.info("OperatorActionButton_Handler() for: {btn}".format(btn=btn.GetLabelText()))
         
         username = self.valueOperatorUsername.GetValue()
         password = self.valueOperatorPassword.GetValue()
@@ -211,30 +177,30 @@ class MainWindow(wx.App):
                 try to make operator login
             """
             result, message = self.application.stamp_login_attempt(username, password)
-            logger.info("{msg}: {result} {message}".format(msg=_("Operator login"), result=result, message=message))
+            logger.info("{0} - operator login successful. {1}".format(result, message))
             if result is True:
                 self.logged_operator = username    
-                tw.PushStatusText(str("{msg}: {operator}".format(msg=_("Operator login successful"), operator=self.logged_operator)))
-                logger.info("{msg}: {operator}".format(msg=_("Operator login successful"), operator=self.logged_operator))
-                self.operatorActionButton.SetLabel(_("Logout"))
+                tw.PushStatusText(str("{0} - operator login successful.".format(self.logged_operator)))
+                logger.info("{0} - operator login successful.".format(self.logged_operator))
+                self.operatorActionButton.SetLabel("Logout")
                 self.valueOperatorUsername.SetEditable(False)
                 self.valueOperatorPassword.SetEditable(False)
                 self.valueOperatorPassword.SetValue("")  # reset password field
             else:
-                tw.PushStatusText(str("{msg}: {operator} - {message}".format(msg=_("Error: Operator login failed for"), operator=username, message=message)))
-                logger.info("{msg}: {operator} - {message}".format(msg=_("Error: Operator login failed for"), operator=username, message=message))
+                tw.PushStatusText(str("{0} - operator login failed. Error: {1}".format(username, message)))
+                logger.info("{0} - operator login failed. Error: {1}".format(username, message))
                 self.valueOperatorPassword.SetValue("")  # reset password field
         else:
             """
                 make operator logout
             """
             self.logged_operator = None
-            tw.PushStatusText(str(_("Operator logout successful."))) 
-            self.operatorActionButton.SetLabel(_("Login"))
+            tw.PushStatusText(str("Operator logout successful.")) 
+            self.operatorActionButton.SetLabel("Login")
             self.valueOperatorUsername.SetEditable(True)
             self.valueOperatorPassword.SetEditable(True)
             self.application.stamp_logout_finished()
-            logger.info(_("Operator logout successful."))
+            logger.info("Operator logout successful.")
             
     def updateControllersStatus(self):
         self._mode = self.ID_UPDATE_CTRL_STATUS
@@ -249,7 +215,7 @@ class MainWindow(wx.App):
         while True:
             self.valueMainLogFile.SetLabelText(file_name_with_size(self.logfile))
             self.valueMainConfigFile.SetLabelText(file_name_with_size(self._opts.config))
-            self.valueMainDBFile.SetLabelText(file_name_with_size(self.dbfile))
+            self.valueMainDBURI.SetLabelText(file_name_with_size(self.dburi))
             self.valueMainStatus.SetLabelText(str(self.application.get_status()))
             self.valueMainUptime.SetLabelText(str(datetime.datetime.now() - self.starttime))
 

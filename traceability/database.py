@@ -120,7 +120,7 @@ class Database(object):
             logger.info("CON: {dbcon} Adding new Operation to database: {operation}".format(dbcon=self.name, operation=new_operation))
 
         except sqlalchemy.exc.OperationalError, e:
-            logger.error("CON: {dbcon} Database: {dbfile} is locked. Error: {err}".format(dbcon=self.name, dbfile=db.get_app().config['SQLALCHEMY_DATABASE_URI'], err=e.__str__()))
+            logger.error("CON: {dbcon} Database: {dburi} is locked. Error: {err}".format(dbcon=self.name, dburi=db.get_app().config['SQLALCHEMY_DATABASE_URI'], err=e.__str__()))
             return False
         return True
 
@@ -174,7 +174,7 @@ class Database(object):
                         logger.error("CON: {dbcon} {rep} : {err}".format(dbcon=self.name, rep=repr(e), err=e.__str__()))
 
         except sqlalchemy.exc.OperationalError, e:
-            logger.error("CON: {dbcon} Database: {dbfile} is locked. Error: {err}".format(dbcon=self.name, dbfile=db.get_app().config['SQLALCHEMY_DATABASE_URI'], err=e.__str__()))
+            logger.error("CON: {dbcon} Database: {dburi} is locked. Error: {err}".format(dbcon=self.name, dburi=db.get_app().config['SQLALCHEMY_DATABASE_URI'], err=e.__str__()))
             return False
         return True
 
@@ -192,7 +192,7 @@ class Database(object):
                 logger.info("CON: {dbcon} Adding new Station to database: {station}".format(dbcon=self.name, station=str(new_variant)))
 
         except sqlalchemy.exc.OperationalError, e:
-            logger.error("CON: {dbcon} Database: {dbfile} is locked. Error: {err}".format(dbcon=self.name, dbfile=db.get_app().config['SQLALCHEMY_DATABASE_URI'], err=e.__str__()))
+            logger.error("CON: {dbcon} Database: {dburi} is locked. Error: {err}".format(dbcon=self.name, dburi=db.get_app().config['SQLALCHEMY_DATABASE_URI'], err=e.__str__()))
             return False
         return True
 
@@ -210,7 +210,7 @@ class Database(object):
                 logger.info("CON: {dbcon} Adding new Station to database: {station}".format(dbcon=self.name, station=str(new_station)))
 
         except sqlalchemy.exc.OperationalError, e:
-            logger.error("CON: {dbcon} Database: {dbfile} is locked. Error: {err}".format(dbcon=self.name, dbfile=db.get_app().config['SQLALCHEMY_DATABASE_URI'], err=e.__str__()))
+            logger.error("CON: {dbcon} Database: {dburi} is locked. Error: {err}".format(dbcon=self.name, dburi=db.get_app().config['SQLALCHEMY_DATABASE_URI'], err=e.__str__()))
             return False
         return True
 
@@ -229,7 +229,7 @@ class Database(object):
                 logger.info("CON: {dbcon} Adding new Operation_Type to database: {operation}".format(dbcon=self.name, operation=str(new_operation_type)))
 
         except sqlalchemy.exc.OperationalError, e:
-            logger.error("CON: {dbcon} Database: {dbfile} is locked. Error: {err}".format(dbcon=self.name, dbfile=db.get_app().config['SQLALCHEMY_DATABASE_URI'], err=e.__str__()))
+            logger.error("CON: {dbcon} Database: {dburi} is locked. Error: {err}".format(dbcon=self.name, dburi=db.get_app().config['SQLALCHEMY_DATABASE_URI'], err=e.__str__()))
             return False
         return True
 
@@ -248,7 +248,7 @@ class Database(object):
                 logger.info("CON: {dbcon} Adding new Operation_Status to database: {operation_status}".format(dbcon=self.name, operation_status=str(new_operation_status)))
 
         except sqlalchemy.exc.OperationalError, e:
-            logger.error("CON: {dbcon} Database: {dbfile} is locked. Error: {err}".format(dbcon=self.name, dbfile=db.get_app().config['SQLALCHEMY_DATABASE_URI'], err=e.__str__()))
+            logger.error("CON: {dbcon} Database: {dburi} is locked. Error: {err}".format(dbcon=self.name, dburi=db.get_app().config['SQLALCHEMY_DATABASE_URI'], err=e.__str__()))
             return False
         return True
 

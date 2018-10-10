@@ -46,9 +46,9 @@ class PLCBase(object):
         self.stamp_password = 'empty'
         self.stamp_login_status = False
 
-    def _init_database(self, dbfile='data/prodline.db'):
+    def _init_database(self, dburi=''):
         self.database_engine = Database("{plc}".format(plc=self.get_id()))
-        logger.info("PLC: {plc} connected to SQLite @ {dbfile}. Status: {status}".format(plc=self.get_id(), dbfile=dbfile, status=self.database_engine.get_status()))
+        logger.info("PLC: {plc} connected to DB @ {dburi}. Status: {status}".format(plc=self.get_id(), dburi=dburi, status=self.database_engine.get_status()))
 
     def __repr__(self):
         return """<{module}.{name} {me}>""".format(module=self.__class__.__module__, name=self.__class__.__name__, me=str(self))
@@ -288,9 +288,11 @@ class PLCBase(object):
 
     def get_pc_ready_flag_on_poll(self):
         return self._pc_ready_flag_on_poll
+
+
     
     def stamp_login_logout(self):
-        sleep(0.3)
+        sleep(1)
         if self.get_stamp() is True:
             if self.stamp_login_status is True:
                 #if self.get_stamp():
@@ -301,7 +303,7 @@ class PLCBase(object):
                 self.set_operator_id(int(int(self.stamp_login_id) % 255))  # set DB 300 block containing operator number (byte 48)
             else:
                 # do logout
-                logger.debug("PLC: {plc} DB: {db} Login Status: {status} Login Id: {stamp_login_id} Login: {login}".format(plc=self.id, db=300, status=self.stamp_login_status, login=self.stamp_login_name, stamp_login_id=self.stamp_login_id))        
+                logger.debug("PLC: {plc} DB: {db} Login Status: {status} Login Id: {stamp_login_id} Login: {login} Pass: {password}".format(plc=self.id, db=300, status=self.stamp_login_status, login=self.stamp_login_name, password=self.stamp_password, stamp_login_id=self.stamp_login_id))        
                 self.set_stamp_login_name('empty')  # set DB 300 block containing login name (byte 66)
                 if self.get_stamp_login() is True:
                     self.set_stamp_login(False)  # change login flag to False
@@ -314,10 +316,10 @@ class PLCBase(object):
         """
             checks if electronic stamp functionality is enabled on given PLC.
         """
+        #sreturn True
         if 300 in self.get_active_datablock_list():
             dbblock = self.get_db(300)
             return dbblock.get_stamp_flag()
-
         else:
             logger.error("PLC: {plc} DB: {db} Unable to read stamp_flag".format(plc=self.id, db=300))
             return False
@@ -355,7 +357,7 @@ class PLCBase(object):
             dbblock = self.get_db(300)
             return dbblock.get_stamp_logout_flag()
         else:
-            logger.error("PLC: {plc} DB: {db} Unable to read stamp_logout_flag.".format(plc=self.id, db=300))
+            logger.error("PLC: {plc} DB: {db} Unable to read stamp_logout_flag xxxs".format(plc=self.id, db=300))
             return False
 
     def set_stamp_logout(self, value=True):

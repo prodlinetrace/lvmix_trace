@@ -255,15 +255,15 @@
                   <object class="sizeritem">
                     <flag>wxALL|wxALIGN_LEFT|wxALIGN_TOP</flag>
                     <border>5</border>
-                    <object class="wxStaticText" name="labelMainDBFile">
-                      <label>SQLite DB File</label>
+                    <object class="wxStaticText" name="labelMainDBURI">
+                      <label>DB URI</label>
                       <style/>
                     </object>
                   </object>
                   <object class="sizeritem">
                     <flag>wxALL|wxALIGN_LEFT|wxALIGN_TOP</flag>
                     <border>5</border>
-                    <object class="wxStaticText" name="valueMainDBFile">
+                    <object class="wxStaticText" name="valueMainDBURI">
                       <label>MyLabel</label>
                       <style/>
                     </object>
