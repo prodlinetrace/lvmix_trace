@@ -242,11 +242,20 @@ class Sync(object):
 
         return p.returncode
 
+    def get_products(self, date_string="2017-06-29 06:39:38.973000"):
+        """
+            gets products from DB younger than given date
+        """
+        
+        candidates = Product.query.filter_by(prodasync=0).order_by(Product.date_added).all()
+        
+        return candidates
+
     def prepare_products_for_proda_sync(self):
         """
         This function iterates over database and finds products that finished assembly process.
         Such products are getting prodasync flag set to 1.
-        Both failed and successully completed products get synced.
+        Both failed and successfully completed products get synced.
         Only products with prodasyncflag==0 should be considered.
         Products with prodasync flag set to 1 are processed by sync_all_products method.
 
