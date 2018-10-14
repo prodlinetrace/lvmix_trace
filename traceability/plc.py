@@ -509,7 +509,9 @@ class PLC(PLCBase):
                 logger.debug("PLC: {plc} DB: {db} PID: {product_id} trying to read status from database for station: {station}".format(plc=self.get_id(), db=block.get_db_number(), product_id=product_id, station=station_number))
  
                 # special handling for virtual tester (station_number: 100)
-                if int(station_number) == 100:
+                virtual_tester_new = False
+                # old implementation of virtual tester
+                if int(station_number) == 100 and virtual_tester_new is False:
                     station_status = 200  # set some initial value - it always have to be overwritten by code below.
                     tester1 = self.database_engine.read_station_status_record(str(product_id), 101)
                     tester2 = self.database_engine.read_station_status_record(str(product_id), 102)
@@ -528,7 +530,27 @@ class PLC(PLCBase):
 
                     if tester1 is None and tester2 is not None:
                         station_status = tester2.status
-                    
+
+                # new implementation of virtual tester
+                if int(station_number) == 100 and virtual_tester_new:
+                    station_status = 200
+                    tester1 = self.database_engine.read_station_status_record(str(product_id), 101)
+                    tester2 = self.database_engine.read_station_status_record(str(product_id), 102)
+                    tester3 = self.database_engine.read_station_status_record(str(product_id), 103)
+                    testers = [tester1, tester2, tester3]
+                    logger.debug("PLC: {plc} DB: {db} List of all testers (raw / initial): {testers}".format(plc=self.id, db=dbid, testers=testers))
+                    testers = filter(None, testers)  # filters testers without record
+                    logger.debug("PLC: {plc} DB: {db} List of all testers with non Null data (unsorted): {testers}".format(plc=self.id, db=dbid, testers=testers))
+
+                    if testers == []:  # if all testers are missing record in database
+                        station_status = 0
+                    else:
+                        # find tester that processed product as a last one (in case there is more than one result)
+                        testers.sort(key=lambda r: r.date_time, reverse=True)
+                        logger.debug("PLC: {plc} DB: {db} List of all testers (sorted by date): {testers}".format(plc=self.id, db=dbid, testers=testers))
+                        station_status = testers[0].status
+                        logger.debug("PLC: {plc} DB: {db} selected tester: {tester} with status: {status}".format(plc=self.id, db=dbid, tester=testers[0], status=testers[0].status))
+
                 # read station status normally
                 else:
                     station_status = self.database_engine.read_status(str(product_id), int(station_number))
