@@ -10,7 +10,7 @@ from flask_login import UserMixin
 from . import db
 logger = logging.getLogger(__name__)
 
-__version__ = '0.5.0'
+__version__ = '0.5.2'
 
 
 class User(UserMixin, db.Model):
@@ -205,7 +205,7 @@ class Status(db.Model):
     date_time = db.Column(db.String(40))
     product_id = db.Column(db.String(20), db.ForeignKey('product.id'))
     station_id = db.Column(db.Integer, db.ForeignKey('station.id'))
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    user_id = db.Column(db.Integer)
     fail_step = db.Column(db.String(255))
 
     def __init__(self, status, product, station, user=None, date_time=None, fail_step=''):
