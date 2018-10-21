@@ -102,7 +102,7 @@ db.event.listen(Comment.body, 'set', Comment.on_changed_body)
 
 class Product(db.Model):
     __tablename__ = 'product'
-    id = db.Column(db.String(20), nullable=False, unique=True, index=True, primary_key=True, autoincrement=True)
+    id = db.Column(db.String(20), nullable=False, unique=True, index=True, primary_key=True)
     type = db.Column(db.String(10), nullable=False, index=True, unique=False)
     serial = db.Column(db.String(6), nullable=False, index=True, unique=False)
     week = db.Column(db.String(2), nullable=False, index=True, unique=False)
