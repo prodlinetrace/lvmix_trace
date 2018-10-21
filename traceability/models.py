@@ -27,7 +27,8 @@ class User(UserMixin, db.Model):
     member_since = db.Column(db.DateTime(), default=datetime.now)
     avatar_hash = db.Column(db.String(32))
     comments = db.relationship('Comment', lazy='dynamic', backref='author')
-    #status = db.relationship('Status', lazy='dynamic', backref='user')
+    status = db.relationship('Status', lazy='dynamic', backref='user', foreign_keys='Status.user_id')
+
 
     def __init__(self, **kwargs):
         super(User, self).__init__(**kwargs)
@@ -205,7 +206,7 @@ class Status(db.Model):
     date_time = db.Column(db.String(40))
     product_id = db.Column(db.String(20), db.ForeignKey('product.id'), index=True)
     station_id = db.Column(db.Integer, db.ForeignKey('station.id'), index=True)
-    user_id = db.Column(db.Integer)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), index=True)
     fail_step = db.Column(db.String(255))
 
     def __init__(self, status, product, station, user=None, date_time=None, fail_step=''):
