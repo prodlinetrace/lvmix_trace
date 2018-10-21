@@ -82,7 +82,7 @@ class Comment(db.Model):
     body_html = db.Column(db.Text)
     timestamp = db.Column(db.DateTime, index=True, default=datetime.utcnow)
     author_id = db.Column(db.Integer, db.ForeignKey('users.id'), index=True)
-    product_id = db.Column(db.Integer, db.ForeignKey('product.id'), index=True)
+    product_id = db.Column(db.BigInteger, db.ForeignKey('product.id'), index=True)
 
     @staticmethod
     def on_changed_body(target, value, oldvalue, initiator):
@@ -102,7 +102,7 @@ db.event.listen(Comment.body, 'set', Comment.on_changed_body)
 
 class Product(db.Model):
     __tablename__ = 'product'
-    id = db.Column(db.Integer, nullable=False, unique=True, index=True, primary_key=True, autoincrement=True)
+    id = db.Column(db.BigInteger(20), nullable=False, unique=True, index=True, primary_key=True, autoincrement=True)
     type = db.Column(db.String(10), nullable=False, index=True, unique=False)
     serial = db.Column(db.String(6), nullable=False, index=True, unique=False)
     week = db.Column(db.String(2), nullable=False, index=True, unique=False)
@@ -200,10 +200,10 @@ class Station(db.Model):
 
 class Status(db.Model):
     __tablename__ = 'status'
-    id = db.Column(db.Integer, nullable=False, unique=True, index=True, primary_key=True, autoincrement=True)
+    id = db.Column(db.BigInteger, nullable=False, unique=True, index=True, primary_key=True, autoincrement=True)
     status = db.Column(db.Integer, db.ForeignKey('operation_status.id'), index=True)
     date_time = db.Column(db.String(40))
-    product_id = db.Column(db.Integer, db.ForeignKey('product.id'), index=True)
+    product_id = db.Column(db.BigInteger, db.ForeignKey('product.id'), index=True)
     station_id = db.Column(db.Integer, db.ForeignKey('station.id'), index=True)
     user_id = db.Column(db.Integer)
     fail_step = db.Column(db.String(255))
@@ -237,8 +237,8 @@ class Status(db.Model):
 
 class Operation(db.Model):
     __tablename__ = 'operation'
-    id = db.Column(db.Integer, nullable=False, unique=True, index=True, primary_key=True, autoincrement=True)
-    product_id = db.Column(db.Integer, db.ForeignKey('product.id'), index=True)
+    id = db.Column(db.BigInteger, nullable=False, unique=True, index=True, primary_key=True, autoincrement=True)
+    product_id = db.Column(db.BigInteger, db.ForeignKey('product.id'), index=True)
     station_id = db.Column(db.Integer, db.ForeignKey('station.id'), index=True)
     operation_status_id = db.Column(db.Integer, db.ForeignKey('operation_status.id'), index=True)
     operation_type_id = db.Column(db.Integer, db.ForeignKey('operation_type.id'), index=True)
