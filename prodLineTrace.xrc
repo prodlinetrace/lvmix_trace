@@ -4,7 +4,7 @@
     <title>ProdLineManager</title>
     <centered>1</centered>
     <style>wxDEFAULT_FRAME_STYLE|wxTAB_TRAVERSAL</style>
-    <size>848,600</size>
+    <size>1600,1000</size>
     <object class="wxPanel" name="DemoPanel">
       <style>wxTAB_TRAVERSAL</style>
       <object class="wxBoxSizer">
