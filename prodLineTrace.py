@@ -123,12 +123,14 @@ class MainWindow(wx.App):
                 time.sleep(1)
                 os.remove(offset_file)
 
+        my_tail = Pygtail(self.logfile)
         while True:
             time.sleep(0.3)
             try:
-                for line in Pygtail(self.logfile):
-                    self.valueLogTextArea.write(line)
-            except ValueError, e:
+                content = "".join(my_tail.readlines())
+                if content:
+                    self.valueLogTextArea.write(content)
+            except ValueError as e:
                 if os.path.exists(offset_file):
                     logger.error("Problem with reading offset file: {offset_file}. Trying to remove it. ".format(offset_file=offset_file))
                     time.sleep(1)
