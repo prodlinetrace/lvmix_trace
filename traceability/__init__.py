@@ -1,7 +1,7 @@
 """
 The PLC Python library.
 """
-__version__ = '0.8.2'
+__version__ = '0.8.3'
 AUTHOR = "Piotr Wilkosz"
 EMAIL = "Piotr.Wilkosz@gmail.com"
 NAME = "ProdLineTrace"
@@ -32,6 +32,6 @@ _app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(_app)
 
 # try to create schema
-from models import *
+from models import User, Comment, Product, Station, Status, Operation, Operation_Status, Operation_Type, Unit, Variant
 db.create_all()
 db.session.commit()
