@@ -135,6 +135,7 @@ hidden_imports = [
     "pymysql",
     "os",
     "sys",
+    "pkg_resources",
 ]
 
 zip_includes = [
