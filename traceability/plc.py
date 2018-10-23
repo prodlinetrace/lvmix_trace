@@ -509,8 +509,9 @@ class PLC(PLCBase):
                 logger.debug("PLC: {plc} DB: {db} PID: {product_id} trying to read status from database for station: {station}".format(plc=self.get_id(), db=block.get_db_number(), product_id=product_id, station=station_number))
  
                 # special handling for virtual tester (station_number: 100)
-                virtual_tester_new = True
+                """
                 # old implementation of virtual tester
+                virtual_tester_new = True
                 if int(station_number) == 100 and virtual_tester_new is False:
                     station_status = 200  # set some initial value - it always have to be overwritten by code below.
                     tester1 = self.database_engine.read_station_status_record(str(product_id), 101)
@@ -530,6 +531,7 @@ class PLC(PLCBase):
 
                     if tester1 is None and tester2 is not None:
                         station_status = tester2.status
+                """
 
                 # new implementation of virtual tester
                 if int(station_number) == 100:
