@@ -6,12 +6,176 @@ import csv
 import os
 import subprocess
 import datetime
+import textwrap
 
 logger = logging.getLogger(__name__)
 
 
-class Sync(object):
+class ProdaProcess(object):
+    """
+        class that represents Proda Process - used for generating set of PL-SQL inserts to PRODA, one insert per Process Step (PS): 
+        Example: 
 
+        insert into
+            prodang_convert.vw_test_lvmix
+            (
+                WABCO_NUMBER,SERIAL_NUMBER,XCOMMENT,SYSTEM_NAME,
+                PROCESS_START_TIME,PROCESS_END_TIME,PROCESS_STATUS,
+                PROCESS_STEP_START_TIME,PROCESS_STEP_END_TIME,PROCESS_STEP_STATUS,OPERATOR_ID,
+                RESULT_001,RESULT_005,RESULT_011,RESULT_013,RESULT_015,RESULT_016,RESULT_017,RESULT_018
+            )
+            values
+            (
+                '4640061000','2018_42_0_123456','46400650001234564218','LV_MIX_stacja32',
+                to_date('2018-08-03 16:03:02','YYYY-MM-DD HH24:MI:SS'),null,2,
+                to_date('2018-08-03 16:03:02','YYYY-MM-DD HH24:MI:SS'),to_date('2018-08-03 16:07:42','YYYY-MM-DD HH24:MI:SS'),1,3242,
+                'TS_1_1','TV_1_1_1_12.432','TV_1_2_1_-0.032','TS_2_1','TV_2_1_1_142.432','TV_2_2_1_-40.0432','TV_2_3_1_54.432','TV_2_4_1_345'
+            );
+    """
+    #from models import Product, Status, Operation
+    
+    def __init__(self, product):
+        self.product = product
+        self.proda_serial = self.product.proda_serial
+        self.statuses = self.product.statuses.all()
+        self.operations = self.product.operations.all()
+        self.statuses.sort(key=lambda r: r.station_id, reverse=False)
+        self.operations.sort(key=lambda r: r.station_id, reverse=False)
+        self.process_steps = []
+        self.proda_inserts = []
+        self.prepare_data()
+
+    def dump_process_steps(self):
+        for ps in self.process_steps:
+            print ps
+
+    def dump_proda_inserts(self):
+        for pi in self.proda_inserts:
+            print pi
+        
+    def get_process_list(self):
+        return [ x.station_id for x in self.statuses ]
+
+        
+    def prepare_data(self):
+        self.process_steps = []  # reset process step list
+        for status in self.statuses:
+            ps = {}  # process step
+            ps['station_id'] = status.station_id
+            ps['status_object'] = status
+            ps['ps_status'] = StatusCodeConverter.tace_to_wabco_status(status.status)  # save process_step status
+            ps['ps_date_added'] = status.date_time
+            ps['ps_end_time'] = datetime.datetime.strptime(ps['ps_date_added'], "%Y-%m-%d %H:%M:%S.%f")
+            ps['ps_end_time_proda_string'] = "to_date('{0}','YYYY-MM-DD HH24:MI:SS')".format(ps['ps_end_time'].strftime("%Y-%m-%d %H:%M:%S"))
+            ps['ps_start_time_proda_string'] = "to_date('{0}','YYYY-MM-DD HH24:MI:SS')".format((ps['ps_end_time'] - datetime.timedelta(minutes=1,seconds=1)).strftime("%Y-%m-%d %H:%M:%S"))  # by default process last 61 seconds
+            #ps['process_start_time'] = ''
+            ps['process_start_time_proda_string'] = 'null'
+            #ps['process_end_time'] = ''
+            ps['process_end_time_proda_string'] = 'null'
+            if ps['station_id'] == 11:  # station 11 defines process start time
+                ps['process_start_time'] = datetime.datetime.strptime(ps['ps_date_added'], "%Y-%m-%d %H:%M:%S.%f")
+                ps['process_start_time_proda_string'] = "to_date('{0}','YYYY-MM-DD HH24:MI:SS')".format(ps['process_start_time'].strftime("%Y-%m-%d %H:%M:%S.%f"))
+            if ps['station_id'] == 55:  # station 55 defines process end time
+                ps['process_end_time'] = datetime.datetime.strptime(ps['ps_date_added'], "%Y-%m-%d %H:%M:%S.%f")
+                ps['process_end_time_proda_string'] = "to_date('{0}','YYYY-MM-DD HH24:MI:SS')".format(ps['process_end_time'].strftime("%Y-%m-%d %H:%M:%S.%f"))
+
+            ps_sequence = status.station_id
+            if ps_sequence in [100, 101, 102, 103]:
+                ps_sequence = 50  # ugly hack to change ps_sequence number for testers 
+            ps['ps_sequence'] = ps_sequence
+            ps['operator_id'] = status.user_id or 0
+            ps['results'] = []
+            
+            # calculate overal process status # 2 - ongoing, 1 - OK, 0 - NOK
+            ps['process_status'] = 2
+            if status.station_id in [61, 100, 101, 102, 103]:  # tester or rework station should never set the overal process status
+                ps['process_status'] = ''
+            if ps['station_id'] == 55:  # elektroniczny stempel - ostatnia stacja - ta ustawia
+                ps['process_status'] = StatusCodeConverter.tace_to_wabco_status(status.status)
+            
+            ps['results'].append("TS_{ts_order}_{ts_status}".format(ts_order=100, ts_status=StatusCodeConverter.tace_to_wabco_status(status.status)))  # ts_order = 100 - means status
+            
+            if status.station_id in [55, 61]:  # add operator id as result in case of station 55 and 61
+                ps['results'].append("TV_{ts_order}_{tv_sequence}_{tv_status}_{tv_value}".format(ts_order=1000, tv_sequence=1, tv_status=1, tv_value=ps['operator_id']))  # ts_order = 100 - means status
+            
+            if status.station_id in [61]:
+                pass
+                # TODO implemnt comment - analysis
+            
+            # process operation results
+            operations = filter(lambda x: x.station_id == status.station_id, self.operations)  # filter operations with matching station_id
+            # filter out operations with with time difference bigger than 120 seconds. 
+            operations = filter(lambda x: (ps['ps_end_time'] - datetime.datetime.strptime(x.date_time, "%Y-%m-%d %H:%M:%S.%f")).seconds < 120, operations)
+            ps['operations'] = operations
+            # find oldest operation and use it as: ps_start_time
+            if operations:
+                oldest_operation_date = min(operations, key=lambda x: x.date_time).date_time
+                ps['ps_start_time'] = datetime.datetime.strptime(oldest_operation_date, "%Y-%m-%d %H:%M:%S.%f")
+                ps['ps_start_time_proda_string'] = "to_date('{0}','YYYY-MM-DD HH24:MI:SS')".format(ps['ps_start_time'].strftime("%Y-%m-%d %H:%M:%S.%f"))
+                
+            
+            for operation in operations:
+                if not operation.result_1_status_id == 1000 and not operation.result_1 == operation.result_1_max == operation.result_1_min == 0:  # skip operations with limits and result == 0 and skip status_id == 1000
+                    result_status_1 = 1 if operation.result_1_max > operation.result_1 > operation.result_1_min else 0  # calculate status according to limits (already set as proda kind of values)
+                    ps['results'].append("TV_{ts_order}_{tv_sequence}_{tv_status}_{tv_value}".format(ts_order=operation.operation_type_id, tv_sequence=1, tv_status=result_status_1, tv_value=operation.result_1))
+                if not operation.result_2_status_id == 1000 and not operation.result_2 == operation.result_2_max == operation.result_2_min == 0:  # skip operations with limits and result == 0 and skip status_id == 1000
+                    result_status_2 = 1 if operation.result_2_max > operation.result_2 > operation.result_2_min else 0  # calculate status according to limits (already set as proda kind of values)
+                    ps['results'].append("TV_{ts_order}_{tv_sequence}_{tv_status}_{tv_value}".format(ts_order=operation.operation_type_id, tv_sequence=2, tv_status=result_status_2, tv_value=operation.result_2))
+                if not operation.result_3_status_id == 1000 and not operation.result_3 == operation.result_3_max == operation.result_3_min == 0:  # skip operations with limits and result == 0 and skip status_id == 1000
+                    result_status_3 = 1 if operation.result_3_max > operation.result_3 > operation.result_3_min else 0  # calculate status according to limits (already set as proda kind of values)
+                    ps['results'].append("TV_{ts_order}_{tv_sequence}_{tv_status}_{tv_value}".format(ts_order=operation.operation_type_id, tv_sequence=3, tv_status=result_status_3, tv_value=operation.result_3))
+
+            self.process_steps.append(ps)
+            self.prepare_proda_inserts()
+    
+    def prepare_proda_inserts(self):
+        self.proda_inserts = []
+        for ps in self.process_steps:
+            insert = self.get_proda_insert(ps)
+            self.proda_inserts.append(insert)
+        
+        return self.proda_inserts
+            
+        
+    def get_proda_inserts(self):
+        return self.proda_inserts
+        
+    def get_proda_insert(self, ps):
+        # TODO: use prepare statement
+        RESULTS = ''
+        for r in xrange(len(ps['results'])):
+            RESULTS += 'RESULT_{number}, '.format(number=str(r+1).zfill(3)) 
+        RESULTS = RESULTS.rstrip(', ')  # remove unwanted characters from end of string.
+        
+        
+        insert = """
+            insert into
+                prodang_convert.vw_test_lvmix
+                (
+                    WABCO_NUMBER,SERIAL_NUMBER,XCOMMENT,PROCESS_SEQUENCE,
+                    PROCESS_START_TIME,PROCESS_END_TIME,PROCESS_STATUS,
+                    PROCESS_STEP_START_TIME,PROCESS_STEP_END_TIME,PROCESS_STEP_STATUS,OPERATOR_ID,
+                    {__RESULTS__}
+                )
+                values
+                (
+                    '{WABCO_NUMBER}','{SERIAL_NUMBER}','{XCOMMENT}',{PROCESS_SEQUENCE},
+                    {PROCESS_START_TIME},{PROCESS_END_TIME},{PROCESS_STATUS},
+                    {PROCESS_STEP_START_TIME},{PROCESS_STEP_END_TIME},{PROCESS_STEP_STATUS},{OPERATOR_ID},
+                    {__RESULTS_VALUES__}
+                );
+        
+        """.format(WABCO_NUMBER=self.product.type, SERIAL_NUMBER=self.product.proda_serial, XCOMMENT=self.product.id, PROCESS_SEQUENCE=ps['ps_sequence'],
+                    PROCESS_START_TIME=ps['process_start_time_proda_string'], PROCESS_END_TIME=ps['process_end_time_proda_string'], PROCESS_STATUS=ps['process_status'],
+                    PROCESS_STEP_START_TIME=ps['ps_start_time_proda_string'], PROCESS_STEP_END_TIME=ps['ps_end_time_proda_string'], PROCESS_STEP_STATUS=ps['ps_status'], OPERATOR_ID=ps['operator_id'],
+                    __RESULTS__= RESULTS, __RESULTS_VALUES__= str(ps['results']).replace('[','').replace(']',''),
+        )
+        
+        return textwrap.dedent(insert)
+                
+
+
+class StatusCodeConverter(object):
     """
     Statusy Trace:
         0 - UNDEFINED
@@ -49,6 +213,32 @@ class Sync(object):
         {"result": "REPEATEDINTERRUPTED", "desc": "Repeated test was interrupted", "wabco": 11, "trace": 11},
         {"result": "VALUEERROR", "desc": "Faulty value was passed. Unable to process data.", "wabco": 99, "trace": 99},
     ]
+
+    @staticmethod
+    def tace_to_wabco_status(st):
+        """
+        translates trace status code to wabco status code
+        """
+
+        for code in StatusCodeConverter.STATUS_CODES:
+            if st == code['trace']:
+                return code['wabco']
+        return st
+
+    @staticmethod
+    def wabco_to_trace_status(st):
+        """
+        translates wabco status code to trace status code
+        """
+
+        for code in StatusCodeConverter.STATUS_CODES:
+            if st == code['wabco']:
+                return code['trace']
+        return st
+
+
+class Sync(object):
+
 
     def __init__(self, argv, loglevel=logging.INFO):
         self.sync_success_count = 0
@@ -108,25 +298,7 @@ class Sync(object):
     def get_conf_file_name(self):
         return self._opts.config
 
-    def tace_to_wabco_status(self, st):
-        """
-        translates trace status code to wabco status code
-        """
 
-        for code in Sync.STATUS_CODES:
-            if st == code['trace']:
-                return code['wabco']
-        return st
-
-    def wabco_to_trace_status(self, st):
-        """
-        translates wabco status code to trace status code
-        """
-
-        for code in Sync.STATUS_CODES:
-            if st == code['wabco']:
-                return code['trace']
-        return st
 
     def get_product_station_status(self, wabco_id, serial, station_id):
         # wabco_id = '4640062010'
@@ -135,14 +307,14 @@ class Sync(object):
         item = Product.query.filter_by(type=wabco_id).filter_by(serial=serial).first()
 
         st = 1000  # set status to undefined first
-        result = 0 # Test step value result - set to failed. Result has to be either 0 (NOK) or 1 (OK).
+        result = 0  # Test step value result - set to failed. Result has to be either 0 (NOK) or 1 (OK).
         for status in item.statuses.filter_by(station_id=station_id).all():
             st = status.status
             # set result to ok - in case station status is ok or repeatedok
             if st == 1 or st == 5:
                 result = 1
 
-        st = self.tace_to_wabco_status(st)
+        st = self.StatusCodeConverter.tace_to_wabco_status(st)
 
         return st, [result]
 
@@ -164,7 +336,7 @@ class Sync(object):
             if not operation.result_1 == operation.result_1_max == operation.result_1_min == 0:
                 results.insert(0,operation.result_1)
 
-        st = self.tace_to_wabco_status(st)
+        st = StatusCodeConverter.tace_to_wabco_status(st)
 
         return st, results
 
@@ -250,6 +422,40 @@ class Sync(object):
         candidates = Product.query.filter_by(prodasync=0).order_by(Product.date_added).all()
         
         return candidates
+
+
+    def find_sync_data(self):
+        from models import Product, Status, Operation
+        
+        #print StatusCodeConverter.tace_to_wabco_status(1)
+        """
+            this function finds data that needs to be synchronized to PRODA
+        """
+        
+        #candidates = Product.query.filter_by(prodasync=0).order_by(Product.date_added).filter_by(type="4640061000").limit(100).all()  # TEST: limit to test type only
+        candidates = Product.query.filter_by(prodasync=2).order_by(Product.date_added).filter_by(type="4640060020").filter_by(serial="630233").all()  # TEST: limit to test type only - ok
+        #candidates = Product.query.filter_by(prodasync=2).order_by(Product.date_added).filter_by(type="4640060020").filter_by(serial="630168").all()  # TEST: limit to test type only - with test failure
+        #candidates = [candidates[0]]  # hack to get right candidate
+        print candidates
+        product_to_sync = candidates[0]
+        
+        self.sync_single_product(product_to_sync)
+
+
+    def sync_single_product(self, product):
+        from models import Product, Status, Operation
+
+        PP = ProdaProcess(product)
+        
+        print PP.get_process_list()
+        #PP.dump_process_steps()
+        PP.dump_proda_inserts()
+        #insert = PP.get_proda_insert()
+        #print insert
+        
+        
+        return 
+        
 
     def prepare_products_for_proda_sync(self):
         """
