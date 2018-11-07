@@ -10,7 +10,7 @@ from flask_login import UserMixin
 from . import db
 logger = logging.getLogger(__name__)
 
-__version__ = '0.6.0'
+__version__ = '0.7.0'
 
 
 class User(UserMixin, db.Model):
@@ -163,6 +163,11 @@ class Product(db.Model):
             'prodasync': self.prodasync,
         }
 
+    @property
+    def proda_serial(self):
+        """Return proda serial number in well defined format: YYYY_WW_V_SN (YYYY-rok, WW-tydzien, V-wariant, SN-numer seryjny)"""
+        return "{year:04d}_{week:02d}_{variant}_{serial}".format(year=2000+int(self.year), week=int(self.week), variant=self.variant_id, serial=str(self.serial).zfill(6))
+
 
 class Station(db.Model):
     __tablename__ = 'station'
@@ -208,6 +213,7 @@ class Status(db.Model):
     station_id = db.Column(db.Integer, db.ForeignKey('station.id'), index=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), index=True)
     fail_step = db.Column(db.String(255))
+    proda_sync = db.Column(db.Integer, index=True, default=0)
 
     def __init__(self, status, product, station, user=None, date_time=None, fail_step=''):
         self.status = status
@@ -244,6 +250,7 @@ class Operation(db.Model):
     operation_status_id = db.Column(db.Integer, db.ForeignKey('operation_status.id'), index=True)
     operation_type_id = db.Column(db.Integer, db.ForeignKey('operation_type.id'), index=True)
     date_time = db.Column(db.String(40))
+    proda_sync = db.Column(db.Integer, index=True, default=0)
     result_1 = db.Column(db.Float)
     result_1_max = db.Column(db.Float)
     result_1_min = db.Column(db.Float)
