@@ -19,14 +19,14 @@ class ProdaProcess(object):
         insert into
             prodang_convert.vw_test_lvmix
             (
-                WABCO_NUMBER,SERIAL_NUMBER,XCOMMENT,SYSTEM_NAME,
+                WABCO_NUMBER,SERIAL_NUMBER,XCOMMENT,PROCESS_STEP_SEQUENCE,
                 PROCESS_START_TIME,PROCESS_END_TIME,PROCESS_STATUS,
                 PROCESS_STEP_START_TIME,PROCESS_STEP_END_TIME,PROCESS_STEP_STATUS,OPERATOR_ID,
                 RESULT_001,RESULT_005,RESULT_011,RESULT_013,RESULT_015,RESULT_016,RESULT_017,RESULT_018
             )
             values
             (
-                '4640061000','2018_42_0_123456','46400650001234564218','LV_MIX_stacja32',
+                '4640061000','2018_42_0_123456','46400650001234564218',14,
                 to_date('2018-08-03 16:03:02','YYYY-MM-DD HH24:MI:SS'),null,2,
                 to_date('2018-08-03 16:03:02','YYYY-MM-DD HH24:MI:SS'),to_date('2018-08-03 16:07:42','YYYY-MM-DD HH24:MI:SS'),1,3242,
                 'TS_1_1','TV_1_1_1_12.432','TV_1_2_1_-0.032','TS_2_1','TV_2_1_1_142.432','TV_2_2_1_-40.0432','TV_2_3_1_54.432','TV_2_4_1_345'
@@ -74,10 +74,10 @@ class ProdaProcess(object):
             ps['process_end_time_proda_string'] = 'null'
             if ps['station_id'] == 11:  # station 11 defines process start time
                 ps['process_start_time'] = datetime.datetime.strptime(ps['ps_date_added'], "%Y-%m-%d %H:%M:%S.%f")
-                ps['process_start_time_proda_string'] = "to_date('{0}','YYYY-MM-DD HH24:MI:SS')".format(ps['process_start_time'].strftime("%Y-%m-%d %H:%M:%S.%f"))
+                ps['process_start_time_proda_string'] = "to_date('{0}','YYYY-MM-DD HH24:MI:SS')".format(ps['process_start_time'].strftime("%Y-%m-%d %H:%M:%S"))
             if ps['station_id'] == 55:  # station 55 defines process end time
                 ps['process_end_time'] = datetime.datetime.strptime(ps['ps_date_added'], "%Y-%m-%d %H:%M:%S.%f")
-                ps['process_end_time_proda_string'] = "to_date('{0}','YYYY-MM-DD HH24:MI:SS')".format(ps['process_end_time'].strftime("%Y-%m-%d %H:%M:%S.%f"))
+                ps['process_end_time_proda_string'] = "to_date('{0}','YYYY-MM-DD HH24:MI:SS')".format(ps['process_end_time'].strftime("%Y-%m-%d %H:%M:%S"))
 
             ps_sequence = status.station_id
             if ps_sequence in [100, 101, 102, 103]:
@@ -89,14 +89,17 @@ class ProdaProcess(object):
             # calculate overal process status # 2 - ongoing, 1 - OK, 0 - NOK
             ps['process_status'] = 2
             if status.station_id in [61, 100, 101, 102, 103]:  # tester or rework station should never set the overal process status
-                ps['process_status'] = ''
-            if ps['station_id'] == 55:  # elektroniczny stempel - ostatnia stacja - ta ustawia
-                ps['process_status'] = StatusCodeConverter.tace_to_wabco_status(status.status)
+                ps['process_status'] = 'null'
+            if ps['station_id'] == 55:  # electronic - only this station can finally set status to 1 (OK)
+                ps['process_status'] = StatusCodeConverter.tace_to_wabco_p_status(status.status)  # make sure it's not zero. (1, or 2 only)
             
-            ps['results'].append("TS_{ts_order}_{ts_status}".format(ts_order=100, ts_status=StatusCodeConverter.tace_to_wabco_status(status.status)))  # ts_order = 100 - means status
+            # add overal status
+            ps['results'].append("TS_{ts_order}_{ts_status}".format(ts_order=100, ts_status=StatusCodeConverter.tace_to_wabco_ps_status(status.status)))  # ts_order = 100 - means status
+            ps['results'].append("TV_{ts_order}_{tv_sequence}_{tv_status}_{tv_value}".format(ts_order=100, tv_sequence=1, tv_status=StatusCodeConverter.tace_to_wabco_ps_status(status.status), tv_value=StatusCodeConverter.tace_to_wabco_ps_status(status.status)))  # ts_order = 100 - means status
             
             if status.station_id in [55, 61]:  # add operator id as result in case of station 55 and 61
-                ps['results'].append("TV_{ts_order}_{tv_sequence}_{tv_status}_{tv_value}".format(ts_order=1000, tv_sequence=1, tv_status=1, tv_value=ps['operator_id']))  # ts_order = 100 - means status
+                ps['results'].append("TS_{ts_order}_{ts_status}".format(ts_order=1000, ts_status=1))  # ts_order = 1000 - means operator number
+                ps['results'].append("TV_{ts_order}_{tv_sequence}_{tv_status}_{tv_value}".format(ts_order=1000, tv_sequence=1, tv_status=1, tv_value=ps['operator_id']))  # ts_order = 1000 - means operator number
             
             if status.station_id in [61]:
                 pass
@@ -111,10 +114,11 @@ class ProdaProcess(object):
             if operations:
                 oldest_operation_date = min(operations, key=lambda x: x.date_time).date_time
                 ps['ps_start_time'] = datetime.datetime.strptime(oldest_operation_date, "%Y-%m-%d %H:%M:%S.%f")
-                ps['ps_start_time_proda_string'] = "to_date('{0}','YYYY-MM-DD HH24:MI:SS')".format(ps['ps_start_time'].strftime("%Y-%m-%d %H:%M:%S.%f"))
+                ps['ps_start_time_proda_string'] = "to_date('{0}','YYYY-MM-DD HH24:MI:SS')".format(ps['ps_start_time'].strftime("%Y-%m-%d %H:%M:%S"))
                 
             
             for operation in operations:
+                ps['results'].append("TS_{ts_order}_{ts_status}".format(ts_order=operation.operation_type_id, ts_status=operation.operation_status_id))
                 if not operation.result_1_status_id == 1000 and not operation.result_1 == operation.result_1_max == operation.result_1_min == 0:  # skip operations with limits and result == 0 and skip status_id == 1000
                     result_status_1 = 1 if operation.result_1_max > operation.result_1 > operation.result_1_min else 0  # calculate status according to limits (already set as proda kind of values)
                     ps['results'].append("TV_{ts_order}_{tv_sequence}_{tv_status}_{tv_value}".format(ts_order=operation.operation_type_id, tv_sequence=1, tv_status=result_status_1, tv_value=operation.result_1))
@@ -152,20 +156,20 @@ class ProdaProcess(object):
             insert into
                 prodang_convert.vw_test_lvmix
                 (
-                    WABCO_NUMBER,SERIAL_NUMBER,XCOMMENT,PROCESS_SEQUENCE,
+                    WABCO_NUMBER,SERIAL_NUMBER,XCOMMENT,PROCESS_STEP_SEQUENCE,
                     PROCESS_START_TIME,PROCESS_END_TIME,PROCESS_STATUS,
                     PROCESS_STEP_START_TIME,PROCESS_STEP_END_TIME,PROCESS_STEP_STATUS,OPERATOR_ID,
                     {__RESULTS__}
                 )
                 values
                 (
-                    '{WABCO_NUMBER}','{SERIAL_NUMBER}','{XCOMMENT}',{PROCESS_SEQUENCE},
+                    '{WABCO_NUMBER}','{SERIAL_NUMBER}','{XCOMMENT}',{PROCESS_STEP_SEQUENCE},
                     {PROCESS_START_TIME},{PROCESS_END_TIME},{PROCESS_STATUS},
                     {PROCESS_STEP_START_TIME},{PROCESS_STEP_END_TIME},{PROCESS_STEP_STATUS},{OPERATOR_ID},
                     {__RESULTS_VALUES__}
                 );
         
-        """.format(WABCO_NUMBER=self.product.type, SERIAL_NUMBER=self.product.proda_serial, XCOMMENT=self.product.id, PROCESS_SEQUENCE=ps['ps_sequence'],
+        """.format(WABCO_NUMBER=self.product.type, SERIAL_NUMBER=self.product.proda_serial, XCOMMENT=self.product.id, PROCESS_STEP_SEQUENCE=ps['ps_sequence'],
                     PROCESS_START_TIME=ps['process_start_time_proda_string'], PROCESS_END_TIME=ps['process_end_time_proda_string'], PROCESS_STATUS=ps['process_status'],
                     PROCESS_STEP_START_TIME=ps['ps_start_time_proda_string'], PROCESS_STEP_END_TIME=ps['ps_end_time_proda_string'], PROCESS_STEP_STATUS=ps['ps_status'], OPERATOR_ID=ps['operator_id'],
                     __RESULTS__= RESULTS, __RESULTS_VALUES__= str(ps['results']).replace('[','').replace(']',''),
@@ -192,7 +196,7 @@ class StatusCodeConverter(object):
     Statusy WABCO:
         0 - NOK
         1 - OK
-        2 - w trakcie produkcji
+        2 - w trakcie produkcji WIP
         3 - w trakcie produkcji powtorka
         5 - OK powtorzony
         6 - NOK powtorzony
@@ -202,16 +206,16 @@ class StatusCodeConverter(object):
         Dodatkowo 100 + powyzsza wartosc dla 'testowania' stanowiska - aby nie uwzgledniac w statystykach. Czyli np. sprawdzamy reaklamacje i chcemy zapisac wyniki ale nie chcemy wplywac na wskazniki
     """
     STATUS_CODES = [
-        {"result": "UNDEFINED", "desc": "status undefined (not present in database)", "wabco": 1000, "trace": 0},
-        {"result": "OK", "desc": "Status ok", "wabco": 1, "trace": 1},
-        {"result": "NOK", "desc": "Status not ok", "wabco": 0, "trace": 2},
-        {"result": "NOTAVAILABLE", "desc": "Not present in given type", "wabco": 4, "trace": 4},
-        {"result": "REPEATEDOK", "desc": "Repeated test was ok", "wabco": 5, "trace": 5},
-        {"result": "REPEATEDNOK", "desc": "Repeated test was not ok", "wabco": 6, "trace": 6},
-        {"result": "WAITING", "desc": "status reset - PLC set status to 'WAITING' and waiting for PC response", "wabco": 9, "trace": 9},
-        {"result": "INTERRUPTED", "desc": "Test was interrupted", "wabco": 10, "trace": 10},
-        {"result": "REPEATEDINTERRUPTED", "desc": "Repeated test was interrupted", "wabco": 11, "trace": 11},
-        {"result": "VALUEERROR", "desc": "Faulty value was passed. Unable to process data.", "wabco": 99, "trace": 99},
+        {"result": "UNDEFINED", "desc": "status undefined (not present in database)", "trace": 0, "wabco": 1000, "wabco_process_step": 0, "wabco_process": 2},
+        {"result": "OK", "desc": "Status ok", "trace": 1, "wabco": 1, "wabco_process_step": 1, "wabco_process": 1},
+        {"result": "NOK", "desc": "Status not ok", "trace": 2, "wabco": 0, "wabco_process_step": 0, "wabco_process": 2},
+        {"result": "NOTAVAILABLE", "desc": "Not present in given type", "trace": 4, "wabco": 4, "wabco_process_step": 0, "wabco_process": 2},
+        {"result": "REPEATEDOK", "desc": "Repeated test was ok", "trace": 5, "wabco": 5, "wabco_process_step": 1, "wabco_process": 1},
+        {"result": "REPEATEDNOK", "desc": "Repeated test was not ok", "trace": 6, "wabco": 6, "wabco_process_step": 0, "wabco_process": 2},
+        {"result": "WAITING", "desc": "status reset - PLC set status to 'WAITING' and waiting for PC response", "wabco": 9, "trace": 9, "wabco_process_step": 0, "wabco_process": 2},
+        {"result": "INTERRUPTED", "desc": "Test was interrupted", "trace": 10, "wabco": 10, "wabco_process_step": 0, "wabco_process": 2},
+        {"result": "REPEATEDINTERRUPTED", "desc": "Repeated test was interrupted", "trace": 11, "wabco": 11,  "wabco_process_step": 0, "wabco_process": 2},
+        {"result": "VALUEERROR", "desc": "Faulty value was passed. Unable to process data.", "trace": 99, "wabco": 99, "wabco_process_step": 0, "wabco_process": 2},
     ]
 
     @staticmethod
@@ -233,6 +237,54 @@ class StatusCodeConverter(object):
 
         for code in StatusCodeConverter.STATUS_CODES:
             if st == code['wabco']:
+                return code['trace']
+        return st
+
+    @staticmethod
+    def tace_to_wabco_ps_status(st):
+        """
+        translates trace status code to wabco status code - for process step only
+        
+        """
+
+        for code in StatusCodeConverter.STATUS_CODES:
+            if st == code['trace']:
+                return code['wabco_process_step']
+        return st
+
+    @staticmethod
+    def wabco_ps_to_trace_status(st):
+        """
+        translates trace status code to wabco status code - for process step only
+        
+        """
+
+        for code in StatusCodeConverter.STATUS_CODES:
+            if st == code['wabco_process_step']:
+                return code['trace']
+        return st
+
+    @staticmethod
+    def tace_to_wabco_p_status(st):
+        """
+        translates trace status code to wabco status code - for complete process only
+        
+        """
+
+        for code in StatusCodeConverter.STATUS_CODES:
+            if st == code['trace']:
+                return code['wabco_process']
+        return st
+
+    @staticmethod
+    def wabco_p_to_trace_status(st):
+        """
+        translates trace status code to wabco status code - for complete process only
+        
+        """
+
+        for code in StatusCodeConverter.STATUS_CODES:
+            if st == code['wabco_process']:
                 return code['trace']
         return st
 
@@ -433,10 +485,12 @@ class Sync(object):
         """
         
         #candidates = Product.query.filter_by(prodasync=0).order_by(Product.date_added).filter_by(type="4640061000").limit(100).all()  # TEST: limit to test type only
-        candidates = Product.query.filter_by(prodasync=2).order_by(Product.date_added).filter_by(type="4640060020").filter_by(serial="630233").all()  # TEST: limit to test type only - ok
+        #candidates = Product.query.filter_by(prodasync=2).order_by(Product.date_added).filter_by(type="4640060020").filter_by(serial="630233").all()  # TEST: limit to test type only - ok
         #candidates = Product.query.filter_by(prodasync=2).order_by(Product.date_added).filter_by(type="4640060020").filter_by(serial="630168").all()  # TEST: limit to test type only - with test failure
-        #candidates = [candidates[0]]  # hack to get right candidate
+        candidates = Product.query.filter_by(prodasync=0).order_by(Product.date_added).filter_by(type="4640061000").filter_by(serial="617803").all()  # TEST: limit to test type only - with test failure
+        #candidates = [candidates[:100]]  # hack to get right candidate
         print candidates
+        #return 0
         product_to_sync = candidates[0]
         
         self.sync_single_product(product_to_sync)
