@@ -7,7 +7,9 @@ import os
 import subprocess
 import datetime
 import textwrap
+import cx_Oracle
 
+logging.basicConfig(format='%(levelname)-8s:%(name)-32s:%(message)s', level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
@@ -35,16 +37,32 @@ class ProdaProcess(object):
     #from models import Product, Status, Operation
     
     def __init__(self, product):
+        self.logger = logging.getLogger("{file_name:24} {cl:16}".format(file_name=__name__, cl=self.__class__.__name__))
+        self.logger.setLevel(logging.DEBUG)
         self.product = product
         self.proda_serial = self.product.proda_serial
         self.statuses = self.product.statuses.all()
         self.operations = self.product.operations.all()
+        #self.logger.info("Initializing product: {product}".format(product=self.product.id))
+        self.logger.info("Product: {product}: status count: {no_statuses} operation count: {no_operations}".format(product=self.product.id, no_statuses=len(self.statuses), no_operations=len(self.operations)))
         self.statuses.sort(key=lambda r: r.station_id, reverse=False)
         self.operations.sort(key=lambda r: r.station_id, reverse=False)
         self.process_steps = []
         self.proda_inserts = []
         self.prepare_data()
+        self.proda_connection_string = None
+        self.proda_connection = None
+        self.proda_cursor = None
+        
+    def initialize_proda_connection(self, connection_string):
+        self.proda_connection_string = connection_string
+        self.logger.debug("oracle_connection_string: {0}".format(self.proda_connection_string))
+        #self.proda_connection = cx_Oracle.connect(self.proda_connection_string)
+        #self.proda_cursor = self.proda_connection.cursor()
 
+    def close_proda_connection(self):
+        self.proda_connection.close()
+    
     def dump_process_steps(self):
         for ps in self.process_steps:
             print ps
@@ -55,7 +73,36 @@ class ProdaProcess(object):
         
     def get_process_list(self):
         return [ x.station_id for x in self.statuses ]
+    
+    def log_process_list(self):
+        self.logger.info("Product: {product}: process list: {process_list}".format(product=self.product.id, process_list=self.get_process_list()))
 
+    def push_to_proda(self):
+        if self.proda_connection_string is None:
+            self.logger.error("Product: {product}: Proda Connection not ready: {proda_connection} connection_string: {proda_connection_string}".format(product=self.product.id, proda_connection=self.proda_connection, proda_connection_string=self.proda_connection_string))
+            return False
+        
+        for ps in self.process_steps:
+            self.logger.debug("Product: {product}: processing PS: {process_step} with status {status}".format(product=self.product.id, process_step=ps['ps_sequence'], status=ps['ps_status'], insert=ps['insert']))
+            #self.logger.debug("Product: {product}: PS: {process_step}, insert: {insert}".format(product=self.product.id, process_step=ps['station_id'], status=ps['ps_status'], insert=ps['insert']))
+            try:
+                connection = cx_Oracle.connect(self.proda_connection_string)
+                cursor = connection.cursor()
+                cursor.execute(ps['insert'])
+                connection.rollback()  # TODO: replace with commit
+                cursor.close()
+                connection.close()
+                # TODO: mark item as synchronized in tracedb
+            except cx_Oracle.DatabaseError as ex:
+                # error, = ex.args
+                # print 'Error.code =', error.code
+                # print 'Error.message =' , error.message
+                # print 'Error.offset =', error.offset
+                self.logger.error("Product: {product}: PS: {process_step}, error: {e}".format(product=self.product.id, process_step=ps['station_id'], e=ex, insert=ps['insert']))
+                self.logger.debug("Product: {product}: PS: {process_step}, Fatal insert: {insert}".format(product=self.product.id, process_step=ps['station_id'], e=ex, insert=ps['insert']))
+                connection.rollback()
+        
+        return True
         
     def prepare_data(self):
         self.process_steps = []  # reset process step list
@@ -130,12 +177,13 @@ class ProdaProcess(object):
                     ps['results'].append("TV_{ts_order}_{tv_sequence}_{tv_status}_{tv_value}".format(ts_order=operation.operation_type_id, tv_sequence=3, tv_status=result_status_3, tv_value=operation.result_3))
 
             self.process_steps.append(ps)
-            self.prepare_proda_inserts()
+        self.prepare_proda_inserts()
     
     def prepare_proda_inserts(self):
         self.proda_inserts = []
         for ps in self.process_steps:
             insert = self.get_proda_insert(ps)
+            ps['insert'] = insert
             self.proda_inserts.append(insert)
         
         return self.proda_inserts
@@ -167,7 +215,7 @@ class ProdaProcess(object):
                     {PROCESS_START_TIME},{PROCESS_END_TIME},{PROCESS_STATUS},
                     {PROCESS_STEP_START_TIME},{PROCESS_STEP_END_TIME},{PROCESS_STEP_STATUS},{OPERATOR_ID},
                     {__RESULTS_VALUES__}
-                );
+                )
         
         """.format(WABCO_NUMBER=self.product.type, SERIAL_NUMBER=self.product.proda_serial, XCOMMENT=self.product.id, PROCESS_STEP_SEQUENCE=ps['ps_sequence'],
                     PROCESS_START_TIME=ps['process_start_time_proda_string'], PROCESS_END_TIME=ps['process_end_time_proda_string'], PROCESS_STATUS=ps['process_status'],
@@ -300,7 +348,7 @@ class Sync(object):
         self._opts, self._args = parse_args(self._argv)
         self.cleanup = False
 
-        self.logger = logging.getLogger(__name__.ljust(24)[:24])
+        self.logger = logging.getLogger("{file_name:24} {cl:16}".format(file_name=__name__, cl=self.__class__.__name__))
         self.logger.setLevel(logging.DEBUG)
 
         # parse config file
@@ -344,13 +392,17 @@ class Sync(object):
         if 'product_timeout' in self._config['main']:
             self.product_timeout = int(self._config['main']['product_timeout'][0])
 
+        self.proda_user = self._config['main']['proda_user'][0]
+        self.proda_pass = self._config['main']['proda_pass'][0]
+        self.proda_name = self._config['main']['proda_name'][0]
+        self.proda_connection_string = "{0}/{1}@{2}".format(self.proda_user, self.proda_pass, self.proda_name)
+        self.logger.debug("proda_connection_string: {proda_connection_string}".format(proda_connection_string=self.proda_connection_string))
+
     def get_conf(self):
         return self._config
 
     def get_conf_file_name(self):
         return self._opts.config
-
-
 
     def get_product_station_status(self, wabco_id, serial, station_id):
         # wabco_id = '4640062010'
@@ -489,7 +541,7 @@ class Sync(object):
         #candidates = Product.query.filter_by(prodasync=2).order_by(Product.date_added).filter_by(type="4640060020").filter_by(serial="630168").all()  # TEST: limit to test type only - with test failure
         candidates = Product.query.filter_by(prodasync=0).order_by(Product.date_added).filter_by(type="4640061000").filter_by(serial="617803").all()  # TEST: limit to test type only - with test failure
         #candidates = [candidates[:100]]  # hack to get right candidate
-        print candidates
+        #print candidates
         #return 0
         product_to_sync = candidates[0]
         
@@ -500,13 +552,9 @@ class Sync(object):
         from models import Product, Status, Operation
 
         PP = ProdaProcess(product)
-        
-        print PP.get_process_list()
-        #PP.dump_process_steps()
-        PP.dump_proda_inserts()
-        #insert = PP.get_proda_insert()
-        #print insert
-        
+        PP.log_process_list()
+        PP.initialize_proda_connection(self.proda_connection_string)
+        PP.push_to_proda()
         
         return 
         
