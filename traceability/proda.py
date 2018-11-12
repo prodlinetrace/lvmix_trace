@@ -150,7 +150,7 @@ class ProdaProcess(object):
             
             if status.station_id in [61]:
                 pass
-                # TODO implemnt comment - analysis
+                # TODO: implemnt comment - analysis
             
             # process operation results
             operations = filter(lambda x: x.station_id == status.station_id, self.operations)  # filter operations with matching station_id
@@ -188,7 +188,6 @@ class ProdaProcess(object):
         
         return self.proda_inserts
             
-        
     def get_proda_inserts(self):
         return self.proda_inserts
         
@@ -292,9 +291,7 @@ class StatusCodeConverter(object):
     def tace_to_wabco_ps_status(st):
         """
         translates trace status code to wabco status code - for process step only
-        
         """
-
         for code in StatusCodeConverter.STATUS_CODES:
             if st == code['trace']:
                 return code['wabco_process_step']
@@ -304,9 +301,7 @@ class StatusCodeConverter(object):
     def wabco_ps_to_trace_status(st):
         """
         translates trace status code to wabco status code - for process step only
-        
         """
-
         for code in StatusCodeConverter.STATUS_CODES:
             if st == code['wabco_process_step']:
                 return code['trace']
@@ -316,9 +311,7 @@ class StatusCodeConverter(object):
     def tace_to_wabco_p_status(st):
         """
         translates trace status code to wabco status code - for complete process only
-        
         """
-
         for code in StatusCodeConverter.STATUS_CODES:
             if st == code['trace']:
                 return code['wabco_process']
@@ -328,9 +321,7 @@ class StatusCodeConverter(object):
     def wabco_p_to_trace_status(st):
         """
         translates trace status code to wabco status code - for complete process only
-        
         """
-
         for code in StatusCodeConverter.STATUS_CODES:
             if st == code['wabco_process']:
                 return code['trace']
@@ -339,14 +330,12 @@ class StatusCodeConverter(object):
 
 class Sync(object):
 
-
     def __init__(self, argv, loglevel=logging.INFO):
         self.sync_success_count = 0
         self.sync_failed_count = 0
         self.time_started = datetime.datetime.now()
         self._argv = argv
         self._opts, self._args = parse_args(self._argv)
-        self.cleanup = False
 
         self.logger = logging.getLogger("{file_name:24} {cl:16}".format(file_name=__name__, cl=self.__class__.__name__))
         self.logger.setLevel(logging.DEBUG)
@@ -379,14 +368,6 @@ class Sync(object):
         self.logger.addHandler(_ch)
         self.logger.info("Using DB: {db}".format(db=self._config['main']['dburi'][0]))
 
-        # cleanup (tmp csv handling)
-        cleanup = self._config['main']['cleanup'][0]
-        if int(cleanup) == 0:
-            self.cleanup = False
-
-        if int(cleanup) == 1:
-            self.cleanup = True
-
         # product timeout in minutes (sync will be triggered once product will not reach station 55 within timeout.)
         self.product_timeout = 480
         if 'product_timeout' in self._config['main']:
@@ -404,120 +385,6 @@ class Sync(object):
     def get_conf_file_name(self):
         return self._opts.config
 
-    def get_product_station_status(self, wabco_id, serial, station_id):
-        # wabco_id = '4640062010'
-        # serial = '000024'
-        # station_id = 11
-        item = Product.query.filter_by(type=wabco_id).filter_by(serial=serial).first()
-
-        st = 1000  # set status to undefined first
-        result = 0  # Test step value result - set to failed. Result has to be either 0 (NOK) or 1 (OK).
-        for status in item.statuses.filter_by(station_id=station_id).all():
-            st = status.status
-            # set result to ok - in case station status is ok or repeatedok
-            if st == 1 or st == 5:
-                result = 1
-
-        st = self.StatusCodeConverter.tace_to_wabco_status(st)
-
-        return st, [result]
-
-    def get_product_operation_data(self, wabco_id, serial, operation_id):
-        # wabco_id = '4640062010'
-        # serial = '000024'
-        # operation_id = 1480
-        item = Product.query.filter_by(type=wabco_id).filter_by(serial=serial).first()
-
-        st = 1000  # set status to undefined first
-        results = [0,0,0]
-        for operation in item.operations.filter_by(operation_type_id=operation_id).all():
-            st = operation.operation_status_id
-            results = [0,0,0]
-            if not operation.result_3 == operation.result_3_max == operation.result_3_min == 0:
-                results.insert(0,operation.result_3)
-            if not operation.result_2 == operation.result_2_max == operation.result_2_min == 0:
-                results.insert(0,operation.result_2)
-            if not operation.result_1 == operation.result_1_max == operation.result_1_min == 0:
-                results.insert(0,operation.result_1)
-
-        st = StatusCodeConverter.tace_to_wabco_status(st)
-
-        return st, results
-
-    def product_sync(self, wabco_id, serial):
-        if wabco_id == "0":
-            return 0
-
-        if wabco_id in self._config:
-            msg = "wabco_id: {wabco_id} found in config file: {config_file}".format(wabco_id=wabco_id, config_file=self.get_conf_file_name())
-            self.logger.debug(msg)
-            is_active = int(self._config[wabco_id]['active'][0])
-            if is_active != 1:
-                msg = "wabco_id: {wabco_id} is not set to active in: {config_file}".format(wabco_id=wabco_id, config_file=self.get_conf_file_name())
-                self.logger.warn(msg)
-                return 130
-        else:
-            msg = "unable to find wabco_id: {wabco_id} in config file: {config_file}. Need to skip it. Sorry!".format(wabco_id=wabco_id, config_file=self.get_conf_file_name())
-            self.logger.error(msg)
-            return 120
-
-        csv_file = self.generate_csv_file(wabco_id, serial)
-        if os.path.exists(csv_file):
-            self.logger.debug("psark csv file generated: {csv_file}".format(csv_file=csv_file))
-        else:
-            self.logger.error("unable to find psark csv file generated: {csv_file}".format(csv_file=csv_file))
-            return 2
-
-        return self.run_psark(wabco_id, serial, csv_file)
-
-    def generate_csv_file(self, wabco_id, serial):
-        csv_file_name = tempfile.mktemp(suffix=".csv", prefix="psark-{wid}-{sn}-".format(wid=wabco_id, sn=serial))
-
-        test_steps = self._config[wabco_id]['proda_sequence']
-        for ts in test_steps:
-            ts_cfg = self._config[ts]
-            ts_type = ts_cfg['type'][0]
-            ts_name = ts_cfg['name'][0]
-            ts_desc = ts_cfg['description'][0]
-            ts_id = int(ts_cfg['id'][0])
-            ts_tv_count = int(ts_cfg['test_values'][0])
-
-            status = -1
-            tvs = [0,0,0]
-            if ts_type == 'status':
-                status, tvs = self.get_product_station_status(wabco_id, serial, ts_id)
-            if ts_type == 'operation':
-                status, tvs= self.get_product_operation_data(wabco_id, serial, ts_id)
-            tv = tvs[:ts_tv_count]
-
-            self.logger.debug("TS found in db. WI: {wabco_id} SN: {serial} TS_ID: {ts_id} TS_DESC: {ts_desc} ST: {status} TV: {tv}".format(wabco_id=wabco_id, serial=serial, ts_id=ts_id, ts_desc=ts_desc, status=status, tv=tv))
-
-            with open(csv_file_name, 'ab') as csvfile:
-                result_writer = csv.writer(csvfile, delimiter=' ', quotechar='|', quoting=csv.QUOTE_MINIMAL)
-                result_writer.writerow([status] + tv)
-
-        return csv_file_name
-
-    def run_psark(self, wabco_id, serial, csv_file):
-        psark_exe = self._config['main']['psark'][0]
-        db_user = self._config['main']['db_user'][0]
-        db_pass = self._config['main']['db_pass'][0]
-        db_name = self._config['main']['db_name'][0]
-        cmd = [psark_exe, '-c', 'csv_feed', '-f', csv_file, '-u', db_user, '-p', db_pass, '-d', db_name, '-w', wabco_id, '-s', serial]
-        self.logger.info("Running command: {cmd}".format(cmd=" ".join(cmd)))
-        p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.PIPE, shell=True)
-        out, err = p.communicate()
-
-        self.logger.debug(out)
-
-        if self.cleanup:
-            os.unlink(csv_file)
-            self.logger.debug("CSV file removed: {csv}".format(csv=csv_file))
-        else:
-            self.logger.warn("CSV file not removed: {csv}".format(csv=csv_file))
-
-        return p.returncode
-
     def get_products(self, date_string="2017-06-29 06:39:38.973000"):
         """
             gets products from DB younger than given date
@@ -527,15 +394,11 @@ class Sync(object):
         
         return candidates
 
-
     def find_sync_data(self):
-        from models import Product, Status, Operation
-        
-        #print StatusCodeConverter.tace_to_wabco_status(1)
         """
             this function finds data that needs to be synchronized to PRODA
         """
-        
+        from models import Product, Status, Operation
         #candidates = Product.query.filter_by(prodasync=0).order_by(Product.date_added).filter_by(type="4640061000").limit(100).all()  # TEST: limit to test type only
         #candidates = Product.query.filter_by(prodasync=2).order_by(Product.date_added).filter_by(type="4640060020").filter_by(serial="630233").all()  # TEST: limit to test type only - ok
         #candidates = Product.query.filter_by(prodasync=2).order_by(Product.date_added).filter_by(type="4640060020").filter_by(serial="630168").all()  # TEST: limit to test type only - with test failure
@@ -557,7 +420,6 @@ class Sync(object):
         PP.push_to_proda()
         
         return 
-        
 
     def prepare_products_for_proda_sync(self):
         """
@@ -572,7 +434,6 @@ class Sync(object):
         # 1 - ready to sync - should be set once assembly is complete
         # 2 - sync completed successfully
         # 3 - sync failed.
-
         """
 
         """
@@ -581,7 +442,6 @@ class Sync(object):
         - Jezeli status montazu na dowolnej stacji jest NOK - montaz zostaje przerwany - wyzwalaj synchronizacje
         - jezeli status montazu zaworu na dowolnej stacji jest OK wstrzymaj sie z syncronizacja danych do momentu az zawor dotrze do stacji 55.
         - jezeli status montazu zaworu na dowolnej stacji jest OK i zawor nie przeszedl przez stacje 55 w ciagu 24h - cos jest nie tak - wyzwalaj synchronizacje.
-
         """
         #candidates = Product.query.filter_by(prodasync=0).order_by(Product.date_added).filter_by(type="4640062010").all()  # TEST: limit to test type only
         candidates = Product.query.filter_by(prodasync=0).order_by(Product.date_added).all()
