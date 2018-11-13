@@ -9,7 +9,7 @@ import datetime
 import textwrap
 import cx_Oracle
 
-logging.basicConfig(format='%(levelname)-8s:%(name)-32s:%(message)s', level=logging.INFO)
+#logging.basicConfig(format='%(levelname)-8s %(name)-32s %(message)s', level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
@@ -36,9 +36,19 @@ class ProdaProcess(object):
     """
     #from models import Product, Status, Operation
     
-    def __init__(self, product):
+    def __init__(self, product, log_fn='proda.log', log_level=logging.INFO):
+        # logging config
         self.logger = logging.getLogger("{file_name:24} {cl:16}".format(file_name=__name__, cl=self.__class__.__name__))
-        self.logger.setLevel(logging.DEBUG)
+        _fh = logging.FileHandler(log_fn)
+        _fh.setLevel(logging.DEBUG)
+        _fh.setFormatter(logging.Formatter('%(asctime)s - %(name)-22s - %(levelname)-8s - %(message)s'))
+        _ch = logging.StreamHandler()
+        _ch.setLevel(log_level)
+        _ch.setFormatter(logging.Formatter('%(name)s - %(levelname)8s - %(message)s'))
+        self.logger.addHandler(_fh)
+        self.logger.addHandler(_ch)
+        #self.logger.setLevel(log_level)
+        
         self.product = product
         self.proda_serial = self.product.proda_serial
         self.statuses = self.product.statuses.all()
@@ -343,31 +353,25 @@ class Sync(object):
         # parse config file
         self.logger.info("Using config file: {cfg}.".format(cfg=self._opts.config))
         self._config = parse_config(self._opts.config)
-        #_fh = TimedRotatingFileHandler(self._config['main']['logfile'][0], when="MIDNIGHT", interval=1, backupCount=30)
-        _fh = logging.FileHandler(self._config['main']['logfile'][0])
-        _fh.setLevel(logging.DEBUG)
-        _ch = logging.StreamHandler()
-        _ch.setLevel(logging.INFO)
-
+        self.log_level = logging.INFO  # TODO: change back to INFO by default
         if self._opts.quiet:
-            # log errors to console
-            _ch.setLevel(logging.ERROR)
-            # log INFO+ to file
-            _fh.setLevel(logging.INFO)
-
+            self.log_level = logging.WARN
         if self._opts.verbose:
-            self.logger.setLevel(logging.DEBUG)
-            # log INFO+ to console
-            _ch.setLevel(logging.DEBUG)
-            # log DEBUG+ to file
-            _fh.setLevel(logging.DEBUG)
-
+            self.log_level = logging.DEBUG
+        self.log_file = self._config['main']['logfile'][0]
+        _fh = logging.FileHandler(self.log_file)
+        #_fh = TimedRotatingFileHandler(self._config['main']['logfile'][0], when="MIDNIGHT", interval=1, backupCount=30)
+        _fh.setLevel(logging.DEBUG)
         _fh.setFormatter(logging.Formatter('%(asctime)s - %(name)-22s - %(levelname)-8s - %(message)s'))
+        _fh.setFormatter(logging.Formatter('%(asctime)s - %(name)-22s - %(levelname)-8s - %(message)s'))
+        _ch = logging.StreamHandler()
+        _ch.setLevel(self.log_level)
         _ch.setFormatter(logging.Formatter('%(name)s - %(levelname)8s - %(message)s'))
         self.logger.addHandler(_fh)
         self.logger.addHandler(_ch)
-        self.logger.info("Using DB: {db}".format(db=self._config['main']['dburi'][0]))
 
+        self.logger.info("Using DB: {db}".format(db=self._config['main']['dburi'][0]))
+    
         # product timeout in minutes (sync will be triggered once product will not reach station 55 within timeout.)
         self.product_timeout = 480
         if 'product_timeout' in self._config['main']:
@@ -414,7 +418,7 @@ class Sync(object):
     def sync_single_product(self, product):
         from models import Product, Status, Operation
 
-        PP = ProdaProcess(product)
+        PP = ProdaProcess(product, self.log_file, self.log_level)
         PP.log_process_list()
         PP.initialize_proda_connection(self.proda_connection_string)
         PP.push_to_proda()

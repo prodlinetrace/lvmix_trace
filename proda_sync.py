@@ -8,7 +8,6 @@ logger = logging.getLogger(__name__)
 
 def main():
     logger.info("Proda Sync Program Started")
-    logging.info("Starting main app")
     sync = Sync(sys.argv)
     sync.find_sync_data()
     #sync.prepare_products_for_proda_sync()
