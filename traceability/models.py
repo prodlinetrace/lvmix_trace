@@ -213,7 +213,7 @@ class Status(db.Model):
     station_id = db.Column(db.Integer, db.ForeignKey('station.id'), index=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), index=True)
     fail_step = db.Column(db.String(255))
-    proda_sync = db.Column(db.Integer, index=True, default=0)
+    prodasync = db.Column(db.Integer, index=True, default=0)
 
     def __init__(self, status, product, station, user=None, date_time=None, fail_step=''):
         self.status = status
@@ -250,7 +250,7 @@ class Operation(db.Model):
     operation_status_id = db.Column(db.Integer, db.ForeignKey('operation_status.id'), index=True)
     operation_type_id = db.Column(db.Integer, db.ForeignKey('operation_type.id'), index=True)
     date_time = db.Column(db.String(40))
-    proda_sync = db.Column(db.Integer, index=True, default=0)
+    prodasync = db.Column(db.Integer, index=True, default=0)
     result_1 = db.Column(db.Float)
     result_1_max = db.Column(db.Float)
     result_1_min = db.Column(db.Float)
