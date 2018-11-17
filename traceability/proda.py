@@ -3,6 +3,7 @@ import datetime
 import textwrap
 import cx_Oracle
 from models import db, Product
+from sqlalchemy.orm.exc import NoResultFound
 
 #logging.basicConfig(format='%(levelname)-8s %(name)-32s %(message)s', level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -61,25 +62,23 @@ class DatabaseSync(object):
         
         return candidates
 
-    def list_sync_candidates(self, proda_sync=0, limit=10):
-        wabco_number="4640061000"
-        # candidates = Product.query.filter_by(prodasync=proda_sync).order_by(Product.date_added.desc()).filter_by(type=wabco_number).limit(limit).all()
-        candidates = Product.query.order_by(Product.date_added.desc()).filter_by(type=wabco_number).limit(limit).all()
+    def list_sync_candidates(self, wabco_number="4640061000", limit=10, proda_sync=-1):
+        
+        if proda_sync > -1:
+            candidates = Product.query.filter_by(prodasync=proda_sync).order_by(Product.date_added.desc()).filter_by(type=wabco_number).limit(limit).all()
+        else:
+            candidates = Product.query.order_by(Product.date_added.desc()).filter_by(type=wabco_number).limit(limit).all()
         for candidate in candidates:
             print "Type: {0} Serial: {1} Date Added: {2} Proda_Sync: {3} Operation Count: {4} Status Count: {5}".format(candidate.type, candidate.serial, candidate.date_added, candidate.prodasync, len(candidate.operations.all()), len(candidate.statuses.all()))
-        
-
+    
     def find_sync_data(self):
         """
             this function finds data that needs to be synchronized to PRODA
         """
-        #from models import Product, Status, Operation
-        
         wabco_number = "4640061000"
         serial = "617973"
         # serial = "617886"  # product OK
         # serial = "617803"  # with test failure
-        
         #candidates = Product.query.filter_by(prodasync=0).order_by(Product.date_added).filter_by(type="4640061000").limit(100).all()  # TEST: limit to test type only
         #candidates = Product.query.filter_by(prodasync=2).order_by(Product.date_added).filter_by(type="4640060020").filter_by(serial="630233").all()  # TEST: limit to test type only - ok
         #candidates = Product.query.filter_by(prodasync=2).order_by(Product.date_added).filter_by(type="4640060020").filter_by(serial="630168").all()  # TEST: limit to test type only - with test failure
@@ -91,16 +90,61 @@ class DatabaseSync(object):
         product_to_sync = candidates[0]
         
         return product_to_sync
+    
+    def get_one_product(self, wabco_number, serial):
+        self.logger.debug("Trying to find product wabco_number: {0} serial: {1}".format(wabco_number, serial))
+        candidate = None
+        try:
+            candidate = Product.query.order_by(Product.date_added).filter_by(type=wabco_number).filter_by(serial=serial).one()
+        except NoResultFound:
+            self.logger.warn("Product: {2}: not found wabco_number: {0} serial: {1}".format(wabco_number, serial, candidate.id))
+        else:
+            self.logger.info("Product: {2}: found in tracedb wabco_number: {0} serial: {1}".format(wabco_number, serial, candidate.id))
 
-    def sync_single_product(self, product, dry_run=True):
+        return candidate
+
+    def set_sync_ready_flag(self, product, dry_run=True, force=False):
+        """
+            Resets prodasync value for statuses, operation and product.
+        """
+        
+        if type(product) is not Product:
+            self.logger.error("Product type missmatch. {0} is not type of: {1}".format(product, Product))
+            return False
+        
+        # by default allow transformation from 0 to 1 only unless force is used.
+        if  product.prodasync == 0 or force is True:
+            product.prodasync = 1
+            
+            # reset prodasync value for statuses
+            for obj in product.statuses.all():
+                if obj.prodasync == 0 or force is True:
+                    obj.prodasync = 1
+            
+            # reset prodasync value for operations
+            for obj in product.operations.all():
+                if obj.prodasync == 0 or force is True:
+                    obj.prodasync = 1
+
+        if dry_run is True:
+            db.session.rollback()
+        else:
+            db.session.commit()  # sync prodasync status to tracedb
+
+        return True
+
+    def sync_single_product(self, product, dry_run=True, force=False):
         """
             this function synchronizes single product
         """
+        if type(product) is not Product:
+            self.logger.error("Product type missmatch. {0} is not type of: {1}".format(product, Product))
+            return False
+        self.set_sync_ready_flag(product, dry_run=dry_run, force=force)  # reset prodasync flag to enable processing
         PP = ProdaProcess(product, self.log_file, self.log_level)
         PP.log_process_list()
         PP.initialize_proda_connection(self.proda_connection_string)
-        PP.push_to_proda(dry_run=dry_run)
-        
+        PP.push_to_proda(dry_run=dry_run, force=force)
 
     def prepare_products_for_proda_sync(self):
         """
@@ -131,18 +175,18 @@ class DatabaseSync(object):
 
             # product just passed station 55 - trigger sync
             if last_status is None:
-                self.logger.warn("Product: {product} has no status stored.".format(product=candidate.id))
+                self.logger.warn("Product: {product}: has no status stored.".format(product=candidate.id))
                 continue
 
             if last_status.station_id == 55:
                 candidate.prodasync = 1
-                self.logger.debug("Product: {product} set as ready to sync as it just passed station 55.".format(product=candidate.id))
+                self.logger.debug("Product: {product}: set as ready to sync as it just passed station 55.".format(product=candidate.id))
                 continue
 
             # if last status is NOK set ready to sync.
             if last_status.status == 2:
                 candidate.prodasync = 1
-                self.logger.debug("Product: {product} set as ready to sync due to last status set to NOK.".format(product=candidate.id))
+                self.logger.debug("Product: {product}: set as ready to sync due to last status set to NOK.".format(product=candidate.id))
                 continue
 
             # product status is OK but it did not reached station 55 within 24h.
@@ -154,11 +198,11 @@ class DatabaseSync(object):
 
             if last_status_update.total_seconds() / 60 > self.product_timeout:
                 candidate.prodasync = 1
-                self.logger.debug("Product: {product} set as ready to sync as it did not reached station 55 within {timeout} minutes.".format(product=candidate.id, timeout=self.product_timeout))
+                self.logger.debug("Product: {product}: set as ready to sync as it did not reached station 55 within {timeout} minutes.".format(product=candidate.id, timeout=self.product_timeout))
                 continue
 
             # not yet ready to sync
-            self.logger.debug("Product: {product} is not yet ready to sync.".format(product=candidate.id))
+            self.logger.debug("Product: {product}: is not yet ready to sync.".format(product=candidate.id))
             
             db.session.commit()
 
@@ -233,7 +277,7 @@ class ProdaProcess(object):
         self.statuses = self.product.statuses.all()
         self.operations = self.product.operations.all()
         #self.logger.info("Initializing product: {product}".format(product=self.product.id))
-        self.logger.info("Product: {product}: status count: {no_statuses} operation count: {no_operations}".format(product=self.product.id, no_statuses=len(self.statuses), no_operations=len(self.operations)))
+        self.logger.info("Product: {product}: prodasync: {prodasync} status count: {no_statuses} operation count: {no_operations}".format(product=self.product.id, no_statuses=len(self.statuses), no_operations=len(self.operations), prodasync=self.product.prodasync))
         self.statuses.sort(key=lambda r: r.station_id, reverse=False)
         self.operations.sort(key=lambda r: r.station_id, reverse=False)
         self.process_steps = []
@@ -266,7 +310,7 @@ class ProdaProcess(object):
     def log_process_list(self):
         self.logger.info("Product: {product}: process list: {process_list}".format(product=self.product.id, process_list=self.get_process_list()))
 
-    def push_to_proda(self, dry_run=True):
+    def push_to_proda(self, dry_run=True, force=False):
         if self.proda_connection_string is None:
             self.logger.error("Product: {product}: Proda Connection set ready: {proda_connection} connection_string: {proda_connection_string}".format(product=self.product.id, proda_connection=self.proda_connection, proda_connection_string=self.proda_connection_string))
             return False
@@ -274,12 +318,21 @@ class ProdaProcess(object):
         connection = cx_Oracle.connect(self.proda_connection_string)
         cursor = connection.cursor()
         overall_status = True
+        pushed_objects_counter = 0
         
         for ps in self.process_steps:
-            self.logger.debug("Product: {product}: processing PS: {process_step} with status {status}. DryRun: {dry_run}".format(product=self.product.id, process_step=ps['ps_sequence'], status=ps['ps_status'], insert=ps['insert'], dry_run=dry_run))
-            # self.logger.debug("Product: {product}: PS: {process_step}, insert: {insert}".format(product=self.product.id, process_step=ps['station_id'], status=ps['ps_status'], insert=ps['insert']))
+            self.logger.debug("Product: {product}: PS: {process_step} Status {status} Prodasync: {prodasync} DryRun: {dry_run} Force: {force}".format(product=self.product.id, process_step=ps['ps_sequence'], status=ps['ps_status'], prodasync=ps['status_object'].prodasync, insert=ps['insert'], dry_run=dry_run, force=force))
+            if ps['status_object'].prodasync != 1:
+                self.logger.debug("Product: {product}: PS: {process_step} skiped to sync due to Prodasync value: {prodasync} DryRun: {dry_run} Force: {force}".format(product=self.product.id, process_step=ps['ps_sequence'], status=ps['ps_status'], prodasync=ps['status_object'].prodasync, insert=ps['insert'], dry_run=dry_run, force=force))
+                continue  # skip this process step only prodasync==1 should be allowed to sync. 
+            
+            pushed_objects_counter += 1
             try:
                 cursor.execute(ps['insert'])
+                if dry_run is True:
+                    connection.rollback()
+                else:
+                    connection.commit()
             except cx_Oracle.DatabaseError as ex:
                 self.logger.error("Product: {product}: PS: {process_step}, error: {e}".format(product=self.product.id, process_step=ps['station_id'], e=ex, insert=ps['insert']))
                 self.logger.debug("Product: {product}: PS: {process_step}, Fatal insert: {insert}".format(product=self.product.id, process_step=ps['station_id'], e=ex, insert=ps['insert']))
@@ -289,29 +342,35 @@ class ProdaProcess(object):
                 ps['status_object'].prodasync = 3
                 for op in ps['operations']:
                     op.prodasync = 3
-            else:  # successful insert (pre-check phase) - update tracedb accordingly
+            else:  # successful insert  - update tracedb accordingly
                 ps['status_object'].prodasync = 2
                 for op in ps['operations']:
                     op.prodasync = 2
-            db.session.commit()  # sync prodasync status to tracedb
-
-        try:
-            if dry_run:
-                connection.rollback()
+            # save or rollback changes in tracedb
+            if dry_run is True:
+                db.session.rollback()
             else:
-                connection.commit()
-        except cx_Oracle.DatabaseError as ex:
-            self.logger.error("Product: {product}: PS: {process_step}, error: {e}".format(product=self.product.id, process_step=ps['station_id'], e=ex, insert=ps['insert']))
-            self.logger.debug("Product: {product}: PS: {process_step}, Fatal insert: {insert}".format(product=self.product.id, process_step=ps['station_id'], e=ex, insert=ps['insert']))
-            connection.rollback()
-            overall_status = False
-            self.product.prodasync = 3 # proda sync failed - save appropriate statuses in product and
-        else:  # no exception proda sync successful 
-            self.product.prodasync = 2
-        finally:
-            cursor.close()
-            connection.close()
-            db.session.commit()  # sync prodasync status to tracedb
+                db.session.commit()  # sync prodasync status to tracedb
+
+        # handle overall product status
+        if self.product.prodasync != 1:
+            self.logger.debug("Product: {product}: skiped to sync due to Prodasync value: {prodasync} DryRun: {dry_run} Force: {force}".format(product=self.product.id, prodasync=self.product.prodasync , dry_run=dry_run, force=force))
+        else:
+            if overall_status is True:
+                self.product.prodasync = 2  # proda sync successful for whole product.
+            else:
+                self.product.prodasync = 3  # overal proda sync status for product is "failed" - appropriate statuses saved in operation and status objects. 
+    
+            # save or rollback changes in tracedb
+            if dry_run is True:
+                db.session.rollback()
+            else:
+                db.session.commit()
+        
+        self.logger.info("Product: {product}: sync finished with status: {overall_status}. Updated objects count: {pushed_objects_counter} Prodasync: {prodasync} DryRun: {dry_run} Force: {force}".format(product=self.product.id, prodasync=self.product.prodasync , dry_run=dry_run, force=force, overall_status=overall_status, pushed_objects_counter=pushed_objects_counter))
+        # cleanup proda db handlers.
+        cursor.close()
+        connection.close()
         
         return overall_status
         
