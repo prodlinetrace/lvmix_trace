@@ -2,9 +2,9 @@
 import logging
 import sys
 import os
-import configargparse
 import textwrap
-from argparse import RawTextHelpFormatter, ArgumentParser
+import ConfigParser
+from argparse import ArgumentParser, RawTextHelpFormatter
 
 logger = logging.getLogger(__name__)
 
@@ -31,37 +31,46 @@ def get_help(prog_name='executable'):
 
 
 def parse_args():
+    # set some defaults
     prog_name = os.path.basename(sys.argv[0])
     file_name, file_extension = os.path.splitext(prog_name)
     conf_file = os.path.join(".".join([file_name, "conf"]))
-    log_file = os.path.join(".".join([file_name, "log"]))
-    """
-    p = configargparse.ArgParser(
-        default_config_files=['~/.my_conf', conf_file],
-        description="Tool to manage tracedb - proda sync operations.\n\n",
-        epilog=get_help(prog_name),
-        formatter_class=RawTextHelpFormatter,
-    )
-    """
-    p = ArgumentParser(
-        description="Tool to manage tracedb - proda sync operations.\n\n",
-        epilog=get_help(prog_name),
-        formatter_class=RawTextHelpFormatter,
-    )
-    #p.add_argument('command', help='command to execute', choices=['list-products', 'sync-one-product', 'sync-all', 'remove-old-records'])
-    p.add_argument('-c', '--config', required=False, is_config_file=True, help='config file path')
-    p.add_argument('--logfile', required=False, type=str, default=log_file, help='logfile path')
-    p.add_argument('--loglevel', action="store", required=False, type=int, default=logging.INFO, help='URI for tracedb connectivity')
-    p.add_argument('-v', help='verbose mode', action='store_true')
-    p.add_argument('-q', help='quiet mode', action='store_true')
-    p.add_argument('--dburi', required=False, type=str, help='URI for tracedb connectivity')
-    p.add_argument('--proda_uri', required=False, type=str, default="prodang/wabco@PT", help='URI for PRODA connectivity')
+    logfile = os.path.join(".".join([file_name, "log"]))
+    log_level = logging.INFO
+    proda_uri = "prodang/wabco@PTT"
+    dburi = "mysql+pymysql://trace:trace@localhost:3307/trace2"
     
-    subparsers = p.add_subparsers(dest="command", title="commands")
+    early_parser = ArgumentParser(add_help=False)
+    early_parser.add_argument('-c', '--config', required=False, default=conf_file, help='config file path')
+    early_args, remainder_argv = early_parser.parse_known_args()
+    
+    if not os.path.exists(early_args.config): 
+        early_parser.error("Selected config file: %s does not exist!" % early_args.config)
+    
+    # get some defines from config file
+    cp = ConfigParser.RawConfigParser(allow_no_value=True)
+    cp.read(early_args.config)
+    if 'main' in cp.sections():
+        for k, v in list(cp.items('main')):
+            exec("""{0} = '{1}'""".format(k, v))
+    
+    parser = ArgumentParser(
+        description="Tool to manage tracedb - proda sync operations.\n\n",
+        epilog=get_help(prog_name),
+        formatter_class=RawTextHelpFormatter,
+    )
+    parser.add_argument('--logfile', required=False, type=str, default=logfile, help='logfile path')
+    parser.add_argument('--loglevel', action="store", required=False, type=int, default=log_level, help='URI for tracedb connectivity')
+    parser.add_argument('-v', help='verbose mode', action='store_true')
+    parser.add_argument('-q', help='quiet mode', action='store_true')
+    parser.add_argument('--dburi', required=False, type=str, default=dburi, help='URI for tracedb connectivity')
+    parser.add_argument('--proda_uri', required=False, type=str, default=proda_uri, help='URI for PRODA connectivity')
+    
+    subparsers = parser.add_subparsers(dest="command", title="commands")
     parser_list_products = subparsers.add_parser('list-products', help="List most recent products from tracedb")
-    parser_list_products.add_argument('--limit', required=False, type=int, default=10, help='Limit number of returned records.')
+    parser_list_products.add_argument('--limit', required=False, type=int, default=10, help='Limit number of returned records. Use 0 to look for all.')
     parser_list_products.add_argument('--prodasync', required=False, type=int, default=-1, help='prodasync value. Use -1 or leave undefined to look for all.')
-    parser_list_products.add_argument('wabco_number', type=int, default=4640061000, help='wabco_number / type to look for')
+    parser_list_products.add_argument('wabco_number', type=int, default=4640061000, help='wabco_number / type to look for. Use 0 to looks for all.')
     
     parser_sync_one = subparsers.add_parser('sync-one', help="Sync one selected product from tracedb to proda")
     parser_sync_one.add_argument('--force', action='store_true', default=False, help='Enforce sync even if product status is - 2 (already synced).')
@@ -78,7 +87,7 @@ def parse_args():
     parser_remove_old_records.add_argument('--force', action='store_true', default=False, help='Enforce sync even if product status is - 2 (already synced).')
     parser_remove_old_records.add_argument('--dry-run', action='store_true', default=False, help='do not really commit any changes to databases.')
     
-    args = p.parse_args()
+    args = parser.parse_args(remainder_argv)
     
     return args
 

@@ -63,14 +63,19 @@ class DatabaseSync(object):
         
         return candidates
 
-    def list_sync_candidates(self, wabco_number="4640061000", limit=10, proda_sync=-1):
-        
+    def list_sync_candidates(self, wabco_number=4640061000, limit=10, proda_sync=-1):
+
+        query = Product.query.order_by(Product.date_added.desc())
         if proda_sync > -1:
-            candidates = Product.query.filter_by(prodasync=proda_sync).order_by(Product.date_added.desc()).filter_by(type=wabco_number).limit(limit).all()
-        else:
-            candidates = Product.query.order_by(Product.date_added.desc()).filter_by(type=wabco_number).limit(limit).all()
+            query = query.filter_by(prodasync=proda_sync)
+        if wabco_number > 0:
+            query = query.filter_by(type=wabco_number)
+        if limit > 0:
+            query = query.limit(limit)
+            
+        candidates = query.all()
         for candidate in candidates:
-            print "Type: {0} Serial: {1} Date Added: {2} Proda_Sync: {3} Operation Count: {4} Status Count: {5}".format(candidate.type, candidate.serial, candidate.date_added, candidate.prodasync, len(candidate.operations.all()), len(candidate.statuses.all()))
+            print "Id: {id} Type: {type} Serial: {sn} Date Added: {date} Proda_Sync: {sync} Status Count: {status_good:02d}/{status_all:02d} Operation Count: {operations_good:02d}/{operations_all:02d}".format(id=candidate.id, type=candidate.type, sn=candidate.serial, date=candidate.date_added, sync=candidate.prodasync, status_good=candidate.status_count_good, status_all=candidate.status_count, operations_good=candidate.operation_count_good, operations_all=candidate.operation_count)
     
     def find_sync_data(self):
         """
