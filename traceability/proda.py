@@ -114,17 +114,17 @@ class DatabaseSync(object):
         
         # by default allow transformation from 0 to 1 only unless force is used.
         if  product.prodasync == 0 or force is True:
-            product.prodasync = 1
+            product.prodasync = 9
             
             # reset prodasync value for statuses
             for obj in product.statuses.all():
                 if obj.prodasync == 0 or force is True:
-                    obj.prodasync = 1
+                    obj.prodasync = 9
             
             # reset prodasync value for operations
             for obj in product.operations.all():
                 if obj.prodasync == 0 or force is True:
-                    obj.prodasync = 1
+                    obj.prodasync = 9
 
         if dry_run is True:
             db.session.rollback()
@@ -149,16 +149,16 @@ class DatabaseSync(object):
     def prepare_products_for_proda_sync(self):
         """
         This function iterates over database and finds products that finished assembly process.
-        Such products are getting prodasync flag set to 1.
+        Such products are getting prodasync flag set to 9.
         Both failed and successfully completed products get synced.
         Only products with prodasyncflag==0 should be considered.
-        Products with prodasync flag set to 1 are processed by sync_all_products method.
+        Products with prodasync flag set to 9 are processed by sync_all_products method.
 
         # prodasync flag values
-        # 0 - default
-        # 1 - ready to sync - should be set once assembly is complete
-        # 2 - sync completed successfully
-        # 3 - sync failed.
+        # 0 - UNDEFINED - default
+        # 1 - OK - sync completed successfully
+        # 2 - NOK - sync failed.
+        # 9 - WAITING - ready to sync - should be set once assembly is complete
         """
 
         """
@@ -179,13 +179,13 @@ class DatabaseSync(object):
                 continue
 
             if last_status.station_id == 55:
-                candidate.prodasync = 1
+                candidate.prodasync = 9
                 self.logger.debug("Product: {product}: set as ready to sync as it just passed station 55.".format(product=candidate.id))
                 continue
 
             # if last status is NOK set ready to sync.
             if last_status.status == 2:
-                candidate.prodasync = 1
+                candidate.prodasync = 9
                 self.logger.debug("Product: {product}: set as ready to sync due to last status set to NOK.".format(product=candidate.id))
                 continue
 
@@ -197,7 +197,7 @@ class DatabaseSync(object):
                 last_status_update = datetime.datetime.now() - datetime.datetime(2015, 1, 1)
 
             if last_status_update.total_seconds() / 60 > self.product_timeout:
-                candidate.prodasync = 1
+                candidate.prodasync = 9
                 self.logger.debug("Product: {product}: set as ready to sync as it did not reached station 55 within {timeout} minutes.".format(product=candidate.id, timeout=self.product_timeout))
                 continue
 
@@ -212,10 +212,12 @@ class DatabaseSync(object):
     def sync_all_products(self):
         #wabco_id = '4640062010'
         # prodasync column description
-        # 0 - default
-        # 1 - ready to sync - should be set once assembly is complete
-        # 2 - sync completed successfully
-        # 3 - sync failed.
+        # prodasync flag values
+        # 0 - UNDEFINED - default status
+        # 1 - OK - sync completed successfully
+        # 2 - NOK - sync failed.
+        # 9 - WAITING - ready to sync - should be set once assembly is complete
+               
 
         items = Product.query.filter_by(prodasync=1).order_by(Product.date_added).all()
         self.logger.info("Found: {number} products to sync".format(number=len(items)))
@@ -224,11 +226,11 @@ class DatabaseSync(object):
             status = self.sync_single_product(item)
             if status is True:
                 self.sync_success_count += 1
-                item.prodasync = 2
+                item.prodasync = 1
                 self.logger.info("Completed sync of: {id} PT: {type} SN: {sn}. Sync Status: {status}".format(id=item.id, type=item.type, sn=item.serial, status=status))
             else:
                 self.sync_failed_count += 1
-                item.prodasync = 3
+                item.prodasync = 2
                 self.logger.error("Failed sync of: {id} PT: {type} SN: {sn}. Sync Status: {status}".format(id=item.id, type=item.type, sn=item.serial, status=status))
             db.session.commit()
 
@@ -322,9 +324,9 @@ class ProdaProcess(object):
         
         for ps in self.process_steps:
             self.logger.debug("Product: {product}: PS: {process_step} Status {status} Prodasync: {prodasync} DryRun: {dry_run} Force: {force}".format(product=self.product.id, process_step=ps['ps_sequence'], status=ps['ps_status'], prodasync=ps['status_object'].prodasync, insert=ps['insert'], dry_run=dry_run, force=force))
-            if ps['status_object'].prodasync != 1:
+            if ps['status_object'].prodasync != 9:
                 self.logger.debug("Product: {product}: PS: {process_step} skiped to sync due to Prodasync value: {prodasync} DryRun: {dry_run} Force: {force}".format(product=self.product.id, process_step=ps['ps_sequence'], status=ps['ps_status'], prodasync=ps['status_object'].prodasync, insert=ps['insert'], dry_run=dry_run, force=force))
-                continue  # skip this process step only prodasync==1 should be allowed to sync. 
+                continue  # skip this process step only prodasync==9 should be allowed to sync. 
             
             pushed_objects_counter += 1
             try:
@@ -339,13 +341,13 @@ class ProdaProcess(object):
                 connection.rollback()
                 overall_status = False
                 # save proda sync status in operations and status tables in tracedb
-                ps['status_object'].prodasync = 3
-                for op in ps['operations']:
-                    op.prodasync = 3
-            else:  # successful insert  - update tracedb accordingly
                 ps['status_object'].prodasync = 2
                 for op in ps['operations']:
                     op.prodasync = 2
+            else:  # successful insert  - update tracedb accordingly
+                ps['status_object'].prodasync = 1
+                for op in ps['operations']:
+                    op.prodasync = 1
             # save or rollback changes in tracedb
             if dry_run is True:
                 db.session.rollback()
@@ -353,13 +355,13 @@ class ProdaProcess(object):
                 db.session.commit()  # sync prodasync status to tracedb
 
         # handle overall product status
-        if self.product.prodasync != 1:
+        if self.product.prodasync != 9:
             self.logger.debug("Product: {product}: skiped to sync due to Prodasync value: {prodasync} DryRun: {dry_run} Force: {force}".format(product=self.product.id, prodasync=self.product.prodasync , dry_run=dry_run, force=force))
         else:
             if overall_status is True:
-                self.product.prodasync = 2  # proda sync successful for whole product.
+                self.product.prodasync = 1  # proda sync successful for whole product.
             else:
-                self.product.prodasync = 3  # overal proda sync status for product is "failed" - appropriate statuses saved in operation and status objects. 
+                self.product.prodasync = 2  # overal proda sync status for product is "failed" - appropriate statuses saved in operation and status objects. 
     
             # save or rollback changes in tracedb
             if dry_run is True:
