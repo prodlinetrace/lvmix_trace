@@ -19,7 +19,9 @@ def get_help(prog_name='executable'):
 
         To sync all products please execute:
         {prog_name} sync-all
-        
+
+        {prog_name} set-ready-to-sync
+                
         To remove old records please execute:
         {prog_name} remove-old-records
 

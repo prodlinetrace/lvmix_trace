@@ -10,7 +10,7 @@ from flask_login import UserMixin
 from . import db
 logger = logging.getLogger(__name__)
 
-__version__ = '0.7.1'
+__version__ = '0.7.2'
 
 
 class User(UserMixin, db.Model):
@@ -287,15 +287,28 @@ class Status(db.Model):
     @property
     def operations(self):
         """
-            get list of operations matching given status (120 seconds diff from operation and status is the limit). 
+            get list of operations matching given status (360 seconds diff from operation and status is the limit). 
         """
-        time_diff_limit = 120  # time diff limit in seconds
+        time_diff_limit = 360  # time diff limit in seconds
         
         # filter operations with matching station_id
-        opers = filter(lambda x: x.station_id == self.station_id, self.product.operations.all())  
-        # filter out operations with with time difference bigger than 120 seconds.
-        opers = filter(lambda x: (self.datetime - datetime.strptime(x.date_time, "%Y-%m-%d %H:%M:%S.%f")).seconds < time_diff_limit, opers)
-        return opers
+        operations = filter(lambda x: x.station_id == self.station_id, self.product.operations.all())  
+        # filter out operations with with time difference bigger than 360 seconds.
+        operations = filter(lambda x: (self.datetime - datetime.strptime(x.date_time, "%Y-%m-%d %H:%M:%S.%f")).seconds < time_diff_limit, operations)
+        
+        # find operations with duplicate operation_type_id and group them
+        import itertools
+        lists = [list(v) for k,v in itertools.groupby(sorted(operations, key=lambda y: y.operation_type_id), lambda x: x.operation_type_id)]
+        operations = []  # reset operations to fill it again with code below
+        for items_groupped_by_operation_type_id in lists:
+            if len(items_groupped_by_operation_type_id) > 1:  # this means that there is more tham one item with same operation_type_id
+                # find item with closest operation date 
+                item_with_closest_operation_date = min(items_groupped_by_operation_type_id, key=lambda x: (self.datetime - datetime.strptime(x.date_time, "%Y-%m-%d %H:%M:%S.%f")).seconds)
+            else:
+                item_with_closest_operation_date = items_groupped_by_operation_type_id[0] 
+            operations.append(item_with_closest_operation_date)
+
+        return operations
 
 
 class Operation(db.Model):

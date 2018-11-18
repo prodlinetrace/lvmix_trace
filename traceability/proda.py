@@ -1,5 +1,6 @@
 import logging
 import datetime
+import itertools
 import textwrap
 import cx_Oracle
 from models import db, Product
@@ -426,8 +427,21 @@ class ProdaProcess(object):
             
             # process operation results
             operations = filter(lambda x: x.station_id == status.station_id, self.operations)  # filter operations with matching station_id
-            # filter out operations with with time difference bigger than 120 seconds. 
-            operations = filter(lambda x: (ps['ps_end_time'] - datetime.datetime.strptime(x.date_time, "%Y-%m-%d %H:%M:%S.%f")).seconds < 120, operations)
+            # filter out operations with with time difference bigger than 360 seconds. 
+            time_diff_limit = 360  # time diff limit in seconds status_datetime vs operation_datetime
+            operations = filter(lambda x: (ps['ps_end_time'] - datetime.datetime.strptime(x.date_time, "%Y-%m-%d %H:%M:%S.%f")).seconds < time_diff_limit, operations)
+            
+            # find operations with duplicate operation_type_id and group them
+            lists = [list(v) for k,v in itertools.groupby(sorted(operations, key=lambda y: y.operation_type_id), lambda x: x.operation_type_id)]
+            operations = []  # reset operations to fill it again with code below
+            for items_groupped_by_operation_type_id in lists:
+                if len(items_groupped_by_operation_type_id) > 1:  # this means that there is more tham one item with same operation_type_id
+                    # find item with closest operation date 
+                    item_with_closest_operation_date = min(items_groupped_by_operation_type_id, key=lambda x: (ps['ps_end_time'] - datetime.datetime.strptime(x.date_time, "%Y-%m-%d %H:%M:%S.%f")).seconds)
+                else:
+                    item_with_closest_operation_date = items_groupped_by_operation_type_id[0] 
+                operations.append(item_with_closest_operation_date)
+            
             ps['operations'] = operations
             # find oldest operation and use it as: ps_start_time
             if operations:
