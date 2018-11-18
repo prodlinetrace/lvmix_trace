@@ -10,7 +10,7 @@ from flask_login import UserMixin
 from . import db
 logger = logging.getLogger(__name__)
 
-__version__ = '0.7.2'
+__version__ = '0.7.3'
 
 
 class User(UserMixin, db.Model):
@@ -205,6 +205,11 @@ class Product(db.Model):
         """ Return number of bad operations """
         return self.operations.filter(Operation.operation_status_id==2).count()
 
+    @property
+    def electronic_stamp(self):
+        """ Return Electronic Stamp"""
+        st55 = self.statuses.filter(Status.station_id==55).order_by(Status.id.desc()).first()
+        return st55 
 
 class Station(db.Model):
     __tablename__ = 'station'
