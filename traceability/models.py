@@ -10,7 +10,7 @@ from flask_login import UserMixin
 from . import db
 logger = logging.getLogger(__name__)
 
-__version__ = '0.7.3'
+__version__ = '0.7.4'
 
 
 class User(UserMixin, db.Model):
@@ -161,7 +161,6 @@ class Product(db.Model):
             'year': self.year,
             'variant_id': self.variant_id,
             'date_added': self.date_added,
-            'datetime_added': self.datetime_added,
             'prodasync': self.prodasync,
             'proda_serial': self.proda_serial,
         }
@@ -282,7 +281,6 @@ class Status(db.Model):
             'date_time': self.date_time,
             'datetime': self.datetime,
             'fail_step': self.fail_step,
-            'operations': self.operations,
         }
 
     @property
