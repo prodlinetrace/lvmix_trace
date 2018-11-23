@@ -18,12 +18,12 @@ def get_help(prog_name='executable'):
         {prog_name} sync-one
 
         To sync all products please execute:
-        {prog_name} sync-all
+        {prog_name} sync-all --start-time --end-time --wabco-number
 
-        {prog_name} set-ready-to-sync
+        #{prog_name} set-ready-to-sync --start-time --end-time --wabco-number
                 
-        To remove old records please execute:
-        {prog_name} remove-old-records
+        To remove old records (statuses, operations and optionally products) please execute:
+        {prog_name} remove-old-records --start-time --end-time --wabco-number 
 
     """.format(prog_name=prog_name)
 

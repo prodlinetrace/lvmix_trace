@@ -38,7 +38,7 @@ class DatabaseSync(object):
         self.logger.addHandler(_fh)
         self.logger.addHandler(_ch)
 
-        self.logger.info("Using Trace DB: {db}".format(db=self._config['dburi']))
+        #self.logger.info("Using Trace DB: {db}".format(db=self._config['dburi']))
     
         # product timeout in minutes (sync will be triggered once product will not reach station 55 within timeout.)
         self.product_timeout = 480
@@ -46,7 +46,7 @@ class DatabaseSync(object):
             self.product_timeout = int(self._config['product_timeout'])
 
         self.proda_connection_string = self._config['proda_uri']
-        self.logger.info("Using Proda DB: {0}".format(self.proda_connection_string))
+        #self.logger.info("Using Proda DB: {0}".format(self.proda_connection_string))
 
     def get_conf(self):
         return self._config
@@ -105,7 +105,7 @@ class DatabaseSync(object):
         except NoResultFound:
             self.logger.warn("Product: {2}: not found wabco_number: {0} serial: {1}".format(wabco_number, serial, candidate.id))
         else:
-            self.logger.info("Product: {2}: found in tracedb wabco_number: {0} serial: {1}".format(wabco_number, serial, candidate.id))
+            self.logger.info("Product: {2}: found in tracedb wabco_number: {0} serial: {1} proda_serial: {3}".format(wabco_number, serial, candidate.id, candidate.proda_serial))
 
         return candidate
 
@@ -297,7 +297,7 @@ class ProdaProcess(object):
         
     def initialize_proda_connection(self, connection_string):
         self.proda_connection_string = connection_string
-        self.logger.debug("oracle_connection_string: {0}".format(self.proda_connection_string))
+        #self.logger.debug("oracle_connection_string: {0}".format(self.proda_connection_string))
         #self.proda_connection = cx_Oracle.connect(self.proda_connection_string)
         #self.proda_cursor = self.proda_connection.cursor()
 
@@ -320,7 +320,7 @@ class ProdaProcess(object):
 
     def push_to_proda(self, dry_run=True, force=False):
         if self.proda_connection_string is None:
-            self.logger.error("Product: {product}: Proda Connection set ready: {proda_connection} connection_string: {proda_connection_string}".format(product=self.product.id, proda_connection=self.proda_connection, proda_connection_string=self.proda_connection_string))
+            self.logger.error("Product: {product}: Proda Connection not ready: {proda_connection} connection_string: {proda_connection_string}".format(product=self.product.id, proda_connection=self.proda_connection, proda_connection_string=self.proda_connection_string))
             return False
         
         connection = cx_Oracle.connect(self.proda_connection_string)
