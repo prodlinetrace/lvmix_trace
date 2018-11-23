@@ -327,6 +327,7 @@ class ProdaProcess(object):
         cursor = connection.cursor()
         overall_status = True
         pushed_objects_counter = 0
+        cursor.execute("alter session set NLS_NUMERIC_CHARACTERS='.,'")  # make sure to use dot as a deciman number separator. It can be also enforced by environment variable: NLS_LANG-"American_America.UTF8".
         
         for ps in self.process_steps:
             self.logger.debug("Product: {product}: PS: {process_step} Status {status} Prodasync: {prodasync} DryRun: {dry_run} Force: {force}".format(product=self.product.id, process_step=ps['ps_sequence'], status=ps['ps_status'], prodasync=ps['status_object'].prodasync, insert=ps['insert'], dry_run=dry_run, force=force))
