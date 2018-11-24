@@ -3,8 +3,9 @@ import logging
 import sys
 import os
 import textwrap
+import dateparser 
+import argparse 
 import ConfigParser
-from argparse import ArgumentParser, RawTextHelpFormatter
 
 logger = logging.getLogger(__name__)
 
@@ -18,17 +19,20 @@ def get_help(prog_name='executable'):
         {prog_name} sync-one
 
         To sync all products please execute:
-        {prog_name} sync-all --start-time --end-time --wabco-number
+        {prog_name} sync-all --start-date --end-date --wabco-number --limit
 
-        #{prog_name} set-ready-to-sync --start-time --end-time --wabco-number
-                
         To remove old records (statuses, operations and optionally products) please execute:
-        {prog_name} remove-old-records --start-time --end-time --wabco-number 
+        {prog_name} remove-old-records --start-date --end-date --wabco-number  --limit
+
+        To enforce sync of possibly missing statuses or operations please execute 
+        {prog_name} sync-missing --start-date --end-date --wabco-number  --limit
 
     """.format(prog_name=prog_name)
 
     return textwrap.dedent(h)
 
+def valid_date(s):
+    return dateparser.parse(s)
 
 def parse_args():
     # set some defaults
@@ -40,7 +44,7 @@ def parse_args():
     proda_uri = "prodang/wabco@PTT"
     dburi = "mysql+pymysql://trace:trace@localhost:3307/trace2"
     
-    early_parser = ArgumentParser(add_help=False)
+    early_parser = argparse.ArgumentParser(add_help=False)
     early_parser.add_argument('-c', '--config', required=False, default=conf_file, help='config file path')
     early_args, remainder_argv = early_parser.parse_known_args()
     
@@ -54,10 +58,10 @@ def parse_args():
         for k, v in list(cp.items('main')):
             exec("""{0} = '{1}'""".format(k, v))
     
-    parser = ArgumentParser(
+    parser = argparse.ArgumentParser(
         description="Tool to manage tracedb - proda sync operations.\n\n",
         epilog=get_help(prog_name),
-        formatter_class=RawTextHelpFormatter,
+        formatter_class=argparse.RawTextHelpFormatter,
     )
     parser.add_argument('--logfile', required=False, type=str, default=logfile, help='logfile path')
     parser.add_argument('--loglevel', action="store", required=False, type=int, default=log_level, help='URI for tracedb connectivity')
@@ -73,18 +77,24 @@ def parse_args():
     parser_list_products.add_argument('wabco_number', type=int, default=4640061000, help='wabco_number / type to look for. Use 0 to looks for all.')
     
     parser_sync_one = subparsers.add_parser('sync-one', help="Sync one selected product from tracedb to proda")
-    parser_sync_one.add_argument('--force', action='store_true', default=False, help='Enforce sync even if product status is - 2 (already synced).')
+    parser_sync_one.add_argument('--force', action='store_true', default=False, help='Enforce sync even if product status non zero (already synced).')
     parser_sync_one.add_argument('--dry-run', action='store_true', default=False, help='do not really commit any changes to databases.')
     parser_sync_one.add_argument('wabco_number', type=int, default=4640061000, help='wabco_number to sync')
     parser_sync_one.add_argument('serial', type=int, default=123456, help='serial to sync')
     
+    #{prog_name} sync-all --start-time --end-time --wabco-number --limit
     parser_sync_all = subparsers.add_parser('sync-all')
     parser_sync_all.add_argument('--product_timeout', required=False, type=int, default=480, help='Product timeout [minutes] - sync will be triggered if product will not reach station 55 within given time.')
-    parser_sync_all.add_argument('--force', action='store_true', default=False, help='Enforce sync even if product status is - 2 (already synced).')
+    parser_sync_all.add_argument('--force', action='store_true', default=False, help='Enforce sync even if product status is non zero (already synced).')
     parser_sync_all.add_argument('--dry-run', action='store_true', default=False, help='do not really commit any changes to databases.')
-
+    parser_sync_all.add_argument('--start-date', default=None, help='Please specify start time for sync. Format: YYYY-MM-DD HH:MM:SS. Also dateparser formats are accepted, eg. "2 weeks ago". See: https://dateparser.readthedocs.io/en/latest/', type=valid_date)
+    parser_sync_all.add_argument('--end-date', default=None, help='Please specify start time for sync. Format: YYYY-MM-DD HH:MM:SS Also dateparser formats are accepted, eg. "3 months, 1 week and 1 day ago". See: https://dateparser.readthedocs.io/en/latest/', type=valid_date)
+    parser_sync_all.add_argument('--limit', type=int, default=0, help='Limit number of records. Use 0 - for all (default).')
+    parser_sync_all.add_argument('--wabco_number', type=int, default=0, help='limit to specific wabco_number. Use 0 - for all (default).')
+    
+    #{prog_name} remove-old-records --start-time --end-time --wabco-number  --limit
     parser_remove_old_records = subparsers.add_parser('remove-old-records')
-    parser_remove_old_records.add_argument('--force', action='store_true', default=False, help='Enforce sync even if product status is - 2 (already synced).')
+    parser_remove_old_records.add_argument('--force', action='store_true', default=False, help='Enforce sync even if product status non zero (already synced).')
     parser_remove_old_records.add_argument('--dry-run', action='store_true', default=False, help='do not really commit any changes to databases.')
     
     args = parser.parse_args(remainder_argv)
@@ -107,13 +117,13 @@ def main():
     
     def sync_one():
         product = dbsync.get_one_product(wabco_number=arg_map['wabco_number'], serial=arg_map['serial'])
+        dbsync.set_sync_ready_flag(product, dry_run=arg_map['dry_run'], force=arg_map['force'])  # reset prodasync flag to enable processing
         dbsync.sync_single_product(product, dry_run=arg_map['dry_run'], force=arg_map['force'])
     
     def sync_all():
-        #sync.prepare_products_for_proda_sync()
-        #sync.sync_all_products()
-        # TODO: implement me
-        pass
+        #print arg_map
+        dbsync.prepare_products_for_proda_sync(dry_run=arg_map['dry_run'], force=arg_map['force'], start_date=arg_map['start_date'], end_date=arg_map['end_date'], limit=arg_map['limit'], wabco_number=arg_map['wabco_number'], product_timeout=arg_map['product_timeout'])
+        dbsync.sync_all_products(dry_run=arg_map['dry_run'], force=arg_map['force'], wabco_number=arg_map['wabco_number'])
     
     def remove_old_records():
         # TODO: implement me

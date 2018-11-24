@@ -3,8 +3,10 @@ import datetime
 import itertools
 import textwrap
 import cx_Oracle
-from models import db, Product
+import dateparser
+from models import db, Product, Status
 from sqlalchemy.orm.exc import NoResultFound
+import proda_sync
 
 #logging.basicConfig(format='%(levelname)-8s %(name)-32s %(message)s', level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -54,15 +56,6 @@ class DatabaseSync(object):
     def get_conf_file_name(self):
         return self._opts.config
 
-    def get_products(self, date_string="2017-06-29 06:39:38.973000"):
-        """
-            gets products from DB younger than given date
-        """
-        
-        candidates = Product.query.filter_by(prodasync=0).order_by(Product.date_added).all()
-        
-        return candidates
-
     def list_sync_candidates(self, wabco_number=4640061000, limit=10, proda_sync=-1):
 
         query = Product.query.order_by(Product.date_added.desc())
@@ -77,26 +70,6 @@ class DatabaseSync(object):
         for candidate in candidates:
             print "Id: {id} Type: {type} Serial: {sn} Date Added: {date} Proda_Sync: {sync} Status Count: {status_good:02d}/{status_all:02d} Operation Count: {operations_good:02d}/{operations_all:02d}".format(id=candidate.id, type=candidate.type, sn=candidate.serial, date=candidate.date_added, sync=candidate.prodasync, status_good=candidate.status_count_good, status_all=candidate.status_count, operations_good=candidate.operation_count_good, operations_all=candidate.operation_count)
     
-    def find_sync_data(self):
-        """
-            this function finds data that needs to be synchronized to PRODA
-        """
-        wabco_number = "4640061000"
-        serial = "617973"
-        # serial = "617886"  # product OK
-        # serial = "617803"  # with test failure
-        #candidates = Product.query.filter_by(prodasync=0).order_by(Product.date_added).filter_by(type="4640061000").limit(100).all()  # TEST: limit to test type only
-        #candidates = Product.query.filter_by(prodasync=2).order_by(Product.date_added).filter_by(type="4640060020").filter_by(serial="630233").all()  # TEST: limit to test type only - ok
-        #candidates = Product.query.filter_by(prodasync=2).order_by(Product.date_added).filter_by(type="4640060020").filter_by(serial="630168").all()  # TEST: limit to test type only - with test failure
-        #candidates = Product.query.filter_by(prodasync=0).order_by(Product.date_added).filter_by(type="4640061000").filter_by(serial="617803").all()  # TEST: limit to test type only - with test failure
-        candidates = Product.query.order_by(Product.date_added).filter_by(type=wabco_number).filter_by(serial=serial).all()  # TEST: limit to test type only - ok
-        #candidates = [candidates[:100]]  # hack to get right candidate
-        #print candidates
-        #return 0
-        product_to_sync = candidates[0]
-        
-        return product_to_sync
-    
     def get_one_product(self, wabco_number, serial):
         self.logger.debug("Trying to find product wabco_number: {0} serial: {1}".format(wabco_number, serial))
         candidate = None
@@ -108,6 +81,20 @@ class DatabaseSync(object):
             self.logger.info("Product: {2}: found in tracedb wabco_number: {0} serial: {1} proda_serial: {3}".format(wabco_number, serial, candidate.id, candidate.proda_serial))
 
         return candidate
+
+    def sync_single_product(self, product, dry_run=True, force=False):
+        """
+            this function synchronizes single product
+        """
+        if type(product) is not Product:
+            self.logger.error("Product type missmatch. {0} is not type of: {1}".format(product, Product))
+            return False
+        PP = ProdaProcess(product, self.log_file, self.log_level)
+        PP.log_process_list()
+        PP.initialize_proda_connection(self.proda_connection_string)
+        sync_status = PP.push_to_proda(dry_run=dry_run, force=force)
+        del PP
+        return sync_status
 
     def set_sync_ready_flag(self, product, dry_run=True, force=False):
         """
@@ -139,20 +126,7 @@ class DatabaseSync(object):
 
         return True
 
-    def sync_single_product(self, product, dry_run=True, force=False):
-        """
-            this function synchronizes single product
-        """
-        if type(product) is not Product:
-            self.logger.error("Product type missmatch. {0} is not type of: {1}".format(product, Product))
-            return False
-        self.set_sync_ready_flag(product, dry_run=dry_run, force=force)  # reset prodasync flag to enable processing
-        PP = ProdaProcess(product, self.log_file, self.log_level)
-        PP.log_process_list()
-        PP.initialize_proda_connection(self.proda_connection_string)
-        PP.push_to_proda(dry_run=dry_run, force=force)
-
-    def prepare_products_for_proda_sync(self):
+    def prepare_products_for_proda_sync(self, dry_run=True, force=False, start_date=None, end_date=None, limit=0, wabco_number=0, product_timeout=480):
         """
         This function iterates over database and finds products that finished assembly process.
         Such products are getting prodasync flag set to 9.
@@ -169,13 +143,33 @@ class DatabaseSync(object):
 
         """
         Osobiscie sklanialem sie w strone nastepujacego rozwiazania:
-        - zawor przeszedl stacje 55 - wyzwalaj synchronizacje
-        - Jezeli status montazu na dowolnej stacji jest NOK - montaz zostaje przerwany - wyzwalaj synchronizacje
-        - jezeli status montazu zaworu na dowolnej stacji jest OK wstrzymaj sie z syncronizacja danych do momentu az zawor dotrze do stacji 55.
-        - jezeli status montazu zaworu na dowolnej stacji jest OK i zawor nie przeszedl przez stacje 55 w ciagu 24h - cos jest nie tak - wyzwalaj synchronizacje.
+        #- zawor przeszedl stacje 55 - wyzwalaj synchronizacje
+        #- Jezeli status montazu na dowolnej stacji jest NOK - montaz zostaje przerwany - wyzwalaj synchronizacje
+        #- jezeli status montazu zaworu na dowolnej stacji jest OK wstrzymaj sie z syncronizacja danych do momentu az zawor dotrze do stacji 55.
+        #- jezeli status montazu zaworu na dowolnej stacji jest OK i zawor nie przeszedl przez stacje 55 w ciagu 24h - cos jest nie tak - wyzwalaj synchronizacje.
         """
         #candidates = Product.query.filter_by(prodasync=0).order_by(Product.date_added).filter_by(type="4640062010").all()  # TEST: limit to test type only
-        candidates = Product.query.filter_by(prodasync=0).order_by(Product.date_added).all()
+        
+        
+        self.logger.info("Looking for new products to sync. Start_date: {0} End_date: {1} Limit: {2} Wabco_number: {3} Dry_Run: {4} Force: {5} ".format(start_date, end_date, limit, wabco_number,  dry_run, force))
+        
+        query = Product.query.order_by(Product.date_added.desc())
+        if wabco_number > 0:
+            query = query.filter_by(type=wabco_number)
+        if force is not True:
+            query = query.filter_by(prodasync=0)
+        if start_date is not None:
+            query = query.filter(Product.date_added > start_date)
+        if end_date is not None:
+            query = query.filter(Product.date_added < end_date)
+        if limit > 0:
+            query = query.limit(limit)
+        candidates = query.all()
+
+        self.logger.info("Found: {n} products to sync.".format(n=query.count())) 
+        for candidate in candidates:
+            self.logger.info("Candidate to sync: Id: {id} Type: {type} Serial: {sn} Date Added: {date} Proda_Sync: {sync} Status Count: {status_good:02d}/{status_all:02d} Operation Count: {operations_good:02d}/{operations_all:02d}".format(id=candidate.id, type=candidate.type, sn=candidate.serial, date=candidate.date_added, sync=candidate.prodasync, status_good=candidate.status_count_good, status_all=candidate.status_count, operations_good=candidate.operation_count_good, operations_all=candidate.operation_count))
+        
         for candidate in candidates:
             last_status = candidate.statuses.order_by(Status.id.desc()).first()
 
@@ -185,63 +179,63 @@ class DatabaseSync(object):
                 continue
 
             if last_status.station_id == 55:
-                candidate.prodasync = 9
-                self.logger.debug("Product: {product}: set as ready to sync as it just passed station 55.".format(product=candidate.id))
+                self.set_sync_ready_flag(candidate, dry_run=dry_run, force=force) 
+                self.logger.debug("Product: {product}: set as ready to sync as it already passed station 55.".format(product=candidate.id))
                 continue
 
             # if last status is NOK set ready to sync.
             if last_status.status == 2:
-                candidate.prodasync = 9
+                self.set_sync_ready_flag(candidate, dry_run=dry_run, force=force)
                 self.logger.debug("Product: {product}: set as ready to sync due to last status set to NOK.".format(product=candidate.id))
                 continue
 
             # product status is OK but it did not reached station 55 within 24h.
-            try:
-                last_status_update = datetime.datetime.now() - datetime.datetime.strptime(last_status.date_time, '%Y-%m-%d %H:%M:%S.%f')
-            except ValueError as e:
-                self.logger.error("Unable to convert date: {date} with format '%Y-%m-%d %H:%M:%S.%f'. Set to timeout".format(date=last_status.date_time))
-                last_status_update = datetime.datetime.now() - datetime.datetime(2015, 1, 1)
+            last_status_update = datetime.datetime.now() - dateparser.parse(last_status.date_time)
 
-            if last_status_update.total_seconds() / 60 > self.product_timeout:
-                candidate.prodasync = 9
-                self.logger.debug("Product: {product}: set as ready to sync as it did not reached station 55 within {timeout} minutes.".format(product=candidate.id, timeout=self.product_timeout))
+            if last_status_update.total_seconds() / 60 > product_timeout:
+                self.set_sync_ready_flag(candidate, dry_run=dry_run, force=force)
+                self.logger.debug("Product: {product}: set as ready to sync as it did not reached station 55 within {timeout} minutes.".format(product=candidate.id, timeout=product_timeout))
                 continue
 
             # not yet ready to sync
             self.logger.debug("Product: {product}: is not yet ready to sync.".format(product=candidate.id))
             
-            db.session.commit()
+    def sync_all_products(self, dry_run=True, force=False, wabco_number=0):
+    #def sync_all_products(self, dry_run=True, start_date=None, end_date=None, limit=0, wabco_number=0):
+        """
+            This function should sync all products with prodasync=9.
+            Only dry_run and wabco_number filtering is allowed here.  
+        
+            #wabco_id = '4640062010'
+            # prodasync column description
+            # prodasync flag values
+            # 0 - UNDEFINED - default status
+            # 1 - OK - sync completed successfully
+            # 2 - NOK - sync failed.
+            # 9 - WAITING - ready to sync - should be set once assembly is complete
+        """
 
-        # push db session changes to database (traceability)
-        db.session.commit()
+        # find products that will be synchronized.
+        query = Product.query.order_by(Product.date_added.desc())
+        if wabco_number > 0:
+            query = query.filter_by(type=wabco_number)
+        query = query.filter_by(prodasync=9)
+        items = query.all()
 
-    def sync_all_products(self):
-        #wabco_id = '4640062010'
-        # prodasync column description
-        # prodasync flag values
-        # 0 - UNDEFINED - default status
-        # 1 - OK - sync completed successfully
-        # 2 - NOK - sync failed.
-        # 9 - WAITING - ready to sync - should be set once assembly is complete
-               
-
-        items = Product.query.filter_by(prodasync=1).order_by(Product.date_added).all()
-        self.logger.info("Found: {number} products to sync".format(number=len(items)))
+        self.logger.info("About to execute sync for: {number} of products now. Dry_run: {dry_run}.".format(number=len(items), dry_run=dry_run))
+        
+        # sync products one by one and count the results.
         for item in items:
-            self.logger.info("Starting sync of: {id} PT: {type} SN: {sn} PRODA_SYNC_STAT: {prodasync}".format(id=item.id, type=item.type, sn=item.serial, prodasync=item.prodasync))
-            status = self.sync_single_product(item)
-            if status is True:
+            self.logger.info("Product: {id} PRODA_SN: {proda_sn}: PRODA_SYNC_STAT: {prodasync} Starting sync.".format(id=item.id, type=item.type, sn=item.serial, proda_sn=item.proda_serial, prodasync=item.prodasync))
+            status = self.sync_single_product(item, dry_run=dry_run, force=force)
+            if True is True:
                 self.sync_success_count += 1
-                item.prodasync = 1
-                self.logger.info("Completed sync of: {id} PT: {type} SN: {sn}. Sync Status: {status}".format(id=item.id, type=item.type, sn=item.serial, status=status))
+                self.logger.info("Product: {id} PRODA_SN: {proda_sn}: PRODA_SYNC_STAT: {prodasync} Sync completed successfully.".format(id=item.id, type=item.type, sn=item.serial, proda_sn=item.proda_serial, prodasync=item.prodasync))
             else:
                 self.sync_failed_count += 1
-                item.prodasync = 2
-                self.logger.error("Failed sync of: {id} PT: {type} SN: {sn}. Sync Status: {status}".format(id=item.id, type=item.type, sn=item.serial, status=status))
-            db.session.commit()
+                self.logger.error("Product: {id} PRODA_SN: {proda_sn}: PRODA_SYNC_STAT: {prodasync} Sync has failed.".format(id=item.id, type=item.type, sn=item.serial, proda_sn=item.proda_serial, prodasync=item.prodasync))
 
-        db.session.commit()
-        self.logger.info("Sync of {number} products finished in {time}. Stats: {failed} failed / {success} succeed.".format(number=len(items), failed=self.sync_failed_count, success=self.sync_success_count, time=datetime.datetime.now()-self.time_started))
+        self.logger.info("Sync of {success}/{number} products finished successfully in {time}. Number of failed sync attempts: {failed}/{number}. Dry_run: {dry_run}.".format(number=len(items), failed=self.sync_failed_count, success=self.sync_success_count, time=datetime.datetime.now()-self.time_started, dry_run=dry_run))
 
 
 class ProdaProcess(object):
@@ -294,6 +288,11 @@ class ProdaProcess(object):
         self.proda_connection_string = None
         self.proda_connection = None
         self.proda_cursor = None
+
+    def __del__(self):
+        # clean up handlers on exit. 
+        # Possibly we are doing something wrong as we need to remove handlers to avoid duplicate log entries. 
+        self.logger.handlers = []
         
     def initialize_proda_connection(self, connection_string):
         self.proda_connection_string = connection_string
@@ -368,7 +367,7 @@ class ProdaProcess(object):
             if overall_status is True:
                 self.product.prodasync = 1  # proda sync successful for whole product.
             else:
-                self.product.prodasync = 2  # overal proda sync status for product is "failed" - appropriate statuses saved in operation and status objects. 
+                self.product.prodasync = 2  # overall proda sync status for product is "failed" - appropriate statuses saved in operation and status objects. 
     
             # save or rollback changes in tracedb
             if dry_run is True:
