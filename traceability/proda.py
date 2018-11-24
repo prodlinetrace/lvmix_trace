@@ -6,9 +6,7 @@ import cx_Oracle
 import dateparser
 from models import db, Product, Status
 from sqlalchemy.orm.exc import NoResultFound
-import proda_sync
 
-#logging.basicConfig(format='%(levelname)-8s %(name)-32s %(message)s', level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
@@ -40,8 +38,6 @@ class DatabaseSync(object):
         self.logger.addHandler(_fh)
         self.logger.addHandler(_ch)
 
-        #self.logger.info("Using Trace DB: {db}".format(db=self._config['dburi']))
-    
         # product timeout in minutes (sync will be triggered once product will not reach station 55 within timeout.)
         self.product_timeout = 480
         if 'product_timeout' in self._config:
@@ -57,7 +53,6 @@ class DatabaseSync(object):
         return self._opts.config
 
     def list_sync_candidates(self, wabco_number=4640061000, limit=10, proda_sync=-1):
-
         query = Product.query.order_by(Product.date_added.desc())
         if proda_sync > -1:
             query = query.filter_by(prodasync=proda_sync)
@@ -100,7 +95,6 @@ class DatabaseSync(object):
         """
             Resets prodasync value for statuses, operation and product.
         """
-        
         if type(product) is not Product:
             self.logger.error("Product type missmatch. {0} is not type of: {1}".format(product, Product))
             return False
@@ -148,9 +142,7 @@ class DatabaseSync(object):
         #- jezeli status montazu zaworu na dowolnej stacji jest OK wstrzymaj sie z syncronizacja danych do momentu az zawor dotrze do stacji 55.
         #- jezeli status montazu zaworu na dowolnej stacji jest OK i zawor nie przeszedl przez stacje 55 w ciagu 24h - cos jest nie tak - wyzwalaj synchronizacje.
         """
-        #candidates = Product.query.filter_by(prodasync=0).order_by(Product.date_added).filter_by(type="4640062010").all()  # TEST: limit to test type only
-        
-        
+
         self.logger.info("Looking for new products to sync. Start_date: {0} End_date: {1} Limit: {2} Wabco_number: {3} Dry_Run: {4} Force: {5} ".format(start_date, end_date, limit, wabco_number,  dry_run, force))
         
         query = Product.query.order_by(Product.date_added.desc())
@@ -201,7 +193,6 @@ class DatabaseSync(object):
             self.logger.debug("Product: {product}: is not yet ready to sync.".format(product=candidate.id))
             
     def sync_all_products(self, dry_run=True, force=False, wabco_number=0):
-    #def sync_all_products(self, dry_run=True, start_date=None, end_date=None, limit=0, wabco_number=0):
         """
             This function should sync all products with prodasync=9.
             Only dry_run and wabco_number filtering is allowed here.  
@@ -228,14 +219,14 @@ class DatabaseSync(object):
         for item in items:
             self.logger.info("Product: {id} PRODA_SN: {proda_sn}: PRODA_SYNC_STAT: {prodasync} Starting sync.".format(id=item.id, type=item.type, sn=item.serial, proda_sn=item.proda_serial, prodasync=item.prodasync))
             status = self.sync_single_product(item, dry_run=dry_run, force=force)
-            if True is True:
+            if status is True:
                 self.sync_success_count += 1
                 self.logger.info("Product: {id} PRODA_SN: {proda_sn}: PRODA_SYNC_STAT: {prodasync} Sync completed successfully.".format(id=item.id, type=item.type, sn=item.serial, proda_sn=item.proda_serial, prodasync=item.prodasync))
             else:
                 self.sync_failed_count += 1
                 self.logger.error("Product: {id} PRODA_SN: {proda_sn}: PRODA_SYNC_STAT: {prodasync} Sync has failed.".format(id=item.id, type=item.type, sn=item.serial, proda_sn=item.proda_serial, prodasync=item.prodasync))
 
-        self.logger.info("Sync of {success}/{number} products finished successfully in {time}. Number of failed sync attempts: {failed}/{number}. Dry_run: {dry_run}.".format(number=len(items), failed=self.sync_failed_count, success=self.sync_success_count, time=datetime.datetime.now()-self.time_started, dry_run=dry_run))
+        self.logger.info("Sync of {success}/{number} products finished successfully in {time}. Number of products that failed sync: {failed}/{number}. Dry_run: {dry_run}.".format(number=len(items), failed=self.sync_failed_count, success=self.sync_success_count, time=datetime.datetime.now()-self.time_started, dry_run=dry_run))
 
 
 class ProdaProcess(object):
@@ -259,8 +250,7 @@ class ProdaProcess(object):
                 'TS_1_1','TV_1_1_1_12.432','TV_1_2_1_-0.032','TS_2_1','TV_2_1_1_142.432','TV_2_2_1_-40.0432','TV_2_3_1_54.432','TV_2_4_1_345'
             );
     """
-    #from models import Product, Status, Operation
-    
+
     def __init__(self, product, log_fn='proda.log', log_level=logging.INFO):
         # logging config
         self.logger = logging.getLogger("{file_name:24} {cl:16}".format(file_name=__name__, cl=self.__class__.__name__))
@@ -296,9 +286,9 @@ class ProdaProcess(object):
         
     def initialize_proda_connection(self, connection_string):
         self.proda_connection_string = connection_string
-        #self.logger.debug("oracle_connection_string: {0}".format(self.proda_connection_string))
-        #self.proda_connection = cx_Oracle.connect(self.proda_connection_string)
-        #self.proda_cursor = self.proda_connection.cursor()
+        # self.logger.debug("oracle_connection_string: {0}".format(self.proda_connection_string))
+        # self.proda_connection = cx_Oracle.connect(self.proda_connection_string)
+        # self.proda_cursor = self.proda_connection.cursor()
 
     def close_proda_connection(self):
         self.proda_connection.close()

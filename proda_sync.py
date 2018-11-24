@@ -96,6 +96,10 @@ def parse_args():
     parser_remove_old_records = subparsers.add_parser('remove-old-records')
     parser_remove_old_records.add_argument('--force', action='store_true', default=False, help='Enforce sync even if product status non zero (already synced).')
     parser_remove_old_records.add_argument('--dry-run', action='store_true', default=False, help='do not really commit any changes to databases.')
+
+    parser_sync_missing_records = subparsers.add_parser('sync-missing-records')
+    parser_sync_missing_records.add_argument('--force', action='store_true', default=False, help='Enforce sync even if product status non zero (already synced).')
+    parser_sync_missing_records.add_argument('--dry-run', action='store_true', default=False, help='do not really commit any changes to databases.')
     
     args = parser.parse_args(remainder_argv)
     
@@ -128,12 +132,17 @@ def main():
     def remove_old_records():
         # TODO: implement me
         pass
+
+    def sync_missing_records():
+        # TODO: implement me
+        pass
     
     commands = {
         'list-products': list_products,
         'sync-one': sync_one, 
         'sync-all': sync_all, 
         'remove-old-records': remove_old_records, 
+        'sync-missing-records': sync_missing_records,
     }
 
     def run(argument):
