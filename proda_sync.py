@@ -22,17 +22,20 @@ def get_help(prog_name='executable'):
         {prog_name} sync-all --start-date --end-date --wabco-number --limit
 
         To remove old records (statuses, operations and optionally products) please execute:
-        {prog_name} remove-old-records --start-date --end-date --wabco-number  --limit
+        {prog_name} remove-old-records --start-date --end-date --wabco-number --serial --limit
 
         To enforce sync of possibly missing statuses or operations please execute 
-        {prog_name} sync-missing --start-date --end-date --wabco-number  --limit
+        {prog_name} sync-missing-records --start-date --end-date --wabco-number --serial --limit
 
     """.format(prog_name=prog_name)
 
     return textwrap.dedent(h)
 
 def valid_date(s):
-    return dateparser.parse(s)
+    date = dateparser.parse(s)
+    if date is None:
+        raise argparse.ArgumentTypeError("Not a valid date: '{0}'.".format(s))
+    return date
 
 def parse_args():
     # set some defaults
@@ -92,14 +95,25 @@ def parse_args():
     parser_sync_all.add_argument('--limit', type=int, default=0, help='Limit number of records. Use 0 - for all (default).')
     parser_sync_all.add_argument('--wabco_number', type=int, default=0, help='limit to specific wabco_number. Use 0 - for all (default).')
     
-    #{prog_name} remove-old-records --start-time --end-time --wabco-number  --limit
+    #{prog_name} remove-old-records --start-date --end-date --wabco-number --serial --limit
     parser_remove_old_records = subparsers.add_parser('remove-old-records')
     parser_remove_old_records.add_argument('--force', action='store_true', default=False, help='Enforce sync even if product status non zero (already synced).')
     parser_remove_old_records.add_argument('--dry-run', action='store_true', default=False, help='do not really commit any changes to databases.')
+    parser_remove_old_records.add_argument('--start-date', default=None, help='Please specify start time for sync. Format: YYYY-MM-DD HH:MM:SS. Also dateparser formats are accepted, eg. "2 weeks ago". See: https://dateparser.readthedocs.io/en/latest/', type=valid_date)
+    parser_remove_old_records.add_argument('--end-date', default=None, help='Please specify start time for sync. Format: YYYY-MM-DD HH:MM:SS Also dateparser formats are accepted, eg. "3 months, 1 week and 1 day ago". See: https://dateparser.readthedocs.io/en/latest/', type=valid_date)
+    parser_remove_old_records.add_argument('--limit', type=int, default=0, help='Limit number of records. Use 0 - for all (default).')
+    parser_remove_old_records.add_argument('--wabco_number', type=int, default=0, help='limit to specific wabco_number. Use 0 - for all (default).')
+    parser_remove_old_records.add_argument('--serial', type=int, default=0, help='limit to specific serial (use six digit format). Use 0 - for all (default).')
 
+    #{prog_name} sync-missing --start-date --end-date --wabco-number --serial --limit
     parser_sync_missing_records = subparsers.add_parser('sync-missing-records')
     parser_sync_missing_records.add_argument('--force', action='store_true', default=False, help='Enforce sync even if product status non zero (already synced).')
     parser_sync_missing_records.add_argument('--dry-run', action='store_true', default=False, help='do not really commit any changes to databases.')
+    parser_sync_missing_records.add_argument('--start-date', default=None, help='Please specify start time for sync. Format: YYYY-MM-DD HH:MM:SS. Also dateparser formats are accepted, eg. "2 weeks ago". See: https://dateparser.readthedocs.io/en/latest/', type=valid_date)
+    parser_sync_missing_records.add_argument('--end-date', default=None, help='Please specify start time for sync. Format: YYYY-MM-DD HH:MM:SS Also dateparser formats are accepted, eg. "3 months, 1 week and 1 day ago". See: https://dateparser.readthedocs.io/en/latest/', type=valid_date)
+    parser_sync_missing_records.add_argument('--limit', type=int, default=0, help='Limit number of records. Use 0 - for all (default).')
+    parser_sync_missing_records.add_argument('--wabco_number', type=int, default=0, help='limit to specific wabco_number. Use 0 - for all (default).')
+    parser_sync_missing_records.add_argument('--serial', type=int, default=0, help='limit to specific serial (use six digit format). Use 0 - for all (default).')
     
     args = parser.parse_args(remainder_argv)
     
@@ -111,8 +125,7 @@ def main():
     args = parse_args()
     arg_map = vars(args)
     sys.argv = [sys.argv[0]]  # delete sys.argv to satisfy traceability.helpers
-    #print arg_map
-    
+    # print arg_map
     from traceability.proda import DatabaseSync
     dbsync = DatabaseSync(arg_map)
     
@@ -125,17 +138,14 @@ def main():
         dbsync.sync_single_product(product, dry_run=arg_map['dry_run'], force=arg_map['force'])
     
     def sync_all():
-        #print arg_map
         dbsync.prepare_products_for_proda_sync(dry_run=arg_map['dry_run'], force=arg_map['force'], start_date=arg_map['start_date'], end_date=arg_map['end_date'], limit=arg_map['limit'], wabco_number=arg_map['wabco_number'], product_timeout=arg_map['product_timeout'])
         dbsync.sync_all_products(dry_run=arg_map['dry_run'], force=arg_map['force'], wabco_number=arg_map['wabco_number'])
     
     def remove_old_records():
-        # TODO: implement me
-        pass
+        dbsync.remove_old_records(dry_run=arg_map['dry_run'], force=arg_map['force'], start_date=arg_map['start_date'], end_date=arg_map['end_date'], limit=arg_map['limit'], wabco_number=arg_map['wabco_number'], serial=arg_map['serial'])
 
     def sync_missing_records():
-        # TODO: implement me
-        pass
+        dbsync.sync_missing_records(dry_run=arg_map['dry_run'], force=arg_map['force'], start_date=arg_map['start_date'], end_date=arg_map['end_date'], limit=arg_map['limit'], wabco_number=arg_map['wabco_number'], serial=arg_map['serial'])
     
     commands = {
         'list-products': list_products,
@@ -150,8 +160,8 @@ def main():
         # Execute the function
         return func()
  
-    #print("Running command: {0}".format(arg_map['command']))
-    run(arg_map['command'])
+    # print("Running command: {0}".format(arg_map['command']))
+    run(arg_map['command'])  # run given command.
     
     logger.info("Proda Sync Program Finished")
 

@@ -91,6 +91,46 @@ class DatabaseSync(object):
         del PP
         return sync_status
 
+    def sync_missing_records_single_product(self, product, dry_run=True, force=False):
+        """
+            this function synchronizes missing records for single product
+        """
+        if type(product) is not Product:
+            self.logger.error("Product type missmatch. {0} is not type of: {1}".format(product, Product))
+            return False
+        PP = ProdaProcess(product, self.log_file, self.log_level)
+        PP.log_process_list()
+        PP.initialize_proda_connection(self.proda_connection_string)
+        sync_status = PP.push_missing_records_to_proda(dry_run=dry_run, force=force)
+        del PP
+        return sync_status
+
+    def delete_single_product(self, product, dry_run=True, force=False):
+        """
+            this function deletes single product from tracedb including corresponding statuses and operations. 
+        """
+        if type(product) is not Product:
+            self.logger.error("Product type missmatch. {0} is not type of: {1}".format(product, Product))
+            return False
+
+        #self.logger.error("Product: type missmatch. {0} is not type of: {1}".format(product, Product))
+        overall_status = True
+
+        for obj in product.operations:  # remove operations
+            db.session.delete(obj)
+
+        for obj in product.statuses:  # remove statuses
+            db.session.delete(obj)
+            
+        db.session.delete(product)  # remove product
+
+        if dry_run is True:
+            db.session.rollback()
+        else:
+            db.session.commit()  # save changes to tracedb
+        
+        return overall_status
+        
     def set_sync_ready_flag(self, product, dry_run=True, force=False):
         """
             Resets prodasync value for statuses, operation and product.
@@ -214,19 +254,111 @@ class DatabaseSync(object):
         items = query.all()
 
         self.logger.info("About to execute sync for: {number} of products now. Dry_run: {dry_run}.".format(number=len(items), dry_run=dry_run))
+        # reset counters
+        self.sync_success_count = self.sync_failed_count = 0
         
         # sync products one by one and count the results.
         for item in items:
-            self.logger.info("Product: {id} PRODA_SN: {proda_sn}: PRODA_SYNC_STAT: {prodasync} Starting sync.".format(id=item.id, type=item.type, sn=item.serial, proda_sn=item.proda_serial, prodasync=item.prodasync))
+            self.logger.info("Product: {id}: PRODA_SN: {proda_sn}: PRODA_SYNC_STAT: {prodasync} Starting sync.".format(id=item.id, type=item.type, sn=item.serial, proda_sn=item.proda_serial, prodasync=item.prodasync))
             status = self.sync_single_product(item, dry_run=dry_run, force=force)
             if status is True:
                 self.sync_success_count += 1
-                self.logger.info("Product: {id} PRODA_SN: {proda_sn}: PRODA_SYNC_STAT: {prodasync} Sync completed successfully.".format(id=item.id, type=item.type, sn=item.serial, proda_sn=item.proda_serial, prodasync=item.prodasync))
+                self.logger.info("Product: {id}: PRODA_SN: {proda_sn}: PRODA_SYNC_STAT: {prodasync} Sync completed successfully.".format(id=item.id, type=item.type, sn=item.serial, proda_sn=item.proda_serial, prodasync=item.prodasync))
             else:
                 self.sync_failed_count += 1
-                self.logger.error("Product: {id} PRODA_SN: {proda_sn}: PRODA_SYNC_STAT: {prodasync} Sync has failed.".format(id=item.id, type=item.type, sn=item.serial, proda_sn=item.proda_serial, prodasync=item.prodasync))
+                self.logger.error("Product: {id}: PRODA_SN: {proda_sn}: PRODA_SYNC_STAT: {prodasync} Sync has failed.".format(id=item.id, type=item.type, sn=item.serial, proda_sn=item.proda_serial, prodasync=item.prodasync))
 
         self.logger.info("Sync of {success}/{number} products finished successfully in {time}. Number of products that failed sync: {failed}/{number}. Dry_run: {dry_run}.".format(number=len(items), failed=self.sync_failed_count, success=self.sync_success_count, time=datetime.datetime.now()-self.time_started, dry_run=dry_run))
+
+    def remove_old_records(self, dry_run=True, force=False, start_date=None, end_date=None, limit=0, wabco_number=0, serial=0):
+        """
+            This function removes old records from tracedb.
+            Only products with proda sync status 1 (OK) will be removed (unless force mode is used). 
+        """
+
+        self.logger.info("Looking for products to remove. Start_date: {0} End_date: {1} Limit: {2} Wabco_number: {3} Dry_Run: {4} Force: {5} ".format(start_date, end_date, limit, wabco_number,  dry_run, force))
+
+        query = Product.query.order_by(Product.date_added.desc())
+        if wabco_number > 0:
+            query = query.filter_by(type=wabco_number)
+        if serial > 0:
+            query = query.filter_by(serial=serial)
+        if force is not True:
+            query = query.filter(Product.prodasync == 1)
+        if start_date is not None:
+            query = query.filter(Product.date_added > start_date)
+        if end_date is not None:
+            query = query.filter(Product.date_added < end_date)
+        if limit > 0:
+            query = query.limit(limit)
+        candidates = query.all()
+
+        #candidates = filter(lambda x: x.status_unsynced_count == 0, candidates)  # take records that are fully synchronized only.
+
+        self.logger.info("Found: {n} products to remove. Dry_run: {dry_run}".format(n=len(candidates), dry_run=dry_run)) 
+        for candidate in candidates:
+            self.logger.info("Product to remove: Id: {id} Type: {type} Serial: {sn} Date Added: {date} Proda_Sync: {sync} Status Count: {status_good:02d}/{status_all:02d} Operation Count: {operations_good:02d}/{operations_all:02d}".format(id=candidate.id, type=candidate.type, sn=candidate.serial, date=candidate.date_added, sync=candidate.prodasync, status_good=candidate.status_count_good, status_all=candidate.status_count, operations_good=candidate.operation_count_good, operations_all=candidate.operation_count))
+        # reset counters
+        removal_success_count = removal_failed_count = 0
+
+        # sync products one by one and count the results.
+        for item in candidates:
+            #self.logger.info("Product: {id}: PRODA_SN: {proda_sn}: PRODA_SYNC_STAT: {prodasync} removing.".format(id=item.id, type=item.type, sn=item.serial, proda_sn=item.proda_serial, prodasync=item.prodasync))
+            status = self.delete_single_product(item, dry_run=dry_run, force=force)
+            if status is True:
+                removal_success_count += 1
+                self.logger.info("Product: {id}: PRODA_SN: {proda_sn}: PRODA_SYNC_STAT: {prodasync} removal succeed.".format(id=item.id, type=item.type, sn=item.serial, proda_sn=item.proda_serial, prodasync=item.prodasync))
+            else:
+                removal_failed_count += 1
+                self.logger.error("Product: {id}: PRODA_SN: {proda_sn}: PRODA_SYNC_STAT: {prodasync} removal failed.".format(id=item.id, type=item.type, sn=item.serial, proda_sn=item.proda_serial, prodasync=item.prodasync))
+
+        self.logger.info("Removal of {success}/{number} products finished successfully in {time}. Number of products that failed to remove: {failed}/{number}. Dry_run: {dry_run}.".format(number=len(candidates), failed=removal_failed_count, success=removal_success_count, time=datetime.datetime.now()-self.time_started, dry_run=dry_run))
+
+    def sync_missing_records(self, dry_run=True, force=False, start_date=None, end_date=None, limit=0, wabco_number=0, serial=0):
+        """
+            This function finds new records (operations and statuses) which are not yet synced to PRODA. 
+            Only products with status 1 or 2 (OK or NOK) will be considered (unless force mode is used).
+        """
+
+        self.logger.info("Looking for products to remove. Start_date: {0} End_date: {1} Limit: {2} Wabco_number: {3} Dry_Run: {4} Force: {5} ".format(start_date, end_date, limit, wabco_number,  dry_run, force))
+
+        query = db.session.query(Product).order_by(Product.date_added.desc())
+        # query = query.filter(Product.status_unsynced_count > 0)  # filter products with unsynchronized statuses only DOES NOT WORK. TODO: FIXME
+        if wabco_number > 0:
+            query = query.filter_by(type=wabco_number)
+        if serial > 0:
+            query = query.filter_by(serial=serial)
+        if force is not True:
+            query = query.filter((Product.prodasync == 1) | (Product.prodasync == 2))  # TODO: check why it does not find products with prodasync value eq 2
+        if start_date is not None:
+            query = query.filter(Product.date_added > start_date)
+        if end_date is not None:
+            query = query.filter(Product.date_added < end_date)
+        if limit > 0:
+            query = query.limit(limit)
+        candidates = query.all()
+        
+        
+        candidates = filter(lambda x: x.status_unsynced_count > 0, candidates)  # remove candidates with all status synchronized: TODO make it with query filters:
+        
+        self.logger.info("Found: {n} products to check for missing records. Dry_run: {dry_run}".format(n=len(candidates), dry_run=dry_run)) 
+        for candidate in candidates:
+            self.logger.info("Product to update: Id: {id} Type: {type} Serial: {sn} Date Added: {date} Proda_Sync: {sync} Desync Status Count: {status_unsynced:02d}/{status_all:02d} Desync Operation Count: {operations_unsynced:02d}/{operations_all:02d}".format(id=candidate.id, type=candidate.type, sn=candidate.serial, date=candidate.date_added, sync=candidate.prodasync, status_good=candidate.status_count_good, status_all=candidate.status_count, status_unsynced=candidate.status_unsynced_count, operations_good=candidate.operation_count_good, operations_all=candidate.operation_count, operations_unsynced=candidate.operation_unsynced_count))
+        # reset counters
+        self.sync_success_count = self.sync_failed_count = 0
+
+        # sync products one by one and count the results.
+        for item in candidates:
+            self.logger.info("Product: {id}: PRODA_SN: {proda_sn}: PRODA_SYNC_STAT: {prodasync} Starting sync.".format(id=item.id, type=item.type, sn=item.serial, proda_sn=item.proda_serial, prodasync=item.prodasync))
+            status = self.sync_missing_records_single_product(item, dry_run=dry_run, force=force)
+            if status is True:
+                self.sync_success_count += 1
+                self.logger.info("Product: {id}: PRODA_SN: {proda_sn}: PRODA_SYNC_STAT: {prodasync} Sync missing records completed successfully.".format(id=item.id, type=item.type, sn=item.serial, proda_sn=item.proda_serial, prodasync=item.prodasync))
+            else:
+                self.sync_failed_count += 1
+                self.logger.error("Product: {id}: PRODA_SN: {proda_sn}: PRODA_SYNC_STAT: {prodasync} Sync missing records has failed.".format(id=item.id, type=item.type, sn=item.serial, proda_sn=item.proda_serial, prodasync=item.prodasync))
+
+        self.logger.info("Sync of {success}/{number} products finished successfully in {time}. Number of products that failed sync: {failed}/{number}. Dry_run: {dry_run}.".format(number=len(candidates), failed=self.sync_failed_count, success=self.sync_success_count, time=datetime.datetime.now()-self.time_started, dry_run=dry_run))
 
 
 class ProdaProcess(object):
@@ -307,6 +439,61 @@ class ProdaProcess(object):
     def log_process_list(self):
         self.logger.info("Product: {product}: process list: {process_list}".format(product=self.product.id, process_list=self.get_process_list()))
 
+    def remove_old_records_from_tracedb(self, dry_run=True, force=False):
+        # TODO: check if this function is needed.
+        pass
+
+    def push_missing_records_to_proda(self, dry_run=True, force=False):
+        if self.proda_connection_string is None:
+            self.logger.error("Product: {product}: Proda Connection not ready: {proda_connection} connection_string: {proda_connection_string}".format(product=self.product.id, proda_connection=self.proda_connection, proda_connection_string=self.proda_connection_string))
+            return False
+        
+        connection = cx_Oracle.connect(self.proda_connection_string)
+        cursor = connection.cursor()
+        overall_status = True
+        pushed_objects_counter = 0
+        cursor.execute("alter session set NLS_NUMERIC_CHARACTERS='.,'")  # make sure to use dot as a decimal number separator. It can be also enforced by environment variable: NLS_LANG-"American_America.UTF8".
+
+        for ps in self.process_steps:
+            self.logger.debug("Product: {product}: PS: {process_step} Status {status} Prodasync: {prodasync} DryRun: {dry_run} Force: {force}".format(product=self.product.id, process_step=ps['ps_sequence'], status=ps['ps_status'], prodasync=ps['status_object'].prodasync, insert=ps['insert'], dry_run=dry_run, force=force))
+            if ps['status_object'].prodasync != 0:  # take status objects with default value only
+                self.logger.debug("Product: {product}: PS: {process_step} skipped to sync due to Prodasync value: {prodasync} DryRun: {dry_run} Force: {force}".format(product=self.product.id, process_step=ps['ps_sequence'], status=ps['ps_status'], prodasync=ps['status_object'].prodasync, insert=ps['insert'], dry_run=dry_run, force=force))
+                continue  # skip this process step. Only prodasync==0 are newly added statuses and are allowed to sync.. 
+            
+            pushed_objects_counter += 1
+            try:
+                cursor.execute(ps['insert'])
+                if dry_run is True:
+                    connection.rollback()
+                else:
+                    connection.commit()
+            except cx_Oracle.DatabaseError as ex:
+                self.logger.error("Product: {product}: PS: {process_step}, error: {e}".format(product=self.product.id, process_step=ps['station_id'], e=ex, insert=ps['insert']))
+                self.logger.debug("Product: {product}: PS: {process_step}, Fatal insert: {insert}".format(product=self.product.id, process_step=ps['station_id'], e=ex, insert=ps['insert']))
+                connection.rollback()
+                overall_status = False
+                # save proda sync status in operations and status tables in tracedb
+                ps['status_object'].prodasync = 2
+                for op in ps['operations']:
+                    op.prodasync = 2
+            else:  # successful insert  - update tracedb accordingly
+                ps['status_object'].prodasync = 1
+                for op in ps['operations']:
+                    op.prodasync = 1
+            # save or rollback changes in tracedb
+            if dry_run is True:
+                db.session.rollback()
+            else:
+                db.session.commit()  # sync prodasync status to tracedb
+
+        self.logger.info("Product: {product}: sync finished with status: {overall_status}. Updated objects count: {pushed_objects_counter} Prodasync: {prodasync} DryRun: {dry_run} Force: {force}".format(product=self.product.id, prodasync=self.product.prodasync , dry_run=dry_run, force=force, overall_status=overall_status, pushed_objects_counter=pushed_objects_counter))
+        # cleanup proda db handlers.
+        cursor.close()
+        connection.close()
+        
+        return overall_status
+
+
     def push_to_proda(self, dry_run=True, force=False):
         if self.proda_connection_string is None:
             self.logger.error("Product: {product}: Proda Connection not ready: {proda_connection} connection_string: {proda_connection_string}".format(product=self.product.id, proda_connection=self.proda_connection, proda_connection_string=self.proda_connection_string))
@@ -316,7 +503,7 @@ class ProdaProcess(object):
         cursor = connection.cursor()
         overall_status = True
         pushed_objects_counter = 0
-        cursor.execute("alter session set NLS_NUMERIC_CHARACTERS='.,'")  # make sure to use dot as a deciman number separator. It can be also enforced by environment variable: NLS_LANG-"American_America.UTF8".
+        cursor.execute("alter session set NLS_NUMERIC_CHARACTERS='.,'")  # make sure to use dot as a decimal number separator. It can be also enforced by environment variable: NLS_LANG-"American_America.UTF8".
         
         for ps in self.process_steps:
             self.logger.debug("Product: {product}: PS: {process_step} Status {status} Prodasync: {prodasync} DryRun: {dry_run} Force: {force}".format(product=self.product.id, process_step=ps['ps_sequence'], status=ps['ps_status'], prodasync=ps['status_object'].prodasync, insert=ps['insert'], dry_run=dry_run, force=force))
