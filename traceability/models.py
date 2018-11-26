@@ -10,7 +10,7 @@ from flask_login import UserMixin
 from . import db
 logger = logging.getLogger(__name__)
 
-__version__ = '0.7.4'
+__version__ = '0.7.5'
 
 
 class User(UserMixin, db.Model):
@@ -175,6 +175,11 @@ class Product(db.Model):
         return datetime.strptime(self.date_time, "%Y-%m-%d %H:%M:%S.%f")
 
     @property
+    def status_unsynced_count(self):
+        """ Return number of unsynchronized statuses """
+        return self.statuses.filter(Status.prodasync==0).count()  
+
+    @property
     def status_count(self):
         """ Return number statuses """
         return self.statuses.count()  
@@ -189,6 +194,11 @@ class Product(db.Model):
         """ Return number of bad statuses """
         return self.statuses.filter(Status.status==2).count()
 
+    @property
+    def operation_unsynced_count(self):
+        """ Return number of unsynchronized operations """
+        return self.operations.filter(Operation.prodasync==0).count()  
+    
     @property
     def operation_count(self):
         """ Return number operations """
