@@ -136,25 +136,30 @@ hidden_imports = [
     "os",
     "sys",
     "pkg_resources",
+    "dateparser",
+    "_strptime",
+    "dateparser.utils.strptime",
 ]
 
 zip_includes = [
 ]
 
 include_files = [
-     "log",
-     "locale",
+    "log",
+    "locale",
     "prodLineTrace.conf",
     "prodLineTrace.ico",
     "dll/snap7.dll",
     "prodLineTrace.xrc",
     "tool/prodllng.dll",
-    "tool/psark.exe",
+    "proda_sync.py",
     "proda_sync.conf",
     "logrotate.cmd",
-    ("tool/sqlitebrowser.exe", "sqlitebrowser.exe"),
     ("tool/clientdemo.exe", "clientdemo.exe"),
 ]
+
+from dateparser.utils import strptime
+strptime.patch_strptime()
 
 exclude_imports = [
     "tkinter", 
@@ -171,12 +176,12 @@ exclude_imports = [
 
 # Dependencies are automatically detected, but it might need fine tuning.
 build_exe_options = {
-                     "packages": hidden_imports,
-                     "excludes": exclude_imports,
-                     "includes": ["plc", "flask"],
-                     "include_files": include_files,
-                     'include_msvcr': True,
-                     'zip_includes': zip_includes,
+    "packages": hidden_imports,
+    "excludes": exclude_imports,
+    "includes": ["plc", "flask"],
+    "include_files": include_files,
+    'include_msvcr': True,
+    'zip_includes': zip_includes,
 }
 
 # http://msdn.microsoft.com/en-us/library/windows/desktop/aa371847(v=vs.85).aspx
@@ -185,18 +190,18 @@ icon_table = [
 ]
 
 shortcut_table = [(
-     "DesktopShortcut",        # Shortcut
-     "DesktopFolder",          # Directory_
-     "ProdLineTrace",           # Name
-     "TARGETDIR",              # Component_
-     "[TARGETDIR]prodLineTrace.exe",# Target
-     None,                     # Arguments
-     SHORT_DESCRIPTION,                     # Description
-     None,                     # Hotkey
-     None,                     # Icon
-     None,                     # IconIndex
-     None,                     # ShowCmd
-     'TARGETDIR'               # WkDir
+    "DesktopShortcut",        # Shortcut
+    "DesktopFolder",          # Directory_
+    "ProdLineTrace",           # Name
+    "TARGETDIR",              # Component_
+    "[TARGETDIR]prodLineTrace.exe",# Target
+    None,                     # Arguments
+    SHORT_DESCRIPTION,                     # Description
+    None,                     # Hotkey
+    None,                     # Icon
+    None,                     # IconIndex
+    None,                     # ShowCmd
+    'TARGETDIR'               # WkDir
 )]
 msi_data = {"Shortcut": shortcut_table}
 bdist_msi_options = {
