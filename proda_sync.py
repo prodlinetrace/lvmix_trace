@@ -77,12 +77,12 @@ def parse_args():
     parser_list_products = subparsers.add_parser('list-products', help="List most recent products from tracedb")
     parser_list_products.add_argument('--limit', required=False, type=int, default=10, help='Limit number of returned records. Use 0 to look for all.')
     parser_list_products.add_argument('--prodasync', required=False, type=int, default=-1, help='prodasync value. Use -1 or leave undefined to look for all.')
-    parser_list_products.add_argument('wabco_number', type=int, default=4640061000, help='wabco_number / type to look for. Use 0 to looks for all.')
+    parser_list_products.add_argument('wabco-number', type=int, default=4640061000, help='wabco-number / type to look for. Use 0 to looks for all.')
     
     parser_sync_one = subparsers.add_parser('sync-one', help="Sync one selected product from tracedb to proda")
     parser_sync_one.add_argument('--force', action='store_true', default=False, help='Enforce sync even if product status non zero (already synced).')
     parser_sync_one.add_argument('--dry-run', action='store_true', default=False, help='do not really commit any changes to databases.')
-    parser_sync_one.add_argument('wabco_number', type=int, default=4640061000, help='wabco_number to sync')
+    parser_sync_one.add_argument('wabco-number', type=int, default=4640061000, help='wabco-number to sync')
     parser_sync_one.add_argument('serial', type=int, default=123456, help='serial to sync')
     
     #{prog_name} sync-all --start-time --end-time --wabco-number --limit
@@ -93,7 +93,7 @@ def parse_args():
     parser_sync_all.add_argument('--start-date', default=None, help='Please specify start time for sync. Format: YYYY-MM-DD HH:MM:SS. Also dateparser formats are accepted, eg. "2 weeks ago". See: https://dateparser.readthedocs.io/en/latest/', type=valid_date)
     parser_sync_all.add_argument('--end-date', default=None, help='Please specify start time for sync. Format: YYYY-MM-DD HH:MM:SS Also dateparser formats are accepted, eg. "3 months, 1 week and 1 day ago". See: https://dateparser.readthedocs.io/en/latest/', type=valid_date)
     parser_sync_all.add_argument('--limit', type=int, default=0, help='Limit number of records. Use 0 - for all (default).')
-    parser_sync_all.add_argument('--wabco_number', type=int, default=0, help='limit to specific wabco_number. Use 0 - for all (default).')
+    parser_sync_all.add_argument('--wabco-number', type=int, default=0, help='limit to specific wabco-number. Use 0 - for all (default).')
     
     #{prog_name} remove-old-records --start-date --end-date --wabco-number --serial --limit
     parser_remove_old_records = subparsers.add_parser('remove-old-records')
@@ -102,7 +102,7 @@ def parse_args():
     parser_remove_old_records.add_argument('--start-date', default=None, help='Please specify start time for sync. Format: YYYY-MM-DD HH:MM:SS. Also dateparser formats are accepted, eg. "2 weeks ago". See: https://dateparser.readthedocs.io/en/latest/', type=valid_date)
     parser_remove_old_records.add_argument('--end-date', default=None, help='Please specify start time for sync. Format: YYYY-MM-DD HH:MM:SS Also dateparser formats are accepted, eg. "3 months, 1 week and 1 day ago". See: https://dateparser.readthedocs.io/en/latest/', type=valid_date)
     parser_remove_old_records.add_argument('--limit', type=int, default=0, help='Limit number of records. Use 0 - for all (default).')
-    parser_remove_old_records.add_argument('--wabco_number', type=int, default=0, help='limit to specific wabco_number. Use 0 - for all (default).')
+    parser_remove_old_records.add_argument('--wabco-number', type=int, default=0, help='limit to specific wabco-number. Use 0 - for all (default).')
     parser_remove_old_records.add_argument('--serial', type=int, default=0, help='limit to specific serial (use six digit format). Use 0 - for all (default).')
 
     #{prog_name} sync-missing --start-date --end-date --wabco-number --serial --limit
@@ -112,7 +112,7 @@ def parse_args():
     parser_sync_missing_records.add_argument('--start-date', default=None, help='Please specify start time for sync. Format: YYYY-MM-DD HH:MM:SS. Also dateparser formats are accepted, eg. "2 weeks ago". See: https://dateparser.readthedocs.io/en/latest/', type=valid_date)
     parser_sync_missing_records.add_argument('--end-date', default=None, help='Please specify start time for sync. Format: YYYY-MM-DD HH:MM:SS Also dateparser formats are accepted, eg. "3 months, 1 week and 1 day ago". See: https://dateparser.readthedocs.io/en/latest/', type=valid_date)
     parser_sync_missing_records.add_argument('--limit', type=int, default=0, help='Limit number of records. Use 0 - for all (default).')
-    parser_sync_missing_records.add_argument('--wabco_number', type=int, default=0, help='limit to specific wabco_number. Use 0 - for all (default).')
+    parser_sync_missing_records.add_argument('--wabco-number', type=int, default=0, help='limit to specific wabco-number. Use 0 - for all (default).')
     parser_sync_missing_records.add_argument('--serial', type=int, default=0, help='limit to specific serial (use six digit format). Use 0 - for all (default).')
     
     args = parser.parse_args(remainder_argv)
