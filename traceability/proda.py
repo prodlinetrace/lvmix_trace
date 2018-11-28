@@ -569,7 +569,7 @@ class ProdaProcess(object):
             ps['ps_date_added'] = status.date_time
             ps['ps_end_time'] = datetime.datetime.strptime(ps['ps_date_added'], "%Y-%m-%d %H:%M:%S.%f")
             ps['ps_end_time_proda_string'] = "to_date('{0}','YYYY-MM-DD HH24:MI:SS')".format(ps['ps_end_time'].strftime("%Y-%m-%d %H:%M:%S"))
-            ps['ps_start_time_proda_string'] = "to_date('{0}','YYYY-MM-DD HH24:MI:SS')".format((ps['ps_end_time'] - datetime.timedelta(minutes=1,seconds=1)).strftime("%Y-%m-%d %H:%M:%S"))  # by default process last 61 seconds
+            ps['ps_start_time_proda_string'] = ps['ps_end_time_proda_string']  # by default process last 0 seconds - start time equals end time.
             #ps['process_start_time'] = ''
             ps['process_start_time_proda_string'] = 'null'
             #ps['process_end_time'] = ''
@@ -605,7 +605,7 @@ class ProdaProcess(object):
             
             if status.station_id in [61]:
                 pass
-                # TODO: implemnt comment - analysis
+                # TODO: implement comment - analysis
             
             # process operation results
             operations = filter(lambda x: x.station_id == status.station_id, self.operations)  # filter operations with matching station_id
