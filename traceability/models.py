@@ -10,7 +10,7 @@ from flask_login import UserMixin
 from . import db
 logger = logging.getLogger(__name__)
 
-__version__ = '0.7.5'
+__version__ = '0.7.6'
 
 
 class User(UserMixin, db.Model):
@@ -218,7 +218,19 @@ class Product(db.Model):
     def electronic_stamp(self):
         """ Return Electronic Stamp"""
         st55 = self.statuses.filter(Status.station_id==55).order_by(Status.id.desc()).first()
-        return st55 
+        return st55
+    
+    @property
+    def processing_time(self):
+        st11 = self.statuses.filter(Status.station_id==11).order_by(Status.id.desc()).first()
+        st55 = self.statuses.filter(Status.station_id==55).order_by(Status.id.desc()).first()
+        if st11 is None or st55 is None:
+            return None 
+        end_time = datetime.strptime(st55.date_time, "%Y-%m-%d %H:%M:%S.%f")
+        start_time = datetime.strptime(st11.date_time, "%Y-%m-%d %H:%M:%S.%f")
+
+        return end_time - start_time
+
 
 class Station(db.Model):
     __tablename__ = 'station'
