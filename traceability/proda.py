@@ -53,12 +53,16 @@ class DatabaseSync(object):
     def get_conf_file_name(self):
         return self._opts.config
 
-    def list_sync_candidates(self, wabco_number=4640061000, limit=10, proda_sync=-1):
+    def list_sync_candidates(self, wabco_number=4640061000, limit=10, proda_sync=-1, start_date=None, end_date=None):
         query = Product.query.order_by(Product.date_added.desc())
         if proda_sync > -1:
             query = query.filter_by(prodasync=proda_sync)
         if wabco_number > 0:
             query = query.filter_by(type=wabco_number)
+        if start_date is not None:
+            query = query.filter(Product.date_added > start_date)
+        if end_date is not None:
+            query = query.filter(Product.date_added < end_date)
         if limit > 0:
             query = query.limit(limit)
             

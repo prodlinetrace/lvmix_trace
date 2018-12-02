@@ -77,12 +77,14 @@ def parse_args():
     parser_list_products = subparsers.add_parser('list-products', help="List most recent products from tracedb")
     parser_list_products.add_argument('--limit', required=False, type=int, default=10, help='Limit number of returned records. Use 0 to look for all.')
     parser_list_products.add_argument('--prodasync', required=False, type=int, default=-1, help='prodasync value. Use -1 or leave undefined to look for all.')
-    parser_list_products.add_argument('wabco-number', type=int, default=4640061000, help='wabco-number / type to look for. Use 0 to looks for all.')
+    parser_list_products.add_argument('--start-date', default=None, help='Please specify start time for sync. Format: YYYY-MM-DD HH:MM:SS. Also dateparser formats are accepted, eg. "2 weeks ago". See: https://dateparser.readthedocs.io/en/latest/', type=valid_date)
+    parser_list_products.add_argument('--end-date', default=None, help='Please specify start time for sync. Format: YYYY-MM-DD HH:MM:SS Also dateparser formats are accepted, eg. "3 months, 1 week and 1 day ago". See: https://dateparser.readthedocs.io/en/latest/', type=valid_date)
+    parser_list_products.add_argument('wabco_number', type=int, default=4640061000, help='wabco-number / type to look for. Use 0 to looks for all.')
     
     parser_sync_one = subparsers.add_parser('sync-one', help="Sync one selected product from tracedb to proda")
     parser_sync_one.add_argument('--force', action='store_true', default=False, help='Enforce sync even if product status non zero (already synced).')
     parser_sync_one.add_argument('--dry-run', action='store_true', default=False, help='do not really commit any changes to databases.')
-    parser_sync_one.add_argument('wabco-number', type=int, default=4640061000, help='wabco-number to sync')
+    parser_sync_one.add_argument('wabco_number', type=int, default=4640061000, help='wabco-number to sync')
     parser_sync_one.add_argument('serial', type=int, default=123456, help='serial to sync')
     
     #{prog_name} sync-all --start-time --end-time --wabco-number --limit
@@ -130,7 +132,7 @@ def main():
     dbsync = DatabaseSync(arg_map)
     
     def list_products():
-        dbsync.list_sync_candidates(wabco_number=arg_map['wabco_number'], limit=arg_map['limit'], proda_sync=arg_map['prodasync'])
+        dbsync.list_sync_candidates(wabco_number=arg_map['wabco_number'], limit=arg_map['limit'], proda_sync=arg_map['prodasync'], start_date=arg_map['start_date'], end_date=arg_map['end_date'])
     
     def sync_one():
         product = dbsync.get_one_product(wabco_number=arg_map['wabco_number'], serial=arg_map['serial'])
