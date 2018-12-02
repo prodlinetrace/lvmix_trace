@@ -1,5 +1,6 @@
 import logging
 import datetime
+import dateutil.parser
 import itertools
 import textwrap
 import cx_Oracle
@@ -567,7 +568,7 @@ class ProdaProcess(object):
             ps['status_object'] = status
             ps['ps_status'] = StatusCodeConverter.tace_to_wabco_status(status.status)  # save process_step status
             ps['ps_date_added'] = status.date_time
-            ps['ps_end_time'] = datetime.datetime.strptime(ps['ps_date_added'], "%Y-%m-%d %H:%M:%S.%f")
+            ps['ps_end_time'] = dateutil.parser.parse(ps['ps_date_added'])
             ps['ps_end_time_proda_string'] = "to_date('{0}','YYYY-MM-DD HH24:MI:SS')".format(ps['ps_end_time'].strftime("%Y-%m-%d %H:%M:%S"))
             ps['ps_start_time_proda_string'] = ps['ps_end_time_proda_string']  # by default process last 0 seconds - start time equals end time.
             #ps['process_start_time'] = ''
@@ -575,10 +576,10 @@ class ProdaProcess(object):
             #ps['process_end_time'] = ''
             ps['process_end_time_proda_string'] = 'null'
             if ps['station_id'] == 11:  # station 11 defines process start time
-                ps['process_start_time'] = datetime.datetime.strptime(ps['ps_date_added'], "%Y-%m-%d %H:%M:%S.%f")
+                ps['process_start_time'] = dateutil.parser.parse(ps['ps_date_added'])
                 ps['process_start_time_proda_string'] = "to_date('{0}','YYYY-MM-DD HH24:MI:SS')".format(ps['process_start_time'].strftime("%Y-%m-%d %H:%M:%S"))
             if ps['station_id'] == 55:  # station 55 defines process end time
-                ps['process_end_time'] = datetime.datetime.strptime(ps['ps_date_added'], "%Y-%m-%d %H:%M:%S.%f")
+                ps['process_end_time'] = dateutil.parser.parse(ps['ps_date_added'])
                 ps['process_end_time_proda_string'] = "to_date('{0}','YYYY-MM-DD HH24:MI:SS')".format(ps['process_end_time'].strftime("%Y-%m-%d %H:%M:%S"))
 
             ps_sequence = status.station_id
@@ -611,7 +612,7 @@ class ProdaProcess(object):
             operations = filter(lambda x: x.station_id == status.station_id, self.operations)  # filter operations with matching station_id
             # filter out operations with with time difference bigger than 360 seconds. 
             time_diff_limit = 360  # time diff limit in seconds status_datetime vs operation_datetime
-            operations = filter(lambda x: (ps['ps_end_time'] - datetime.datetime.strptime(x.date_time, "%Y-%m-%d %H:%M:%S.%f")).seconds < time_diff_limit, operations)
+            operations = filter(lambda x: (ps['ps_end_time'] - dateutil.parser.parse(x.date_time)).seconds < time_diff_limit, operations)
             
             # find operations with duplicate operation_type_id and group them
             lists = [list(v) for k,v in itertools.groupby(sorted(operations, key=lambda y: y.operation_type_id), lambda x: x.operation_type_id)]
@@ -619,7 +620,7 @@ class ProdaProcess(object):
             for items_groupped_by_operation_type_id in lists:
                 if len(items_groupped_by_operation_type_id) > 1:  # this means that there is more tham one item with same operation_type_id
                     # find item with closest operation date 
-                    item_with_closest_operation_date = min(items_groupped_by_operation_type_id, key=lambda x: (ps['ps_end_time'] - datetime.datetime.strptime(x.date_time, "%Y-%m-%d %H:%M:%S.%f")).seconds)
+                    item_with_closest_operation_date = min(items_groupped_by_operation_type_id, key=lambda x: (ps['ps_end_time'] - dateutil.parser.parse(x.date_time)).seconds)
                 else:
                     item_with_closest_operation_date = items_groupped_by_operation_type_id[0] 
                 operations.append(item_with_closest_operation_date)
@@ -628,7 +629,7 @@ class ProdaProcess(object):
             # find oldest operation and use it as: ps_start_time
             if operations:
                 oldest_operation_date = min(operations, key=lambda x: x.date_time).date_time
-                ps['ps_start_time'] = datetime.datetime.strptime(oldest_operation_date, "%Y-%m-%d %H:%M:%S.%f")
+                ps['ps_start_time'] = dateutil.parser.parse(oldest_operation_date)
                 ps['ps_start_time_proda_string'] = "to_date('{0}','YYYY-MM-DD HH24:MI:SS')".format(ps['ps_start_time'].strftime("%Y-%m-%d %H:%M:%S"))
                 
             
