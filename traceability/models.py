@@ -1,6 +1,7 @@
 import hashlib
 import bleach
 import logging
+import dateutil.parser
 from markdown import markdown
 from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -10,7 +11,7 @@ from flask_login import UserMixin
 from . import db
 logger = logging.getLogger(__name__)
 
-__version__ = '0.7.6'
+__version__ = '0.7.7'
 
 
 class User(UserMixin, db.Model):
@@ -172,7 +173,7 @@ class Product(db.Model):
 
     @property
     def datetime(self):
-        return datetime.strptime(self.date_time, "%Y-%m-%d %H:%M:%S.%f")
+        return dateutil.parser.parse(self.date_time)
 
     @property
     def status_unsynced_count(self):
@@ -226,8 +227,8 @@ class Product(db.Model):
         st55 = self.statuses.filter(Status.station_id==55).order_by(Status.id.desc()).first()
         if st11 is None or st55 is None:
             return None 
-        end_time = datetime.strptime(st55.date_time, "%Y-%m-%d %H:%M:%S.%f")
-        start_time = datetime.strptime(st11.date_time, "%Y-%m-%d %H:%M:%S.%f")
+        end_time = dateutil.parser.parse(st55.date_time)
+        start_time = dateutil.parser.parse(st11.date_time)
 
         return end_time - start_time
 
@@ -307,7 +308,7 @@ class Status(db.Model):
 
     @property
     def datetime(self):
-        return datetime.strptime(self.date_time, "%Y-%m-%d %H:%M:%S.%f")
+        return dateutil.parser.parse(self.date_time)
 
     @property
     def operations(self):
@@ -319,7 +320,7 @@ class Status(db.Model):
         # filter operations with matching station_id
         operations = filter(lambda x: x.station_id == self.station_id, self.product.operations.all())  
         # filter out operations with with time difference bigger than 360 seconds.
-        operations = filter(lambda x: (self.datetime - datetime.strptime(x.date_time, "%Y-%m-%d %H:%M:%S.%f")).seconds < time_diff_limit, operations)
+        operations = filter(lambda x: (self.datetime - dateutil.parser.parse(x.date_time)).seconds < time_diff_limit, operations)
         
         # find operations with duplicate operation_type_id and group them
         import itertools
@@ -328,7 +329,7 @@ class Status(db.Model):
         for items_groupped_by_operation_type_id in lists:
             if len(items_groupped_by_operation_type_id) > 1:  # this means that there is more tham one item with same operation_type_id
                 # find item with closest operation date 
-                item_with_closest_operation_date = min(items_groupped_by_operation_type_id, key=lambda x: (self.datetime - datetime.strptime(x.date_time, "%Y-%m-%d %H:%M:%S.%f")).seconds)
+                item_with_closest_operation_date = min(items_groupped_by_operation_type_id, key=lambda x: (self.datetime - dateutil.parser.parse(x.date_time)).seconds)
             else:
                 item_with_closest_operation_date = items_groupped_by_operation_type_id[0] 
             operations.append(item_with_closest_operation_date)
@@ -387,7 +388,7 @@ class Operation(db.Model):
 
     @property
     def datetime(self):
-        return datetime.strptime(self.date_time, "%Y-%m-%d %H:%M:%S.%f")
+        return dateutil.parser.parse(self.date_time)
 
     @property
     def serialize(self):
