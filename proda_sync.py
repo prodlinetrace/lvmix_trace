@@ -112,7 +112,7 @@ def parse_args():
 
     #{prog_name} sync-missing --start-date --end-date --wabco-number --serial --limit
     parser_sync_missing_records = subparsers.add_parser('sync-missing-records')
-    parser_sync_missing_records.add_argument('--force', action='store_true', default=False, help='Enforce sync even if product status non zero (already synced).')
+    parser_sync_missing_records.add_argument('--force', action='store_true', default=False, help='Enforce sync of missing items (statuses or operations) even if product.prodasync status is 0 or 9. By default product.prodasync has to be 1 or 2.')
     parser_sync_missing_records.add_argument('--dry-run', action='store_true', default=False, help='do not really commit any changes to databases.')
     parser_sync_missing_records.add_argument('--start-date', default=None, help='Please specify start time for sync. Format: YYYY-MM-DD HH:MM:SS. Also dateparser formats are accepted, eg. "2 weeks ago". See: https://dateparser.readthedocs.io/en/latest/', type=valid_date)
     parser_sync_missing_records.add_argument('--end-date', default=None, help='Please specify start time for sync. Format: YYYY-MM-DD HH:MM:SS Also dateparser formats are accepted, eg. "3 months, 1 week and 1 day ago". See: https://dateparser.readthedocs.io/en/latest/', type=valid_date)

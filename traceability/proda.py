@@ -337,7 +337,6 @@ class DatabaseSync(object):
         self.logger.info("Looking for products to remove. Start_date: {0} End_date: {1} Limit: {2} wabco_number_include: {3} wabco_number_exclude: {4} Dry_Run: {5} Force: {6} ".format(start_date, end_date, limit, wabco_number_include, wabco_number_exclude, dry_run, force))
 
         query = db.session.query(Product).order_by(Product.date_added.desc())
-        # query = query.filter(Product.status_unsynced_count > 0)  # filter products with unsynchronized statuses only DOES NOT WORK. TODO: FIXME
         if len(wabco_number_include) > 0:
             query = query.filter(Product.type.in_(wabco_number_include))
         if len(wabco_number_exclude) > 0:
@@ -345,7 +344,7 @@ class DatabaseSync(object):
         if serial > 0:
             query = query.filter_by(serial=serial)
         if force is not True:
-            query = query.filter((Product.prodasync == 1) | (Product.prodasync == 2))  # TODO: check why it does not find products with prodasync value eq 2
+            query = query.filter((Product.prodasync == 1) | (Product.prodasync == 2))
         if start_date is not None:
             query = query.filter(Product.date_added > start_date)
         if end_date is not None:
@@ -470,7 +469,7 @@ class ProdaProcess(object):
 
         for ps in self.process_steps:
             self.logger.debug("Product: {product}: PS: {process_step} Status {status} Prodasync: {prodasync} DryRun: {dry_run} Force: {force}".format(product=self.product.id, process_step=ps['ps_sequence'], status=ps['ps_status'], prodasync=ps['status_object'].prodasync, insert=ps['insert'], dry_run=dry_run, force=force))
-            if ps['status_object'].prodasync != 0:  # take status objects with default value only
+            if ps['status_object'].prodasync != 0:  # take status objects with default value only - default status means it's newly added item.
                 self.logger.debug("Product: {product}: PS: {process_step} skipped to sync due to Prodasync value: {prodasync} DryRun: {dry_run} Force: {force}".format(product=self.product.id, process_step=ps['ps_sequence'], status=ps['ps_status'], prodasync=ps['status_object'].prodasync, insert=ps['insert'], dry_run=dry_run, force=force))
                 continue  # skip this process step. Only prodasync==0 are newly added statuses and are allowed to sync.. 
             
