@@ -45,4 +45,5 @@ STATION_STATUS_CODES = {
     10: {"result": "INTERRUPTED", "desc": "Test was interrupted"},
     11: {"result": "REPEATEDINTERRUPTED", "desc": "Repeated test was interrupted"},
     99: {"result": "VALUEERROR", "desc": "Faulty value was passed. Unable to process data."},
+    255: {"result": "VALUEERROR", "desc": "Faulty value was passed. Unable to process data."},
 }

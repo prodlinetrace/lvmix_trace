@@ -854,7 +854,7 @@ class PLC(PLCBase):
                 else:
                     logger.warning("PLC: {plc} ST: {station} URL: {url} Popup event registered but popups are disabled by configuration.".format(plc=self.get_id(), station=station_id, type=product_type, serial=serial_number, url=url))
 
-                operator_id = self.get_operator_id() or 0  # get logged operator id. In case operator is not logged in use 0
+                operator_id = self.stamp_login_id or 0  # get logged operator id. In case operator is not logged in use 0. Use stamp_login_id (electronic stamp login)
                 logger.info("PLC: {plc} DB: {db} PT: {type} SN: {serial} ST: {station} status: {station_status} ({status}) Operator: {operator} to database due to product scan event.".format(plc=self.id, db=block.get_db_number(), type=product_type, serial=serial_number, station=station_id, station_status=station_status, status=status, operator=operator_id))
                 self.database_engine.write_status(product_type, serial_number, week_number, year_number, variant_id, station_id, station_status, operator_id, str(datetime.now()))
                 self.counter_show_product_details += 1
