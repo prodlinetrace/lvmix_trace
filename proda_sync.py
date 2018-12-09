@@ -79,8 +79,8 @@ def parse_args():
     parser_list_products.add_argument('--prodasync', required=False, type=int, default=-1, help='prodasync value. Use -1 or leave undefined to look for all.')
     parser_list_products.add_argument('--start-date', default=None, help='Please specify start time for sync. Format: YYYY-MM-DD HH:MM:SS. Also dateparser formats are accepted, eg. "2 weeks ago". See: https://dateparser.readthedocs.io/en/latest/', type=valid_date)
     parser_list_products.add_argument('--end-date', default=None, help='Please specify start time for sync. Format: YYYY-MM-DD HH:MM:SS Also dateparser formats are accepted, eg. "3 months, 1 week and 1 day ago". See: https://dateparser.readthedocs.io/en/latest/', type=valid_date)
-    parser_list_products.add_argument('--wabco-number-include', type=int, default=[], action="append", help='wabco-number / type to search for. Leave empty to look for all.')
-    parser_list_products.add_argument('--wabco-number-exclude', type=int, default=[], action='append', help='Filter out given wabco-number. Can be used more than once.')
+    parser_list_products.add_argument('-i', '--wabco-number-include', type=int, default=[], action="append", help='wabco-number / type to search for. Leave empty to look for all.')
+    parser_list_products.add_argument('-e', '--wabco-number-exclude', type=int, default=[], action='append', help='Filter out given wabco-number. Can be used more than once.')
     
     parser_sync_one = subparsers.add_parser('sync-one', help="Sync one selected product from tracedb to proda")
     parser_sync_one.add_argument('--force', action='store_true', default=False, help='Enforce sync even if product status non zero (already synced).')
@@ -96,8 +96,8 @@ def parse_args():
     parser_sync_all.add_argument('--start-date', default=None, help='Please specify start time for sync. Format: YYYY-MM-DD HH:MM:SS. Also dateparser formats are accepted, eg. "2 weeks ago". See: https://dateparser.readthedocs.io/en/latest/', type=valid_date)
     parser_sync_all.add_argument('--end-date', default=None, help='Please specify start time for sync. Format: YYYY-MM-DD HH:MM:SS Also dateparser formats are accepted, eg. "3 months, 1 week and 1 day ago". See: https://dateparser.readthedocs.io/en/latest/', type=valid_date)
     parser_sync_all.add_argument('--limit', type=int, default=0, help='Limit number of records. Use 0 - for all (default).')
-    parser_sync_all.add_argument('--wabco-number-include', type=int, default=[], action='append', help='limit to specific wabco-number. Leave empty for all (default). Can be used more than once.')
-    parser_sync_all.add_argument('--wabco-number-exclude', type=int, default=[], action='append', help='Filter out given wabco-number. Can be used more than once.')
+    parser_sync_all.add_argument('-i', '--wabco-number-include', type=int, default=[], action='append', help='limit to specific wabco-number. Leave empty for all (default). Can be used more than once.')
+    parser_sync_all.add_argument('-e', '--wabco-number-exclude', type=int, default=[], action='append', help='Filter out given wabco-number. Can be used more than once.')
 
     #{prog_name} remove-old-records --start-date --end-date --wabco-number --serial --limit
     parser_remove_old_records = subparsers.add_parser('remove-old-records')
@@ -106,9 +106,9 @@ def parse_args():
     parser_remove_old_records.add_argument('--start-date', default=None, help='Please specify start time for sync. Format: YYYY-MM-DD HH:MM:SS. Also dateparser formats are accepted, eg. "2 weeks ago". See: https://dateparser.readthedocs.io/en/latest/', type=valid_date)
     parser_remove_old_records.add_argument('--end-date', default=None, help='Please specify start time for sync. Format: YYYY-MM-DD HH:MM:SS Also dateparser formats are accepted, eg. "3 months, 1 week and 1 day ago". See: https://dateparser.readthedocs.io/en/latest/', type=valid_date)
     parser_remove_old_records.add_argument('--limit', type=int, default=0, help='Limit number of records. Use 0 - for all (default).')
-    parser_remove_old_records.add_argument('--wabco-number-include', type=int, default=[], action='append', help='limit to specific wabco-number. Leave empty for all (default). Can be used more than once.')
-    parser_remove_old_records.add_argument('--wabco-number-exclude', type=int, default=[], action='append', help='Filter out given wabco-number. Can be used more than once.')
-    parser_remove_old_records.add_argument('--serial', type=int, default=0, help='limit to specific serial (use six digit format). Use 0 - for all (default).')
+    parser_remove_old_records.add_argument('-i', '--wabco-number-include', type=int, default=[], action='append', help='limit to specific wabco-number. Leave empty for all (default). Can be used more than once.')
+    parser_remove_old_records.add_argument('-e', '--wabco-number-exclude', type=int, default=[], action='append', help='Filter out given wabco-number. Can be used more than once.')
+    parser_remove_old_records.add_argument('-s', '--serial', type=int, default=0, help='limit to specific serial (use six digit format). Use 0 - for all (default).')
 
     #{prog_name} sync-missing --start-date --end-date --wabco-number --serial --limit
     parser_sync_missing_records = subparsers.add_parser('sync-missing-records')
@@ -117,9 +117,9 @@ def parse_args():
     parser_sync_missing_records.add_argument('--start-date', default=None, help='Please specify start time for sync. Format: YYYY-MM-DD HH:MM:SS. Also dateparser formats are accepted, eg. "2 weeks ago". See: https://dateparser.readthedocs.io/en/latest/', type=valid_date)
     parser_sync_missing_records.add_argument('--end-date', default=None, help='Please specify start time for sync. Format: YYYY-MM-DD HH:MM:SS Also dateparser formats are accepted, eg. "3 months, 1 week and 1 day ago". See: https://dateparser.readthedocs.io/en/latest/', type=valid_date)
     parser_sync_missing_records.add_argument('--limit', type=int, default=0, help='Limit number of records. Use 0 - for all (default).')
-    parser_sync_missing_records.add_argument('--wabco-number-include', type=int, default=[], action='append', help='limit to specific wabco-number. Leave empty for all (default). Can be used more than once.')
-    parser_sync_missing_records.add_argument('--wabco-number-exclude', type=int, default=[], action='append', help='Filter out given wabco-number. Can be used more than once.')
-    parser_sync_missing_records.add_argument('--serial', type=int, default=0, help='limit to specific serial (use six digit format). Use 0 - for all (default).')
+    parser_sync_missing_records.add_argument('-i', '--wabco-number-include', type=int, default=[], action='append', help='limit to specific wabco-number. Leave empty for all (default). Can be used more than once.')
+    parser_sync_missing_records.add_argument('-e', '--wabco-number-exclude', type=int, default=[], action='append', help='Filter out given wabco-number. Can be used more than once.')
+    parser_sync_missing_records.add_argument('-s', '--serial', type=int, default=0, help='limit to specific serial (use six digit format). Use 0 - for all (default).')
     
     args = parser.parse_args(remainder_argv)
     
