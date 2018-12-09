@@ -7,6 +7,7 @@ import cx_Oracle
 import dateparser
 from models import db, Product, Status
 from sqlalchemy.orm.exc import NoResultFound
+from sqlalchemy.sql import not_
 
 logger = logging.getLogger(__name__)
 
@@ -53,12 +54,14 @@ class DatabaseSync(object):
     def get_conf_file_name(self):
         return self._opts.config
 
-    def list_sync_candidates(self, wabco_number=4640061000, limit=10, proda_sync=-1, start_date=None, end_date=None):
+    def list_sync_candidates(self, wabco_number_include=[], wabco_number_exclude=[], limit=10, proda_sync=-1, start_date=None, end_date=None):
         query = Product.query.order_by(Product.date_added.desc())
         if proda_sync > -1:
             query = query.filter_by(prodasync=proda_sync)
-        if wabco_number > 0:
-            query = query.filter_by(type=wabco_number)
+        if len(wabco_number_include) > 0:
+            query = query.filter(Product.type.in_(wabco_number_include))
+        if len(wabco_number_exclude) > 0:
+            query = query.filter(not_(Product.type.in_(wabco_number_exclude)))
         if start_date is not None:
             query = query.filter(Product.date_added > start_date)
         if end_date is not None:
@@ -165,7 +168,7 @@ class DatabaseSync(object):
 
         return True
 
-    def prepare_products_for_proda_sync(self, dry_run=True, force=False, start_date=None, end_date=None, limit=0, wabco_number=0, product_timeout=480):
+    def prepare_products_for_proda_sync(self, dry_run=True, force=False, start_date=None, end_date=None, limit=0, wabco_number_include=[], wabco_number_exclude=[], product_timeout=480):
         """
         This function iterates over database and finds products that finished assembly process.
         Such products are getting prodasync flag set to 9.
@@ -188,11 +191,13 @@ class DatabaseSync(object):
         #- jezeli status montazu zaworu na dowolnej stacji jest OK i zawor nie przeszedl przez stacje 55 w ciagu 24h - cos jest nie tak - wyzwalaj synchronizacje.
         """
 
-        self.logger.info("Looking for new products to sync. Start_date: {0} End_date: {1} Limit: {2} Wabco_number: {3} Dry_Run: {4} Force: {5} ".format(start_date, end_date, limit, wabco_number,  dry_run, force))
+        self.logger.info("Looking for new products to sync. Start_date: {0} End_date: {1} Limit: {2} wabco_number_include: {3} wabco_number_exclude: {4} Dry_Run: {5} Force: {6} ".format(start_date, end_date, limit, wabco_number_include, wabco_number_exclude, dry_run, force))
         
         query = Product.query.order_by(Product.date_added.desc())
-        if wabco_number > 0:
-            query = query.filter_by(type=wabco_number)
+        if len(wabco_number_include) > 0:
+            query = query.filter(Product.type.in_(wabco_number_include))
+        if len(wabco_number_exclude) > 0:
+            query = query.filter(not_(Product.type.in_(wabco_number_exclude)))
         if force is not True:
             query = query.filter_by(prodasync=0)
         if start_date is not None:
@@ -237,7 +242,7 @@ class DatabaseSync(object):
             # not yet ready to sync
             self.logger.debug("Product: {product}: is not yet ready to sync.".format(product=candidate.id))
             
-    def sync_all_products(self, dry_run=True, force=False, wabco_number=0):
+    def sync_all_products(self, dry_run=True, force=False, wabco_number_include=[], wabco_number_exclude=[]):
         """
             This function should sync all products with prodasync=9.
             Only dry_run and wabco_number filtering is allowed here.  
@@ -253,8 +258,10 @@ class DatabaseSync(object):
 
         # find products that will be synchronized.
         query = Product.query.order_by(Product.date_added.desc())
-        if wabco_number > 0:
-            query = query.filter_by(type=wabco_number)
+        if len(wabco_number_include) > 0:
+            query = query.filter(Product.type.in_(wabco_number_include))
+        if len(wabco_number_exclude) > 0:
+            query = query.filter(not_(Product.type.in_(wabco_number_exclude)))
         query = query.filter_by(prodasync=9)
         items = query.all()
 
@@ -275,17 +282,19 @@ class DatabaseSync(object):
 
         self.logger.info("Sync of {success}/{number} products finished successfully in {time}. Number of products that failed sync: {failed}/{number}. Dry_run: {dry_run}.".format(number=len(items), failed=self.sync_failed_count, success=self.sync_success_count, time=datetime.datetime.now()-self.time_started, dry_run=dry_run))
 
-    def remove_old_records(self, dry_run=True, force=False, start_date=None, end_date=None, limit=0, wabco_number=0, serial=0):
+    def remove_old_records(self, dry_run=True, force=False, start_date=None, end_date=None, limit=0, wabco_number_include=[], wabco_number_exclude=[], serial=0):
         """
             This function removes old records from tracedb.
             Only products with proda sync status 1 (OK) will be removed (unless force mode is used). 
         """
 
-        self.logger.info("Looking for products to remove. Start_date: {0} End_date: {1} Limit: {2} Wabco_number: {3} Dry_Run: {4} Force: {5} ".format(start_date, end_date, limit, wabco_number,  dry_run, force))
+        self.logger.info("Looking for products to remove. Start_date: {0} End_date: {1} Limit: {2} wabco_number_include: {3} wabco_number_include: {4} Dry_Run: {5} Force: {6}".format(start_date, end_date, limit, wabco_number_include, wabco_number_exclude, dry_run, force))
 
         query = Product.query.order_by(Product.date_added.desc())
-        if wabco_number > 0:
-            query = query.filter_by(type=wabco_number)
+        if len(wabco_number_include) > 0:
+            query = query.filter(Product.type.in_(wabco_number_include))
+        if len(wabco_number_exclude) > 0:
+            query = query.filter(not_(Product.type.in_(wabco_number_exclude)))
         if serial > 0:
             query = query.filter_by(serial=serial)
         if force is not True:
@@ -319,18 +328,20 @@ class DatabaseSync(object):
 
         self.logger.info("Removal of {success}/{number} products finished successfully in {time}. Number of products that failed to remove: {failed}/{number}. Dry_run: {dry_run}.".format(number=len(candidates), failed=removal_failed_count, success=removal_success_count, time=datetime.datetime.now()-self.time_started, dry_run=dry_run))
 
-    def sync_missing_records(self, dry_run=True, force=False, start_date=None, end_date=None, limit=0, wabco_number=0, serial=0):
+    def sync_missing_records(self, dry_run=True, force=False, start_date=None, end_date=None, limit=0, wabco_number_include=[], wabco_number_exclude=[], serial=0):
         """
             This function finds new records (operations and statuses) which are not yet synced to PRODA. 
             Only products with status 1 or 2 (OK or NOK) will be considered (unless force mode is used).
         """
 
-        self.logger.info("Looking for products to remove. Start_date: {0} End_date: {1} Limit: {2} Wabco_number: {3} Dry_Run: {4} Force: {5} ".format(start_date, end_date, limit, wabco_number,  dry_run, force))
+        self.logger.info("Looking for products to remove. Start_date: {0} End_date: {1} Limit: {2} wabco_number_include: {3} wabco_number_exclude: {4} Dry_Run: {5} Force: {6} ".format(start_date, end_date, limit, wabco_number_include, wabco_number_exclude, dry_run, force))
 
         query = db.session.query(Product).order_by(Product.date_added.desc())
         # query = query.filter(Product.status_unsynced_count > 0)  # filter products with unsynchronized statuses only DOES NOT WORK. TODO: FIXME
-        if wabco_number > 0:
-            query = query.filter_by(type=wabco_number)
+        if len(wabco_number_include) > 0:
+            query = query.filter(Product.type.in_(wabco_number_include))
+        if len(wabco_number_exclude) > 0:
+            query = query.filter(not_(Product.type.in_(wabco_number_exclude)))
         if serial > 0:
             query = query.filter_by(serial=serial)
         if force is not True:
@@ -342,8 +353,6 @@ class DatabaseSync(object):
         if limit > 0:
             query = query.limit(limit)
         candidates = query.all()
-        
-        
         candidates = filter(lambda x: x.status_unsynced_count > 0, candidates)  # remove candidates with all status synchronized: TODO make it with query filters:
         
         self.logger.info("Found: {n} products to check for missing records. Dry_run: {dry_run}".format(n=len(candidates), dry_run=dry_run)) 

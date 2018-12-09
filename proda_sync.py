@@ -79,12 +79,13 @@ def parse_args():
     parser_list_products.add_argument('--prodasync', required=False, type=int, default=-1, help='prodasync value. Use -1 or leave undefined to look for all.')
     parser_list_products.add_argument('--start-date', default=None, help='Please specify start time for sync. Format: YYYY-MM-DD HH:MM:SS. Also dateparser formats are accepted, eg. "2 weeks ago". See: https://dateparser.readthedocs.io/en/latest/', type=valid_date)
     parser_list_products.add_argument('--end-date', default=None, help='Please specify start time for sync. Format: YYYY-MM-DD HH:MM:SS Also dateparser formats are accepted, eg. "3 months, 1 week and 1 day ago". See: https://dateparser.readthedocs.io/en/latest/', type=valid_date)
-    parser_list_products.add_argument('wabco_number', type=int, default=4640061000, help='wabco-number / type to look for. Use 0 to looks for all.')
+    parser_list_products.add_argument('--wabco-number-include', type=int, default=[], action="append", help='wabco-number / type to search for. Leave empty to look for all.')
+    parser_list_products.add_argument('--wabco-number-exclude', type=int, default=[], action='append', help='Filter out given wabco-number. Can be used more than once.')
     
     parser_sync_one = subparsers.add_parser('sync-one', help="Sync one selected product from tracedb to proda")
     parser_sync_one.add_argument('--force', action='store_true', default=False, help='Enforce sync even if product status non zero (already synced).')
     parser_sync_one.add_argument('--dry-run', action='store_true', default=False, help='do not really commit any changes to databases.')
-    parser_sync_one.add_argument('wabco_number', type=int, default=4640061000, help='wabco-number to sync')
+    parser_sync_one.add_argument('wabco-number', type=int, default=4640061000, help='wabco-number to sync')
     parser_sync_one.add_argument('serial', type=int, default=123456, help='serial to sync')
     
     #{prog_name} sync-all --start-time --end-time --wabco-number --limit
@@ -95,8 +96,9 @@ def parse_args():
     parser_sync_all.add_argument('--start-date', default=None, help='Please specify start time for sync. Format: YYYY-MM-DD HH:MM:SS. Also dateparser formats are accepted, eg. "2 weeks ago". See: https://dateparser.readthedocs.io/en/latest/', type=valid_date)
     parser_sync_all.add_argument('--end-date', default=None, help='Please specify start time for sync. Format: YYYY-MM-DD HH:MM:SS Also dateparser formats are accepted, eg. "3 months, 1 week and 1 day ago". See: https://dateparser.readthedocs.io/en/latest/', type=valid_date)
     parser_sync_all.add_argument('--limit', type=int, default=0, help='Limit number of records. Use 0 - for all (default).')
-    parser_sync_all.add_argument('--wabco-number', type=int, default=0, help='limit to specific wabco-number. Use 0 - for all (default).')
-    
+    parser_sync_all.add_argument('--wabco-number-include', type=int, default=[], action='append', help='limit to specific wabco-number. Leave empty for all (default). Can be used more than once.')
+    parser_sync_all.add_argument('--wabco-number-exclude', type=int, default=[], action='append', help='Filter out given wabco-number. Can be used more than once.')
+
     #{prog_name} remove-old-records --start-date --end-date --wabco-number --serial --limit
     parser_remove_old_records = subparsers.add_parser('remove-old-records')
     parser_remove_old_records.add_argument('--force', action='store_true', default=False, help='Enforce sync even if product status non zero (already synced).')
@@ -104,7 +106,8 @@ def parse_args():
     parser_remove_old_records.add_argument('--start-date', default=None, help='Please specify start time for sync. Format: YYYY-MM-DD HH:MM:SS. Also dateparser formats are accepted, eg. "2 weeks ago". See: https://dateparser.readthedocs.io/en/latest/', type=valid_date)
     parser_remove_old_records.add_argument('--end-date', default=None, help='Please specify start time for sync. Format: YYYY-MM-DD HH:MM:SS Also dateparser formats are accepted, eg. "3 months, 1 week and 1 day ago". See: https://dateparser.readthedocs.io/en/latest/', type=valid_date)
     parser_remove_old_records.add_argument('--limit', type=int, default=0, help='Limit number of records. Use 0 - for all (default).')
-    parser_remove_old_records.add_argument('--wabco-number', type=int, default=0, help='limit to specific wabco-number. Use 0 - for all (default).')
+    parser_remove_old_records.add_argument('--wabco-number-include', type=int, default=[], action='append', help='limit to specific wabco-number. Leave empty for all (default). Can be used more than once.')
+    parser_remove_old_records.add_argument('--wabco-number-exclude', type=int, default=[], action='append', help='Filter out given wabco-number. Can be used more than once.')
     parser_remove_old_records.add_argument('--serial', type=int, default=0, help='limit to specific serial (use six digit format). Use 0 - for all (default).')
 
     #{prog_name} sync-missing --start-date --end-date --wabco-number --serial --limit
@@ -114,7 +117,8 @@ def parse_args():
     parser_sync_missing_records.add_argument('--start-date', default=None, help='Please specify start time for sync. Format: YYYY-MM-DD HH:MM:SS. Also dateparser formats are accepted, eg. "2 weeks ago". See: https://dateparser.readthedocs.io/en/latest/', type=valid_date)
     parser_sync_missing_records.add_argument('--end-date', default=None, help='Please specify start time for sync. Format: YYYY-MM-DD HH:MM:SS Also dateparser formats are accepted, eg. "3 months, 1 week and 1 day ago". See: https://dateparser.readthedocs.io/en/latest/', type=valid_date)
     parser_sync_missing_records.add_argument('--limit', type=int, default=0, help='Limit number of records. Use 0 - for all (default).')
-    parser_sync_missing_records.add_argument('--wabco-number', type=int, default=0, help='limit to specific wabco-number. Use 0 - for all (default).')
+    parser_sync_missing_records.add_argument('--wabco-number-include', type=int, default=[], action='append', help='limit to specific wabco-number. Leave empty for all (default). Can be used more than once.')
+    parser_sync_missing_records.add_argument('--wabco-number-exclude', type=int, default=[], action='append', help='Filter out given wabco-number. Can be used more than once.')
     parser_sync_missing_records.add_argument('--serial', type=int, default=0, help='limit to specific serial (use six digit format). Use 0 - for all (default).')
     
     args = parser.parse_args(remainder_argv)
@@ -132,7 +136,7 @@ def main():
     dbsync = DatabaseSync(arg_map)
     
     def list_products():
-        dbsync.list_sync_candidates(wabco_number=arg_map['wabco_number'], limit=arg_map['limit'], proda_sync=arg_map['prodasync'], start_date=arg_map['start_date'], end_date=arg_map['end_date'])
+        dbsync.list_sync_candidates(wabco_number_include=arg_map['wabco_number_include'], wabco_number_exclude=arg_map['wabco_number_exclude'], limit=arg_map['limit'], proda_sync=arg_map['prodasync'], start_date=arg_map['start_date'], end_date=arg_map['end_date'])
     
     def sync_one():
         product = dbsync.get_one_product(wabco_number=arg_map['wabco_number'], serial=arg_map['serial'])
@@ -140,14 +144,14 @@ def main():
         dbsync.sync_single_product(product, dry_run=arg_map['dry_run'], force=arg_map['force'])
     
     def sync_all():
-        dbsync.prepare_products_for_proda_sync(dry_run=arg_map['dry_run'], force=arg_map['force'], start_date=arg_map['start_date'], end_date=arg_map['end_date'], limit=arg_map['limit'], wabco_number=arg_map['wabco_number'], product_timeout=arg_map['product_timeout'])
-        dbsync.sync_all_products(dry_run=arg_map['dry_run'], force=arg_map['force'], wabco_number=arg_map['wabco_number'])
+        dbsync.prepare_products_for_proda_sync(dry_run=arg_map['dry_run'], force=arg_map['force'], start_date=arg_map['start_date'], end_date=arg_map['end_date'], limit=arg_map['limit'], wabco_number_include=arg_map['wabco_number_include'], wabco_number_exclude=arg_map['wabco_number_exclude'], product_timeout=arg_map['product_timeout'])
+        dbsync.sync_all_products(dry_run=arg_map['dry_run'], force=arg_map['force'], wabco_number_include=arg_map['wabco_number_include'], wabco_number_exclude=arg_map['wabco_number_exclude'])
     
     def remove_old_records():
-        dbsync.remove_old_records(dry_run=arg_map['dry_run'], force=arg_map['force'], start_date=arg_map['start_date'], end_date=arg_map['end_date'], limit=arg_map['limit'], wabco_number=arg_map['wabco_number'], serial=arg_map['serial'])
+        dbsync.remove_old_records(dry_run=arg_map['dry_run'], force=arg_map['force'], start_date=arg_map['start_date'], end_date=arg_map['end_date'], limit=arg_map['limit'], wabco_number_include=arg_map['wabco_number_include'], wabco_number_exclude=arg_map['wabco_number_exclude'], serial=arg_map['serial'])
 
     def sync_missing_records():
-        dbsync.sync_missing_records(dry_run=arg_map['dry_run'], force=arg_map['force'], start_date=arg_map['start_date'], end_date=arg_map['end_date'], limit=arg_map['limit'], wabco_number=arg_map['wabco_number'], serial=arg_map['serial'])
+        dbsync.sync_missing_records(dry_run=arg_map['dry_run'], force=arg_map['force'], start_date=arg_map['start_date'], end_date=arg_map['end_date'], limit=arg_map['limit'], wabco_number_include=arg_map['wabco_number_include'], wabco_number_exclude=arg_map['wabco_number_exclude'], serial=arg_map['serial'])
     
     commands = {
         'list-products': list_products,
