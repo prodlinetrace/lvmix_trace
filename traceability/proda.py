@@ -353,7 +353,7 @@ class DatabaseSync(object):
         if limit > 0:
             query = query.limit(limit)
         candidates = query.all()
-        candidates = filter(lambda x: x.status_unsynced_count > 0, candidates)  # remove candidates with all status synchronized: TODO make it with query filters:
+        candidates = filter(lambda x: x.status_unsynced_count > 0, candidates)  # remove candidates with all status synchronized: TODO: make it with query filters.
         
         self.logger.info("Found: {n} products to check for missing records. Dry_run: {dry_run}".format(n=len(candidates), dry_run=dry_run)) 
         for candidate in candidates:
