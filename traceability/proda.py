@@ -185,10 +185,10 @@ class DatabaseSync(object):
 
         """
         Osobiscie sklanialem sie w strone nastepujacego rozwiazania:
+        #- jezeli nie zostal zapisany zaden status w ciagu 8h (product timeout)
         #- zawor przeszedl stacje 55 - wyzwalaj synchronizacje
         #- Jezeli status montazu na dowolnej stacji jest NOK - montaz zostaje przerwany - wyzwalaj synchronizacje
         #- jezeli status montazu zaworu na dowolnej stacji jest OK wstrzymaj sie z syncronizacja danych do momentu az zawor dotrze do stacji 55.
-        #- jezeli nie zostal zapisany zaden status w ciagu 8h (product timeout)
         #- jezeli status montazu zaworu na dowolnej stacji jest OK i zawor nie przeszedl przez stacje 55 w ciagu 8h - cos jest nie tak - wyzwalaj synchronizacje.
         """
 
@@ -216,6 +216,13 @@ class DatabaseSync(object):
         for candidate in candidates:
             last_status = candidate.statuses.order_by(Status.id.desc()).first()
 
+            # product older than 8 h without statuses - trigger sync
+            product_age = datetime.datetime.now() - dateparser.parse(candidate.date_added)
+            if product_age.total_seconds() / 60 > product_timeout and last_status is None:
+                self.set_sync_ready_flag(candidate, dry_run=dry_run, force=force)
+                self.logger.debug("Product: {product}: set as ready to sync as it did not get any status within {timeout} minutes.".format(product=candidate.id, timeout=product_timeout))
+                continue
+
             # product just passed station 55 - trigger sync
             if last_status.station_id == 55:
                 self.set_sync_ready_flag(candidate, dry_run=dry_run, force=force) 
@@ -226,13 +233,6 @@ class DatabaseSync(object):
             if last_status.status == 2:
                 self.set_sync_ready_flag(candidate, dry_run=dry_run, force=force)
                 self.logger.debug("Product: {product}: set as ready to sync due to last status set to NOK.".format(product=candidate.id))
-                continue
-
-            # product older than 8 h without statuses - trigger sync
-            product_age = datetime.datetime.now() - dateparser.parse(candidate.date_added)
-            if product_age.total_seconds() / 60 > product_timeout and last_status is None:
-                self.set_sync_ready_flag(candidate, dry_run=dry_run, force=force)
-                self.logger.debug("Product: {product}: set as ready to sync as it did not get any status within {timeout} minutes.".format(product=candidate.id, timeout=product_timeout))
                 continue
 
             # product status is OK but it did not reached station 55 within 24h.
