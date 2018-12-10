@@ -812,12 +812,29 @@ class PLC(PLCBase):
                     logger.warning("PLC: {plc} DB: {db} wrong value for year, returning 0. Exception: {e}, TB: {tb}".format(plc=self.id, db=block.get_db_number(), e=e, tb=traceback.format_exc()))
                     year_number = '0'
                 try:
+                    data = block[VARIANT_ID]
+                    variant_id = int(data)
+                except ValueError, e:
+                    logger.error("PLC: {plc} DB: {db} wrong value for variant_id, returning 0. Exception: {e}, TB: {tb}".format(plc=self.id, db=block.get_db_number(), e=e, tb=traceback.format_exc()))
+                    variant_id = 0
+                try:
                     data = block[STATION_ID]
                     station_id = int(data)
                 except ValueError, e:
                     logger.error("PLC: {plc} DB: {db} Data read error. Input: {data} Exception: {e}, TB: {tb}".format(plc=self.id, db=dbid, data=data, e=e, tb=traceback.format_exc()))
                     station_id = 0
                 logger.info("PLC: {plc} ST: {station} PT: {type} SN: {serial} browser opening request - show product details.".format(plc=self.get_id(), station=station_id, type=product_type, serial=serial_number))
+                try:
+                    data = block[STATION_STATUS]
+                    station_status = int(data)
+                except ValueError, e:
+                    logger.error("PLC: {plc} DB: {db} Data read error. Input: {data} Exception: {e}, TB: {tb}".format(plc=self.id, db=dbid, data=data, e=e, tb=traceback.format_exc()))
+                    station_status = 0
+                try:
+                    status = STATION_STATUS_CODES[station_status]['result']
+                except ValueError, e:
+                    logger.warning("PLC: {plc} DB: {db} wrong value for status, returning undefined. Exception: {e}".format(plc=self.id, db=block.get_db_number(), e=e))
+                    status = STATION_STATUS_CODES[99]['result']
 
                 url = "/".join([self.get_baseurl(), 'product', str(Product.calculate_product_id(product_type, serial_number, week_number, year_number))])
                 if self.get_popups():
@@ -837,6 +854,9 @@ class PLC(PLCBase):
                 else:
                     logger.warning("PLC: {plc} ST: {station} URL: {url} Popup event registered but popups are disabled by configuration.".format(plc=self.get_id(), station=station_id, type=product_type, serial=serial_number, url=url))
 
+                operator_id = self.stamp_login_id or 0  # get logged operator id. In case operator is not logged in use 0. Use stamp_login_id (electronic stamp login)
+                logger.info("PLC: {plc} DB: {db} PT: {type} SN: {serial} ST: {station} status: {station_status} ({status}) Operator: {operator} to database due to product scan event.".format(plc=self.id, db=block.get_db_number(), type=product_type, serial=serial_number, station=station_id, station_status=station_status, status=status, operator=operator_id))
+                self.database_engine.write_status(product_type, serial_number, week_number, year_number, variant_id, station_id, station_status, operator_id, str(datetime.now()))
                 self.counter_show_product_details += 1
                 block.set_pc_open_browser_flag(False) # cancel PC_OPEN_BROWSER flag
                 block.set_pc_ready_flag(True)  # set PC ready flag back to true
