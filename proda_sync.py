@@ -85,7 +85,7 @@ def parse_args():
     parser_sync_one = subparsers.add_parser('sync-one', help="Sync one selected product from tracedb to proda")
     parser_sync_one.add_argument('--force', action='store_true', default=False, help='Enforce sync even if product status non zero (already synced).')
     parser_sync_one.add_argument('--dry-run', action='store_true', default=False, help='do not really commit any changes to databases.')
-    parser_sync_one.add_argument('wabco-number', type=int, default=4640061000, help='wabco-number to sync')
+    parser_sync_one.add_argument('wabco_number', type=int, default=4640061000, help='wabco-number to sync')
     parser_sync_one.add_argument('serial', type=int, default=123456, help='serial to sync')
     
     #{prog_name} sync-all --start-time --end-time --wabco-number --limit
