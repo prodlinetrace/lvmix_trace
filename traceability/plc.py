@@ -824,12 +824,8 @@ class PLC(PLCBase):
                     logger.error("PLC: {plc} DB: {db} Data read error. Input: {data} Exception: {e}, TB: {tb}".format(plc=self.id, db=dbid, data=data, e=e, tb=traceback.format_exc()))
                     station_id = 0
                 logger.info("PLC: {plc} ST: {station} PT: {type} SN: {serial} browser opening request - show product details.".format(plc=self.get_id(), station=station_id, type=product_type, serial=serial_number))
-                try:
-                    data = block[STATION_STATUS]
-                    station_status = int(data)
-                except ValueError, e:
-                    logger.error("PLC: {plc} DB: {db} Data read error. Input: {data} Exception: {e}, TB: {tb}".format(plc=self.id, db=dbid, data=data, e=e, tb=traceback.format_exc()))
-                    station_status = 0
+
+                station_status = 1  # station status for opening product details window should always be 1 - OK. Currently PLC on ST61 (rework) has status value of 255. Change requested by Mateusz Woszak @ 2018-12-10                     
                 try:
                     status = STATION_STATUS_CODES[station_status]['result']
                 except ValueError, e:
