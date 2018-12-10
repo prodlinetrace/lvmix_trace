@@ -217,7 +217,7 @@ class DatabaseSync(object):
             last_status = candidate.statuses.order_by(Status.id.desc()).first()
 
             # product older than 8 h without statuses - trigger sync
-            product_age = datetime.datetime.now() - dateparser.parse(candidate.date_added)
+            product_age = datetime.datetime.now() - dateparser.parse(str(candidate.date_added))
             if product_age.total_seconds() / 60 > product_timeout and last_status is None:
                 self.set_sync_ready_flag(candidate, dry_run=dry_run, force=force)
                 self.logger.debug("Product: {product}: set as ready to sync as it did not get any status within {timeout} minutes.".format(product=candidate.id, timeout=product_timeout))
