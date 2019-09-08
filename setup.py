@@ -139,6 +139,7 @@ hidden_imports = [
     "dateparser",
     "_strptime",
     "dateparser.utils.strptime",
+    "idna",
 ]
 
 zip_includes = [
