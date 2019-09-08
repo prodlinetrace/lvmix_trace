@@ -556,6 +556,13 @@ class PLC(PLCBase):
                 # read station status normally
                 else:
                     station_status = self.database_engine.read_status(str(product_id), int(station_number))
+                    # check for younger statuses on grater stations
+                    younger_status_available_check = True  # TODO: make this configurable item in prodileTrace.conf
+                    if station_status == 1 and younger_status_available_check is True:
+                        check_result = self.database_engine.check_for_newer_greater_status(str(product_id), int(station_number))
+                        if check_result is True:
+                            # TODO: log event on console
+                            station_status = 2  # SET station station status as NOK as it did not passed check_for_newer_greater_status
 
                 try:
                     status = STATION_STATUS_CODES[station_status]['result']
