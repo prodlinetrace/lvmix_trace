@@ -563,7 +563,6 @@ class PLC(PLCBase):
                 else:
                     station_status = self.database_engine.read_status(str(product_id), int(station_number))
                     # check for newer statuses on grater stations
-                    # TODO: make this configurable item in prodileTrace.conf
                     self.newer_greater_status_check = True  
                     if station_status == 1 and self.newer_greater_status_check is True:
                         check_result = self.database_engine.newer_greater_status(str(product_id), int(station_number))
