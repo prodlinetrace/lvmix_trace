@@ -16,7 +16,7 @@ class Database(object):
         #    cursor.execute("PRAGMA foreign_keys=ON;")
         #    cursor.close()
         #db.create_all()  # initialize empty database if required.
-
+        
     def read_status(self, product_id, station):
         product_id = str(product_id)
         station = int(station)
@@ -39,6 +39,41 @@ class Database(object):
         record = res[-1]
         logger.info("CON: {dbcon} PID: {product_id} ST: {station} record has status: {status}".format(dbcon=self.name, product_id=product_id, station=station, status=status))
         return record
+
+    def newer_greater_status(self, product_id, station, debug=False):
+        """
+            Checks all statuses on stations greater than queried station and compare the timestamp. 
+            If status on greater station is newer than queried station - error is returned.
+            Current statuses: (0 undefined, 1 OK, 2 NOK)
+            False - check failed - we are safe and we can continue;
+            True - check passed - further processing should be interrupted as there's a risk of failre.
+        """
+        qstatus = Status.query.filter_by(product_id=product_id).filter_by(station_id=station).order_by(Status.id.desc()).first()
+        if qstatus is None:
+            logger.warn("CON: {dbcon} PID: {product_id} ST: {station} record not found in database - returning undefined".format(dbcon=self.name, product_id=product_id, station=station))
+            return False
+        if debug:
+            print "Reference status:", qstatus, "with date: ", qstatus.date_time
+        
+        greater_statuses = Status.query.filter_by(product_id=product_id).filter(Status.station_id>station).all()   # TODO: ask Wabco check > or >= ?
+        if debug:
+            print " found greater_statuses:", greater_statuses 
+        if len(greater_statuses) == 0:
+            logger.debug("CON: {dbcon} PID: {product_id} ST: {station} no greater statuses found".format(dbcon=self.name, product_id=product_id, station=station))
+            return False
+        
+        for gstatus in greater_statuses:
+            if debug:
+                print " verifyng timestamp - checking status of:", gstatus, "with date: ", gstatus.date_time
+            if gstatus.date_time > qstatus.date_time:
+                if gstatus.status == 1:   # TODO: Ask Wabco if we should check OK statuses only (or simply all OK and NOK)?
+                    msg="CON: {dbcon} PID: {product_id} ST: {station} Newer status found for greater station: {gstatus_station}. Queried timestamp: {qtime} Greater Station Timestamp {gtime}: - returning Status NOK.".format(dbcon=self.name, product_id=product_id, station=station, gstatus_station=gstatus.station, gtime=gstatus.date_time, qtime=qstatus.date_time)
+                    if debug:
+                        print msg
+                    logger.warn(msg)
+                    return True 
+
+        return False
 
     def read_operator_status(self, operator):
         result = User.query.filter_by(id=operator).all()

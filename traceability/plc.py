@@ -45,6 +45,7 @@ class PLCBase(object):
         self.stamp_login_id = 0
         self.stamp_password = 'empty'
         self.stamp_login_status = False
+        self.newer_greater_status_check = True
 
     def _init_database(self, dburi=''):
         self.database_engine = Database("{plc}".format(plc=self.get_id()))
@@ -289,7 +290,12 @@ class PLCBase(object):
     def get_pc_ready_flag_on_poll(self):
         return self._pc_ready_flag_on_poll
 
+    def set_newer_greater_status_check(self, val=True):
+        logger.info("PLC: {plc} Setting newer_greater_status_check to: {val}".format(plc=self.id, val=val))
+        self.newer_greater_status_check = bool(val)
 
+    def get_newer_greater_status_check(self):
+        return self.newer_greater_status_check
     
     def stamp_login_logout(self):
         sleep(1)
@@ -556,6 +562,13 @@ class PLC(PLCBase):
                 # read station status normally
                 else:
                     station_status = self.database_engine.read_status(str(product_id), int(station_number))
+                    # check for newer statuses on grater stations
+                    self.newer_greater_status_check = True  
+                    if station_status == 1 and self.newer_greater_status_check is True:
+                        check_result = self.database_engine.newer_greater_status(str(product_id), int(station_number))
+                        if check_result is True:
+                            logger.error("PLC: {plc} DB: {db} PT: {type} SN: {serial} SID: {station_id} newer greater status found. {station_status_stored} (save on PLC failed.)".format(plc=self.get_id(), db=block.get_db_number(), type=product_type, serial=serial_number, station_id=station_id, station_number=station_number, station_status=station_status))
+                            station_status = 2  # SET station station status as NOK as it did not passed newer_greater_status
 
                 try:
                     status = STATION_STATUS_CODES[station_status]['result']
