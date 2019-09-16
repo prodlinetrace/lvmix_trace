@@ -42,6 +42,7 @@ class ProdLineBase(object):
         self._pc_ready_flag_on_poll = False
         self._pollsleep = 0.1
         self._polldbsleep = 0.01
+        self._newer_greater_status_check = True
 
         if self._opts.quiet:
             # log errors to console
@@ -99,6 +100,13 @@ class ProdLineBase(object):
     def set_pc_ready_flag_on_poll(self, flag):
         logger.info("pc_ready_flag_on_poll set to: {flag}".format(flag=flag))
         self._pc_ready_flag_on_poll = flag
+
+    def get_newer_greater_status_check(self):
+        return self._newer_greater_status_check
+
+    def set_newer_greater_status_check(self, flag):
+        logger.info("newer_greater_status_check set to: {flag}".format(flag=flag))
+        self._newer_greater_status_check = flag
 
     def get_config(self):
         return self._config

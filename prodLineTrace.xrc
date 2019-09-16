@@ -191,6 +191,22 @@
                   <object class="sizeritem">
                     <flag>wxALL|wxALIGN_LEFT|wxALIGN_TOP</flag>
                     <border>5</border>
+                    <object class="wxStaticText" name="labelMainNewerGreaterStatusCheck">
+                      <label>Newer Greater Status Check</label>
+                      <style/>
+                    </object>
+                  </object>                  
+                  <object class="sizeritem">
+                    <flag>wxALL|wxALIGN_LEFT|wxALIGN_TOP</flag>
+                    <border>5</border>
+                    <object class="wxStaticText" name="valueMainNewerGreaterStatusCheck">
+                      <label>Newer Greater Status Check</label>
+                      <style/>
+                    </object>
+                  </object>                  
+                  <object class="sizeritem">
+                    <flag>wxALL|wxALIGN_LEFT|wxALIGN_TOP</flag>
+                    <border>5</border>
                     <object class="wxStaticText" name="labelMainVersion">
                       <label>ProdLineTrace Version</label>
                       <style/>

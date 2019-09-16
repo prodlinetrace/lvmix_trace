@@ -40,6 +40,8 @@ class MainWindow(wx.App):
         self.valueMainPollSleep = wx.xrc.XRCCTRL(frame, "valueMainPollSleep")
         self.valueMainPollDBSleep = wx.xrc.XRCCTRL(frame, "valueMainPollDBSleep")
         self.valueMainPCReadyResetOnPoll = wx.xrc.XRCCTRL(frame, "valueMainPCReadyResetOnPoll")
+        self.valueMainNewerGreaterStatusCheck = wx.xrc.XRCCTRL(frame, "valueMainNewerGreaterStatusCheck")
+
 
         self.valueMainControllerCount = wx.xrc.XRCCTRL(frame, "valueMainControllerCount")
         self.valueMainMsgRead = wx.xrc.XRCCTRL(frame, "valueMainMsgRead")
@@ -80,6 +82,10 @@ class MainWindow(wx.App):
             self.pollDbSleep = self._config['main']['poll_db_sleep'][0]
         if 'pc_ready_flag_on_poll' in self._config['main']:
             self.pcReadyFlagOnPoll = self._config['main']['pc_ready_flag_on_poll'][0]
+        self.newerGreaterStatusCheck = 1
+        if 'newer_greater_status_check' in self._config['main']:
+            self.newerGreaterStatusCheck = self._config['main']['newer_greater_status_check'][0]
+
 
         # bind verbosity choice box with selector function
         self.Bind(wx.EVT_CHOICE, self.OnVerbositySelect, self.valueMainVerbosity)
@@ -91,6 +97,7 @@ class MainWindow(wx.App):
         self.application.set_pollsleep(self.pollSleep)
         self.application.set_polldbsleep(self.pollDbSleep)
         self.application.set_pc_ready_flag_on_poll(self.pcReadyFlagOnPoll)
+        self.application.set_newer_greater_status_check(self.newerGreaterStatusCheck)
         
         self.logged_operator = None  # enforce operator logout on startup 
         
@@ -213,6 +220,7 @@ class MainWindow(wx.App):
         self.valueMainPollSleep.SetLabelText(str(self.pollSleep))
         self.valueMainPollDBSleep.SetLabelText(str(self.pollDbSleep))
         self.valueMainPCReadyResetOnPoll.SetLabelText(str(self.pcReadyFlagOnPoll))
+        self.valueMainNewerGreaterStatusCheck.SetLabelText(str(self.newerGreaterStatusCheck))
 
         while True:
             self.valueMainLogFile.SetLabelText(file_name_with_size(self.logfile))
