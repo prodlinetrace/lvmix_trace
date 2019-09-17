@@ -1,0 +1,38 @@
+
+0.0    head.station_id                 BYTE             # station_id of given PLC. (0-255 typically: 10, 11, 20, 21, 22, 23, 30, 31)
+1.0    head.variant_id                 BYTE             # variant of product (0 - standard, 1 - Volvo)
+2.0    head.product_type               STRING[12]       # product_type from nameplate (10 digits)
+16.0   head.serial_number              STRING[8]        # serial_number from nameplate (6 digits)
+26.0   head.week_number                STRING[4]        # month number from nameplate (2 digits)
+32.0   head.year_number                STRING[4]        # year number from nameplate  (2 digits)
+38.0   head.date_time                  DATETIME         # size is 8 bytes
+46.0   body.trc.template_count   BYTE
+47.0   body.res_1   BYTE
+48.0   body.trc.tmpl.0.PC_Ready   BOOL
+48.1   body.trc.tmpl.0.res_1   BOOL
+48.2   body.trc.tmpl.0.PLC_Save   BOOL
+48.3   body.trc.tmpl.0.res_2   BOOL
+48.4   body.trc.tmpl.0.res_3   BOOL
+48.5   body.trc.tmpl.0.res_4   BOOL
+48.6   body.trc.tmpl.0.res_5   BOOL
+48.7   body.trc.tmpl.0.res_6   BOOL
+49.0   body.trc.tmpl.0.res_byte   BYTE
+50.0   body.trc.tmpl.0.operation_status   BYTE
+51.0   body.trc.tmpl.0.res_byte_0   BYTE
+52.0   body.trc.tmpl.0.operation_type   INT
+54.0   body.trc.tmpl.0.1.result   REAL
+58.0   body.trc.tmpl.0.1.result_max   REAL
+62.0   body.trc.tmpl.0.1.result_min   REAL
+66.0   body.trc.tmpl.0.1.result_status   INT
+68.0   body.trc.tmpl.0.1.word_res   INT
+70.0   body.trc.tmpl.0.2.result   REAL
+74.0   body.trc.tmpl.0.2.result_max   REAL
+78.0   body.trc.tmpl.0.2.result_min   REAL
+82.0   body.trc.tmpl.0.2.result_status   INT
+84.0   body.trc.tmpl.0.2.word_res   INT
+86.0   body.trc.tmpl.0.3.result   REAL
+90.0   body.trc.tmpl.0.3.result_max   REAL
+94.0   body.trc.tmpl.0.3.result_min   REAL
+98.0   body.trc.tmpl.0.3.result_status   INT
+100.0   body.trc.tmpl.0.3.word_res   INT
+102.0   body.trc.tmpl.0.date_time   DATETIME
