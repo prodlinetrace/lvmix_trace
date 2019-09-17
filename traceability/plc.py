@@ -567,8 +567,8 @@ class PLC(PLCBase):
                     if station_status == 1 and self.newer_greater_status_check is True:
                         check_result = self.database_engine.newer_greater_status(str(product_id), int(station_number))
                         if check_result is True:
-                            logger.error("PLC: {plc} DB: {db} PT: {type} SN: {serial} SID: {station_id} newer greater status found. {station_status_stored} (save on PLC failed.)".format(plc=self.get_id(), db=block.get_db_number(), type=product_type, serial=serial_number, station_id=station_id, station_number=station_number, station_status=station_status))
                             station_status = 2  # SET station station status as NOK as it did not passed newer_greater_status
+                            logger.error("PLC: {plc} DB: {db} PT: {type} SN: {serial} SID: {station_id} newer greater status found. Station status set to: {station_status}".format(plc=self.get_id(), db=block.get_db_number(), type=product_type, serial=serial_number, station_id=station_id, station_number=station_number, station_status=station_status))
 
                 try:
                     status = STATION_STATUS_CODES[station_status]['result']

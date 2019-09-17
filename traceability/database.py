@@ -55,12 +55,18 @@ class Database(object):
         if debug:
             print "Reference status:", qstatus, "with date: ", qstatus.date_time
         
-        greater_statuses = Status.query.filter_by(product_id=product_id).filter(Status.station_id>station).all()   # TODO: ask Wabco check > or >= ?
+        greater_statuses = Status.query.filter_by(product_id=product_id).filter(Status.station_id>=station).order_by(Status.id.desc()).all()
+        latest_status = Status.query.filter_by(product_id=product_id).filter(Status.station_id>=station).order_by(Status.id.desc()).first()
+        
         if debug:
             print " found greater_statuses:", greater_statuses 
         if len(greater_statuses) == 0:
             logger.debug("CON: {dbcon} PID: {product_id} ST: {station} no greater statuses found".format(dbcon=self.name, product_id=product_id, station=station))
             return False
+        if latest_status is not None:
+            if latest_status.station_id == 61:
+                logger.info("CON: {dbcon} PID: {product_id} ST: {station} Latest station is rework id: {latest_station_id}. Assembly on any station enabled.".format(dbcon=self.name, product_id=product_id, station=station, latest_station_id=latest_status.station_id))
+                return False
         
         for gstatus in greater_statuses:
             if debug:
