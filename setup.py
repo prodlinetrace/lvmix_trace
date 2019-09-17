@@ -66,6 +66,7 @@ hidden_imports = [
     "sqlalchemy.ext.mutable",
     "sqlalchemy.ext.orderinglist",
     "sqlalchemy.ext.serializer",
+    "sqlalchemy.ext.baked",
     "sqlalchemy.inspection",
     "sqlalchemy.interfaces",
     "sqlalchemy.log",
